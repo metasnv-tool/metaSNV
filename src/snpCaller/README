@@ -1,0 +1,12 @@
+#This is a draft of a readme.
+#Maybe should have some sort of licensing thingy
+
+#####
+# Dependencies:
+# boost : Can be fonund here http://www.boost.org/. Get latest and add path to it in "Makefile". At the top, there's a "BOOST" variable that should point to where your boost is.
+#####
+
+#Install should be as easy as
+make
+
+#Now, you're done
