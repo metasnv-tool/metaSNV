@@ -9,7 +9,7 @@ Download
 
 Via Git:
 
-    git clone git@git.embl.de:rmuench/metaSNP.git
+    git clone git@git.embl.de:costea/metaSNV.git
     
 or [download](https://git.embl.de/rmuench/metaSNP/repository/archive.zip?ref=master) a zip file of the repository.
 
