@@ -21,6 +21,8 @@ Dependencies
 * [htslib](http://www.htslib.org/)
  
 * Python-2.7 or above
+    * numpy
+    * pandas
 
 #### Installing dependencies on Ubuntu/debian
 

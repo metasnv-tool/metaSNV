@@ -72,6 +72,7 @@ def debugging(taxids_of_interest, header_cov):
 	
 def file_check():
 	''' Check if required files exist (True / False)'''
+	args.projdir = args.projdir.rstrip('/')
 	args.coverage_file = args.projdir+'/'+args.projdir+'.all_cov.tab'
 	args.percentage_file = args.projdir+'/'+args.projdir+'.all_perc.tab'
 	args.all_samples = args.projdir+'/'+'all_samples'
