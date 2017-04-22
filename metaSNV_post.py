@@ -40,7 +40,9 @@ def get_arguments():
 	parser.add_argument('-m',metavar='INT', type=int, help="Minimum number of samples per species", default=2)
 	parser.add_argument('-c',metavar='FLOAT', type=float, help="FILTERING STEP II: minimum coverage per position per sample per species", default=5.0)
 	parser.add_argument('-p',metavar='FLOAT', type=float, help="FILTERING STEP II: required proportion of informative samples (coverage non-zero) per position", default=0.50)
-		
+	
+	parser.add_argument('-div',action='store_true',help="Compute diversity measures - note that this is a slow computation")
+	
 # REQUIRED  arguments:
 	parser.add_argument('projdir', help='project name', metavar='Proj')
 	
@@ -316,6 +318,55 @@ def computeAllDist(args):
 
     	dist.to_csv(args.projdir+'/distances/'+'%s.allele.dist' % f.split('/')[-1].replace('.freq',''), sep='\t')
 
+# Compute the diversity per position
+def compute_diversity(ind, sample1, sample2):
+    # Get per position nucleotide frequency
+    s1 = sample1.loc[ind].values
+    s2 = sample2.loc[ind].values
+    # Add the reference nucleotide frequency
+    s1 = np.append(s1, [1-np.sum(s1)])
+    s2 = np.append(s2, [1-np.sum(s2)])
+    # Compute all the combinaison
+    out = np.outer(s1, s2)
+    # Initialize the per position diversity
+    sum_i = np.nan
+    # If not all values are nan, then sum without taking the diagonal
+    if ~np.isnan(out).all():
+        np.fill_diagonal(out, 0)
+        sum_i = np.nansum(out)
+    return sum_i
+
+# Apply the compute_diversity to all positions for a specific pairwise comparison
+def genetic_distance(sample1, sample2):
+    temp_res = [compute_diversity(ind, sample1, sample2) for ind in list(sample1.index.levels[0])]
+    return np.nansum(temp_res)
+
+
+def computeAllDiv(args):
+
+    print "Computing diversities"
+    allFreq = glob.glob(args.projdir + '/filtered/pop/*.freq')
+    for f in allFreq:
+
+	# Read the freq table as data.frame
+	data = pd.read_table(f, index_col=0, na_values=['-1'])
+
+	pre_index = [i.split(':') for i in list(data.index)]
+	# Setting index for each position
+	index1 = [item[0] + ':' + item[1] + ':' + item[2] for item in pre_index]
+	# Setting index for Non-synonymous vs Synonymous
+	index2 = [item[4] for item in pre_index]
+	indexes = [index1, index2]
+	index = pd.MultiIndex.from_arrays(indexes, names=['position', 'significance'])
+
+	data = data.set_index(index)
+
+	dist = [[genetic_distance(data.iloc[:, [i]], data.iloc[:, [j]]) for i in range(j+1)] for j in range(3)]
+	dist.to_csv(args.projdir+'/distances/'+'%s.diversity' % f.split('/')[-1].replace('.freq',''), sep='\t')
+	# To do : divide by the minimal horizontal coverage of each pairwise comparison.
+	# dist = dist / min(sample_i.1X_horizontal_coverage, sample_j.1X_horizontal_coverage)
+
+
 if __name__ == "__main__":
 #	print("globals: {}".format(globals()))
 
@@ -346,4 +397,7 @@ if __name__ == "__main__":
 	filter_two(args, snp_header,glob.glob(args.projdir + '/snpCaller/indiv*'),args.projdir + '/filtered/ind')
 
 	computeAllDist(args)
+
+	if args.div:
+		computeAllDiv(args)
 
