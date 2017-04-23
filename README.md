@@ -11,7 +11,7 @@ Via Git:
 
     git clone git@git.embl.de:costea/metaSNV.git
     
-or [download](https://git.embl.de/rmuench/metaSNP/repository/archive.zip?ref=master) a zip file of the repository.
+or [download](https://git.embl.de/costea/metaSNV/repository/archive.zip?ref=master) a zip file of the repository.
 
 Dependencies
 ============
