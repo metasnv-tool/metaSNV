@@ -76,6 +76,21 @@ def compute_opt(args):
             stderr.write("Failure in sample {}".format(sample))
             stderr.write("Call to {} failed.".format(' '.join(cmd)))
             exit(1)
+
+def get_header(args):
+    use = open(args.all_samples).readline().rstrip()
+    o = subprocess.check_output(["samtools","view","-H",use])
+    f = open(args.project_dir + '/bed_header','w')
+    for line in o.split('\n')[1:]:
+	line = line.rstrip().split('\t')
+	if len(line) != 3:
+		continue
+	line[1] = line[1].replace('SN:','')
+	line[2] = line[2].replace('LN:','')
+	f.write(line[1]+'\t1\t'+line[2]+'\n')
+    f.close()	
+    args.ctg_len = args.project_dir + '/bed_header'
+
 def split_opt(args):
 
     if args.n_splits > 100:
@@ -214,8 +229,7 @@ def main():
                         help='Number of jobs to run simmultaneously. Will create same number of splits, unless n_splits set differently.')
     parser.add_argument('--n_splits', metavar='INT', default=1,type=int,
                         help='Number of bins to split ref into')
-    parser.add_argument('--ctg_len',metavar='BED_FILE',default='',
-			help='Per contig lengths, required for splitting.')
+
     args = parser.parse_args()
     if not path.isfile(args.ref_db):
         stderr.write('''
@@ -234,13 +248,6 @@ ERROR:  No binaries found
 SOLUTION: make\n\n'''.format(basedir))	
 	exit(1)
 
-    if (args.n_splits > 1 or args.threads > 1) and args.ctg_len=='':
-	stderr.write('''
-ERROR:  No contig information supplied. Cannot compute splits
-
-SOLUTION: Supply contig information through --ctg_len\n\n'''.format(basedir))  
-        exit(1)	
-
     if args.threads > 1 and args.n_splits==1:
 	args.n_splits=args.threads
 
@@ -249,6 +256,8 @@ SOLUTION: Supply contig information through --ctg_len\n\n'''.format(basedir))
         exit(1)
     create_directories(args.project_dir)
     compute_opt(args)
+    get_header(args)
+    
     if args.n_splits > 1:
 	split_opt(args)
     snp_call(args)

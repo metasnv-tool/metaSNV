@@ -593,23 +593,23 @@ int main(int argc, char *argv[])
     bam_destroy1(b);
     free(entireChr);
 
-    fprintf(stdout,"\nDuplicates:%u \n", duplicates);
+    //fprintf(stdout,"\nDuplicates:%u \n", duplicates);
 
     //Print header for next table in output file
     fprintf(outputFile,"\nCov*X\tPercentage\tNr. of bases\n");
 
-    fprintf(stdout,"Total genome lenght %lu \n", totalGenomeLength);
+    //fprintf(stdout,"Total genome lenght %lu \n", totalGenomeLength);
     //Compute procentages of genome cover!.
     int i;
     for (i=0; i<=userOpt.maxCoverage; ++i) {
       if (i == 0) {
 	//Non-covered!
-	fprintf(stdout,"%3.2f of genome has not been covered\n", (double)(coverageHist[i])/totalGenomeLength*100);
+	//fprintf(stdout,"%3.2f of genome has not been covered\n", (double)(coverageHist[i])/totalGenomeLength*100);
       } else {
 	uint64_t coverage = 0;
 	//All that has been covered i, had been covered i+1, i+2 and so on times. Thus, do this addition
 	for (int x = i; x<=userOpt.maxCoverage; ++x) coverage += coverageHist[x];
-	fprintf(stdout,"%3.2f of genome has been covered at least %dX \n", (double)(coverage)/totalGenomeLength*100, i);
+	//fprintf(stdout,"%3.2f of genome has been covered at least %dX \n", (double)(coverage)/totalGenomeLength*100, i);
 	fprintf(outputFile,"%d\t%3.5f\t%lu\n",i, (double)(coverage)/totalGenomeLength*100, coverage);
       }
 
@@ -632,7 +632,7 @@ int main(int argc, char *argv[])
       fprintf(outputFile, "Number of interchromosomal pairs: %u\n",interChr);
     }
 
-    printf("Out of %u reads, you have %3.5f unmapped reads\n and %3.5f sub-par quality mappings\n", totalNumberOfReads ,procentageOfUnmapped, procentageOfZeroQuality);
+    //printf("Out of %u reads, you have %3.5f unmapped reads\n and %3.5f sub-par quality mappings\n", totalNumberOfReads ,procentageOfUnmapped, procentageOfZeroQuality);
     
 
     free(coverageHist);

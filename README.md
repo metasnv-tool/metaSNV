@@ -33,7 +33,6 @@ universe repository before):
 
     sudo add-apt-repository "deb http://archive.ubuntu.com/ubuntu $(lsb_release -sc) universe"
     sudo apt-get update
-
     sudo apt-get install libhts-dev libboost-dev
 
 ### Installing dependencies using anaconda
@@ -50,10 +49,8 @@ If you do not have a C++ compiler, anaconda can also install G++:
 
     conda create --name metaSNV boost htslib pkg-config
     source activate metaSNV
-
     # Add this command:
     conda install gcc
-
     export CFLAGS=-I$CONDA_ENV_PATH/include
     export LD_LIBRARY_PATH=$CONDA_ENV_PATH/lib:$LD_LIBRARY_PATH
 
@@ -104,7 +101,7 @@ Example Tutorial
 
 ## 4. Run the SNV calling step
 
-    $ python metaSNV.py tutorial sample_list db/freeze9.genomes.RepGenomesv9.fna --threads 8 --ctg_len db/freeze9.len.def.bed
+    $ python metaSNV.py tutorial sample_list db/freeze9.genomes.RepGenomesv9.fna --threads 8
 
 ## 5. Run filtering and post processing
 
@@ -120,13 +117,13 @@ run and you can decide on how to schedule and manage them.
 
 ## 1. Get the first set of commands
     
-    $ python metaSNV.py tutorial sample_list db/freeze9.genomes.RepGenomesv9.fna --n_splits 8 --ctg_len db/freeze9.len.def.bed --print-commands
+    $ python metaSNV.py tutorial sample_list db/freeze9.genomes.RepGenomesv9.fna --n_splits 8 --print-commands
     
     Note the addition of the "--print-commnads". This will print out one-liners that you need to run. When done, run same again.
 
 ## 2. Get the second set of commands
  
-    $ python metaSNV.py tutorial sample_list db/freeze9.genomes.RepGenomesv9.fna --n_splits 8 --ctg_len db/freeze9.len.def.bed --print-commands
+    $ python metaSNV.py tutorial sample_list db/freeze9.genomes.RepGenomesv9.fna --n_splits 8 --print-commands
     
     This will calculate the "load balancing" and give you the commands for running the SNV calling.
     

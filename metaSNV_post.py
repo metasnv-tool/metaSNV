@@ -341,31 +341,43 @@ def genetic_distance(sample1, sample2):
     temp_res = [compute_diversity(ind, sample1, sample2) for ind in list(sample1.index.levels[0])]
     return np.nansum(temp_res)
 
-
 def computeAllDiv(args):
-
     print "Computing diversities"
+    
+    # Coverage
+    cov_perc = pd.read_table(args.percentage_file, skiprows=[1], index_col=False)
+    cov_perc = cov_perc.set_index(cov_perc.loc[:, 'Unnamed: 0'])
+    cov_perc = cov_perc.drop('Unnamed: 0', 1)
+
+    # Genome
+    bedfile_tab = pd.read_table(args.projdir + '/bed_header', index_col=0, header=None)
+    bed_index = [i.split('.')[0] for i in list(bedfile_tab.index)]
+    bedfile_tab = bedfile_tab.set_index(pd.Index(bed_index))
+
+    # Loop over species :
     allFreq = glob.glob(args.projdir + '/filtered/pop/*.freq')
+
     for f in allFreq:
 
-	# Read the freq table as data.frame
-	data = pd.read_table(f, index_col=0, na_values=['-1'])
+        # Get species name :
+        species = int(f.split('/')[-1].split('.')[0])
+        # Get species genome length
+        genome_length = bedfile_tab.loc[str(species), 2].sum()
+        # Read the freq table as data.frame
+        data = pd.read_table(f, index_col=0, na_values=['-1'])
+        pre_index = [i.split(':') for i in list(data.index)]
+        # Setting index for each position
+        index1 = [item[0] + ':' + item[1] + ':' + item[2] for item in pre_index]
+        # Setting index for Non-synonymous vs Synonymous
+        index2 = [item[4] for item in pre_index]
+        indexes = [index1, index2]
+        index = pd.MultiIndex.from_arrays(indexes, names=['position', 'significance'])
+        data = data.set_index(index)
 
-	pre_index = [i.split(':') for i in list(data.index)]
-	# Setting index for each position
-	index1 = [item[0] + ':' + item[1] + ':' + item[2] for item in pre_index]
-	# Setting index for Non-synonymous vs Synonymous
-	index2 = [item[4] for item in pre_index]
-	indexes = [index1, index2]
-	index = pd.MultiIndex.from_arrays(indexes, names=['position', 'significance'])
-
-	data = data.set_index(index)
-
-	dist = [[genetic_distance(data.iloc[:, [i]], data.iloc[:, [j]]) for i in range(j+1)] for j in range(3)]
-	dist.to_csv(args.projdir+'/distances/'+'%s.diversity' % f.split('/')[-1].replace('.freq',''), sep='\t')
-	# To do : divide by the minimal horizontal coverage of each pairwise comparison.
-	# dist = dist / min(sample_i.1X_horizontal_coverage, sample_j.1X_horizontal_coverage)
-
+        # Correcting the coverage by the genome length observed in each pairwise comparison
+        correction_cov = [[min(cov_perc.loc[species, i], cov_perc.loc[species, j]) * genome_length / 100 for i in data.columns] for j in data.columns]
+        dist = [[genetic_distance(data.iloc[:, [i]], data.iloc[:, [j]]) / correction_cov[i][j] for i in range(j + 1)] for j in range(len(data.columns))]
+        dist.to_csv(args.projdir + '/distances/' + '%s.diversity' % species, sep='\t')
 
 if __name__ == "__main__":
 #	print("globals: {}".format(globals()))
