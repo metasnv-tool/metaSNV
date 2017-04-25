@@ -377,6 +377,7 @@ def computeAllDiv(args):
         # Correcting the coverage by the genome length observed in each pairwise comparison
         correction_cov = [[min(cov_perc.loc[species, i], cov_perc.loc[species, j]) * genome_length / 100 for i in data.columns] for j in data.columns]
         dist = [[genetic_distance(data.iloc[:, [i]], data.iloc[:, [j]]) / correction_cov[i][j] for i in range(j + 1)] for j in range(len(data.columns))]
+	dist = pd.DataFrame(dist, index=data.columns, columns=data.columns)
         dist.to_csv(args.projdir + '/distances/' + '%s.diversity' % species, sep='\t')
 
 if __name__ == "__main__":
