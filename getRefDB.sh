@@ -4,12 +4,12 @@ download_9() {
     [ -d "db" ] || mkdir -p db
     cd db
     echo "Downloading the archive."
-    wget vm-lux.embl.de/~rmuench/files/db_f9.tar.bz2
+    wget vm-lux.embl.de/~rmuench/files/freeze9.tar.bz2
     echo "This might take up to 10 minutes."
     echo "Extracting files!"
     echo "Patience please..."
-    tar xjvf db_f9.tar.bz2
-    rm db_f9.tar.bz2
+    tar xjvf freeze9.tar.bz2
+    rm freeze9.tar.bz2
     exit	
 }
 
@@ -17,12 +17,12 @@ download_11() {
     [ -d "db" ] || mkdir -p db
     cd db
     echo "Downloading the archive."
-    wget vm-lux.embl.de/~rmuench/files/db_f11.tar.bz2
+    wget vm-lux.embl.de/~rmuench/files/freeze11.tar.bz2
 	echo "This might take up to 20 minutes."
     echo "Extracting files!"
     echo "Patience please..."
-    tar xjvf db_f11.tar.bz2
-    rm db_f11.tar.bz2
+    tar xjvf freeze11.tar.bz2
+    rm freeze11.tar.bz2
     exit
 }
 

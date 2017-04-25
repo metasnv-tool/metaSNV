@@ -110,7 +110,7 @@ def split_opt(args):
 	if not args.print_commands:
         	stderr.write("Coverage files not found.\n")
 	else:
-		stderr.write("Coverage files not found.\nFinish running the commands prinnted above and then run this command again.\n")
+		stderr.write("Coverage files not found.\nFinish running the commands printed above and then run this command again.\n")
         exit(1)
     for f in cov_files:
         cmd = ['python',
