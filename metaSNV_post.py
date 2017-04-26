@@ -49,7 +49,7 @@ def get_arguments():
 	parser.add_argument('-c',metavar='FLOAT', type=float, help="FILTERING STEP II: minimum coverage per position per sample per species", default=5.0)
 	parser.add_argument('-p',metavar='FLOAT', type=float, help="FILTERING STEP II: required proportion of informative samples (coverage non-zero) per position", default=0.50)
 	
-	parser.add_argument('-div',action='store_true',help="Compute diversity measures - note that this is a slow computation")
+	parser.add_argument('-div',action='store_true',help="Compute diversity measures")
 	
 # REQUIRED  arguments:
 	parser.add_argument('projdir', help='project name', metavar='Proj')
@@ -326,28 +326,44 @@ def computeAllDist(args):
 
     	dist.to_csv(args.projdir+'/distances/'+'%s.allele.dist' % f.split('/')[-1].replace('.freq',''), sep='\t')
 
-# Compute the diversity per position
-def compute_diversity(ind, sample1, sample2):
-    # Get per position nucleotide frequency
-    s1 = sample1.loc[ind].values
-    s2 = sample2.loc[ind].values
-    # Add the reference nucleotide frequency
-    s1 = np.append(s1, [1-np.sum(s1)])
-    s2 = np.append(s2, [1-np.sum(s2)])
-    # Compute all the combinaison
-    out = np.outer(s1, s2)
-    # Initialize the per position diversity
-    sum_i = np.nan
-    # If not all values are nan, then sum without taking the diagonal
-    if ~np.isnan(out).all():
-        np.fill_diagonal(out, 0)
-        sum_i = np.nansum(out)
-    return sum_i
 
-# Apply the compute_diversity to all positions for a specific pairwise comparison
+
+
 def genetic_distance(sample1, sample2):
-    temp_res = [compute_diversity(ind, sample1, sample2) for ind in set(list(sample1.index))]
-    return np.nansum(temp_res)
+    '''Pairwise genetic distance'''
+
+
+    # The expression used to compute dist_nd would compute all the necessary
+    # values if appplied to sample[12]. However, the case where there are no
+    # duplicates is the majority (often >90% of cases) and can be done much
+    # faster, so it is special cased here:
+    sample1nd = sample1.reset_index().drop_duplicates(subset='index', keep=False).set_index('index')
+    sample2nd = sample2.reset_index().drop_duplicates(subset='index', keep=False).set_index('index')
+    sample2nd = sample2nd.reindex(index=sample1nd.index)
+    s1 = sample1nd.values
+    s2 = sample2nd.values
+    valid = ~(np.isnan(s1) | np.isnan(s2))
+    s1 = s1[valid]
+    s2 = s2[valid]
+    s1 = np.vstack([s1, 1 - s1])
+    s2 = np.vstack([s2, 1 - s2])
+    dist_nd = (s1[0]*s2[1]+s1[1]*s2[0]).sum()
+
+    def compute_diversity(x):
+        out = np.outer(x.s1.values, x.s2.values)
+        return np.nansum(out) - np.nansum(out.diagonal())
+
+    sample1d = sample1.ix[sample1.index[sample1.index.duplicated()]]
+    sample2d = sample2.ix[sample2.index[sample2.index.duplicated()]]
+    if not len(sample1d) or not len(sample2d):
+        # No duplicates
+        return dist_nd
+    both = pd.DataFrame({'s1' : sample1d, 's2' : sample2d})
+    both = both.reset_index()
+    both = pd.concat([both,(1. - both.groupby('index').sum()).reset_index()])
+    dist_d = both.groupby('index', group_keys=False).apply(compute_diversity).sum()
+    return dist_d + dist_nd
+
 
 def computeAllDiv(args):
 
@@ -371,7 +387,7 @@ def computeAllDiv(args):
         data = data.set_index(pd.Index(pos_index))
         # Correcting the coverage by the genome length observed in each pairwise comparison
         correction_cov = [[(min(cov_perc.loc[species, i], cov_perc.loc[species, j]) * genome_length) / 100 for i in data.columns] for j in data.columns]
-        dist = [[genetic_distance(data.iloc[:, [i]], data.iloc[:, [j]]) / correction_cov[j][i] for i in range(j + 1)] for j in range(len(data.columns))]
+        dist = [[genetic_distance(data.iloc[:, i], data.iloc[:, j]) / correction_cov[j][i] for i in range(j + 1)] for j in range(len(data.columns))]
         FST = [[(1-(dist[i][i]+dist[j][j])/(2*dist[j][i])) for i in range(j + 1)] for j in range(len(dist))]
 
         dist = pd.DataFrame(dist, index=data.columns, columns=data.columns)
