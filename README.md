@@ -40,14 +40,14 @@ universe repository before):
 If you use [anaconda](https://www.continuum.io/downloads), you can create an
 environment with all necessary dependencies using the following commands:
 
-    conda create --name metaSNV boost htslib pkg-config
+    conda create --name metaSNV boost htslib pkg-config numpy pandas
     source activate metaSNV
     export CFLAGS=-I$CONDA_ENV_PATH/include
     export LD_LIBRARY_PATH=$CONDA_ENV_PATH/lib:$LD_LIBRARY_PATH
 
 If you do not have a C++ compiler, anaconda can also install G++:
 
-    conda create --name metaSNV boost htslib pkg-config
+    conda create --name metaSNV boost htslib pkg-config numpy pandas
     source activate metaSNV
     # Add this command:
     conda install gcc

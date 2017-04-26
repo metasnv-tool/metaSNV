@@ -1,12 +1,20 @@
 #!/usr/bin/env python
-import os               # interacting with operating system
-import sys		# interact with system commandline 
-import time		# print current date/time
-import argparse		# manage command line options and arguments
+import os
+import sys
+import time
+import argparse
 import glob
 
-import numpy as np
-import pandas as pd
+try:
+	import numpy as np
+except ImportError:
+	sys.stderr.write("Numpy is necessary to run postfiltering.\n")
+	sys.exit(1)
+try:
+	import pandas as pd
+except ImportError:
+	sys.stderr.write("Pandas is necessary to run postfiltering.\n")
+	sys.exit(1)
 
 
 basedir = os.path.dirname(os.path.abspath(__file__))
