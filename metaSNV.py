@@ -91,21 +91,12 @@ def get_header(args):
     f.close()	
     args.ctg_len = args.project_dir + '/bed_header'
 
-def split_opt(args):
 
-    if args.n_splits > 100:
-        stderr.write("Maximum number of splits is 100.\n")
-        exit(1)
-
-    older_files = glob(args.project_dir + '/bestsplits/*')
-    if older_files:
-        stderr.write("\nremoving old splits.\n")
-        for f in older_files:
-            os.unlink(f)
-
+def compute_summary(args):
+    '''This information is required by metaSNV_post.py'''
     cov_dir = path.join(args.project_dir, 'cov')
     cov_files = glob(cov_dir + '/*.cov')
-    project_name = path.basename(args.project_dir)
+#    project_name = path.basename(args.project_dir)
     if not cov_files:
 	if not args.print_commands:
         	stderr.write("Coverage files not found.\n")
@@ -120,20 +111,32 @@ def split_opt(args):
                 f + '.summary']
         subprocess.call(cmd)
     print("\nCoverage summary here: {}".format(args.project_dir))
-    print("	Average vertical genome coverage: '{}/{}.all_cov.tab'".format(args.project_dir, project_name))
-    print("	Horizontal genome coverage (1X): '{}/{}.all_perc.tab'".format(args.project_dir, project_name))
+    print("	Average vertical genome coverage: '{}/{}.all_cov.tab'".format(args.project_dir, args.project_dir))
+    print("	Horizontal genome coverage (1X): '{}/{}.all_perc.tab'".format(args.project_dir, args.project_dir))
     cmd = ['python',
             '{}/src/collapse_coverages.py'.format(basedir),
             args.project_dir]
-    subprocess.call(cmd)
+    subprocess.call(cmd)    
 
+
+def split_opt(args):
+
+    if args.n_splits > 100:
+        stderr.write("Maximum number of splits is 100.\n")
+        exit(1)
+
+    older_files = glob(args.project_dir + '/bestsplits/*')
+    if older_files:
+        stderr.write("\nremoving old splits.\n")
+        for f in older_files:
+            os.unlink(f)
 
     print("\nCalculating best database split:")
     # usage createOptimumSplit.sh <all_cov.tab> <all_perc.tab> <geneDefinitions> <INT_NrSplits> <.outfile>
     cmd = ['python',
             '{}/src/createOptimumSplit.py'.format(basedir),
-            "{}/{}.all_cov.tab".format(args.project_dir, project_name),
-            "{}/{}.all_perc.tab".format(args.project_dir, project_name),
+            "{}/{}.all_cov.tab".format(args.project_dir, args.project_dir),
+            "{}/{}.all_perc.tab".format(args.project_dir, args.project_dir),
             args.ctg_len,
             str(args.n_splits),
             path.join(args.project_dir, "bestsplits", "best_split")]
@@ -258,6 +261,7 @@ SOLUTION: make\n\n'''.format(basedir))
 
     create_directories(args.project_dir)
     compute_opt(args)
+    compute_summary(args)
     get_header(args)
     
     if args.n_splits > 1:
