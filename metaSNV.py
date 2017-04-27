@@ -91,12 +91,11 @@ def get_header(args):
     f.close()	
     args.ctg_len = args.project_dir + '/bed_header'
 
-
 def compute_summary(args):
     '''This information is required by metaSNV_post.py'''
 
     project_name = path.basename(args.project_dir)
-
+ 
     cov_dir = path.join(args.project_dir, 'cov')
     cov_files = glob(cov_dir + '/*.cov')
 #    project_name = path.basename(args.project_dir)
@@ -122,7 +121,6 @@ def compute_summary(args):
             args.project_dir]
     subprocess.call(cmd)    
 
-
 def split_opt(args):
 
     if args.n_splits > 100:
@@ -135,15 +133,14 @@ def split_opt(args):
         for f in older_files:
             os.unlink(f)
 
-    project_name = path.basename(args.project_dir)
-
+    project_name = path.basename(args.project_dir) 
 
     print("\nCalculating best database split:")
     # usage createOptimumSplit.sh <all_cov.tab> <all_perc.tab> <geneDefinitions> <INT_NrSplits> <.outfile>
     cmd = ['python',
             '{}/src/createOptimumSplit.py'.format(basedir),
-            "{}/{}.all_cov.tab".format(args.project_dir, project_name),
-            "{}/{}.all_perc.tab".format(args.project_dir, project_name),
+            "{}/{}.all_cov.tab".format(args.project_dir, args.project_dir),
+            "{}/{}.all_perc.tab".format(args.project_dir, args.project_dir),
             args.ctg_len,
             str(args.n_splits),
             path.join(args.project_dir, "bestsplits", "best_split")]
