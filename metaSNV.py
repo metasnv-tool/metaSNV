@@ -231,6 +231,7 @@ def main():
                         help='Number of bins to split ref into')
 
     args = parser.parse_args()
+    args.project_dir = args.project_dir.rstrip('/')
     if not path.isfile(args.ref_db):
         stderr.write('''
 ERROR:	No reference database or annotation file found!"
@@ -254,6 +255,7 @@ SOLUTION: make\n\n'''.format(basedir))
     if path.exists(args.project_dir) and not args.print_commands:
     	stderr.write("Project directory '{}' already exists\n\n\n".format(args.project_dir))
         exit(1)
+
     create_directories(args.project_dir)
     compute_opt(args)
     get_header(args)
