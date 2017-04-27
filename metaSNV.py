@@ -95,10 +95,9 @@ def compute_summary(args):
     '''This information is required by metaSNV_post.py'''
 
     project_name = path.basename(args.project_dir)
- 
     cov_dir = path.join(args.project_dir, 'cov')
     cov_files = glob(cov_dir + '/*.cov')
-#    project_name = path.basename(args.project_dir)
+
     if not cov_files:
 	if not args.print_commands:
         	stderr.write("Coverage files not found.\n")
@@ -139,8 +138,8 @@ def split_opt(args):
     # usage createOptimumSplit.sh <all_cov.tab> <all_perc.tab> <geneDefinitions> <INT_NrSplits> <.outfile>
     cmd = ['python',
             '{}/src/createOptimumSplit.py'.format(basedir),
-            "{}/{}.all_cov.tab".format(args.project_dir, args.project_dir),
-            "{}/{}.all_perc.tab".format(args.project_dir, args.project_dir),
+            "{}/{}.all_cov.tab".format(args.project_dir, project_name),
+            "{}/{}.all_perc.tab".format(args.project_dir, project_name),
             args.ctg_len,
             str(args.n_splits),
             path.join(args.project_dir, "bestsplits", "best_split")]
