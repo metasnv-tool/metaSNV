@@ -227,7 +227,7 @@ def main():
                         help='File with an input list of bam files, one file per line')
     parser.add_argument("ref_db", metavar='REF_DB_FILE',
                         help='reference multi-sequence FASTA file used for the alignments.')
-    parser.add_argument('--db_ann', metavar='BED_FILE',default='',
+    parser.add_argument('--db_ann', metavar='DB_ANN_FILE',default='',
                         help='Database gene annotation.')
     parser.add_argument('--print-commands', default=False, action='store_true',
                         help='Instead of executing the commands, simply print them out')
