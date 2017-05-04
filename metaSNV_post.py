@@ -43,8 +43,10 @@ def get_arguments():
 	
 	
 # OPTIONAL arguments:
-	parser.add_argument('-b', metavar='FLOAT', type=float, help="Coverage breadth: Horizontal genome coverage percentage per sample per species", default=40.0)
-	parser.add_argument('-d', metavar='FLOAT', type=float, help="Coverage depth: Average vertical genome coverage per sample per species", default=5.0)
+	parser.add_argument('-b', metavar='FLOAT', type=float, default=40.0)
+                                help="Coverage breadth: minimal horizontal genome coverage percentage per sample per species")
+	parser.add_argument('-d', metavar='FLOAT', type=float, default=5.0,
+                                help="Coverage depth: minimal average vertical genome coverage per sample per species")
 	parser.add_argument('-m',metavar='INT', type=int, help="Minimum number of samples per species", default=2)
 	parser.add_argument('-c',metavar='FLOAT', type=float, help="FILTERING STEP II: minimum coverage per position per sample per species", default=5.0)
 	parser.add_argument('-p',metavar='FLOAT', type=float, help="FILTERING STEP II: required proportion of informative samples (coverage non-zero) per position", default=0.50)
