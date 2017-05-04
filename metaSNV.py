@@ -51,10 +51,7 @@ def run_sample(sample, command):
 
 def compute_opt(args):
     out_dir = path.join(args.project_dir, 'cov')
-    try:
-        os.makedirs(out_dir)
-    except:
-        pass
+    mkdir_p(out_dir)
     p = multiprocessing.Pool(args.threads, init_worker)
     results = []
     for line in open(args.all_samples):
@@ -124,7 +121,7 @@ def split_opt(args):
 
     if args.n_splits > 100:
         stderr.write("Maximum number of splits is 100.\n")
-        exit(1)
+        args.n_splits = 100
 
     older_files = glob(args.project_dir + '/bestsplits/*')
     if older_files:
