@@ -43,7 +43,7 @@ def get_arguments():
 	
 	
 # OPTIONAL arguments:
-	parser.add_argument('-b', metavar='FLOAT', type=float, default=40.0)
+	parser.add_argument('-b', metavar='FLOAT', type=float, default=40.0,
                                 help="Coverage breadth: minimal horizontal genome coverage percentage per sample per species")
 	parser.add_argument('-d', metavar='FLOAT', type=float, default=5.0,
                                 help="Coverage depth: minimal average vertical genome coverage per sample per species")
@@ -85,8 +85,8 @@ def debugging(taxids_of_interest, header_cov):
 def file_check():
 	''' Check if required files exist (True / False)'''
 	args.projdir = args.projdir.rstrip('/')
-	args.coverage_file = args.projdir+'/'+args.projdir+'.all_cov.tab'
-	args.percentage_file = args.projdir+'/'+args.projdir+'.all_perc.tab'
+	args.coverage_file = args.projdir+'/'+args.projdir.split('/')[-1]+'.all_cov.tab'
+	args.percentage_file = args.projdir+'/'+args.projdir.spit('/')[-1]+'.all_perc.tab'
 	args.all_samples = args.projdir+'/'+'all_samples'
 
 	print("Checking for necessary input files...")
