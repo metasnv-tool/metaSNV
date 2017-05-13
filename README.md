@@ -89,7 +89,7 @@ Example Tutorial
 ## 1. Run the setup & compilation steps and download the provided reference database. 
 
     $ ./getRefDB.sh
-    Select freez9 for the tutorial, as these files have been mapped agains this freeze. 
+    Select freeze9, as the tutorial files have been mapped against this freeze. 
 
 ## 2. Go to the EXAMPLE directory and download the samples with the getSamplesScript.sh
 
