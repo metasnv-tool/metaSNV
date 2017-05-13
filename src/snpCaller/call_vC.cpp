@@ -130,7 +130,6 @@ bool indexGenomeAndGenes(FILE* refGenome, FILE* refGenes) {
     filePosStart = strlen(line);//This includes the \n
     filePosition p1;
     while (fgets(line,10000,refGenes)) {
-        fileConsumed += strlen(line);
         int pos = 0;
         const char* rest = toksplit(line,'\t',tok,10000);
         while (*rest) {
@@ -152,6 +151,7 @@ bool indexGenomeAndGenes(FILE* refGenome, FILE* refGenes) {
             ++pos;
             rest = toksplit(rest,'\t',tok,10000);
         }
+	fileConsumed += strlen(line);
         lineCount += 1;
     }
     //Add the last one!
@@ -248,7 +248,7 @@ bool loadGenome(std::string gName, FILE* refGenes, bool* hasGenes) {
             }
             if (pos == 2) {//This is the name!
                 if (gName.compare(tok) != 0) {
-                    fprintf(stderr,"Reading wrong gene defintions");
+                    fprintf(stderr,"Reading wrong gene defintion for %s\n. Scafold supposed to be %s, but is %s\n.",geneName.c_str(),tok,gName.c_str());
                     break;
                 }
             } else if (pos == 6) {//Start
