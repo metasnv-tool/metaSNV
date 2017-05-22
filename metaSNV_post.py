@@ -86,7 +86,7 @@ def file_check():
 	''' Check if required files exist (True / False)'''
 	args.projdir = args.projdir.rstrip('/')
 	args.coverage_file = args.projdir+'/'+args.projdir.split('/')[-1]+'.all_cov.tab'
-	args.percentage_file = args.projdir+'/'+args.projdir.spit('/')[-1]+'.all_perc.tab'
+	args.percentage_file = args.projdir+'/'+args.projdir.split('/')[-1]+'.all_perc.tab'
 	args.all_samples = args.projdir+'/'+'all_samples'
 
 	print("Checking for necessary input files...")
