@@ -368,11 +368,9 @@ def genetic_distance(sample1, sample2):
 
 
 def computeAllDiv(args):
-
-    print "Computing diversities"
-    cov_perc = pd.read_table(args.percentage_file, skiprows=[1], index_col=False)
-    cov_perc = cov_perc.set_index(cov_perc.loc[:, 'Unnamed: 0'])
-    cov_perc = cov_perc.drop('Unnamed: 0', 1)
+    # Load external info : Coverage, genomes size, genes size
+    horizontal_coverage = pd.read_table(args.percentage_file, skiprows=[1], index_col=0)
+    vertical_coverage = pd.read_table(args.coverage_file, skiprows=[1], index_col=0)
 
     bedfile_tab = pd.read_table(args.projdir + '/bed_header', index_col=0, header=None)
     bed_index = [i.split('.')[0] for i in list(bedfile_tab.index)]
@@ -385,11 +383,18 @@ def computeAllDiv(args):
 
         data = pd.read_table(f, index_col=0, na_values=['-1'])
         pre_index = [i.split(':') for i in list(data.index)]
-        pos_index = [item[0] + ':' + item[1] + ':' + item[2] for item in pre_index]
-        data = data.set_index(pd.Index(pos_index))
+        data = data.set_index(pd.Index([item[0] + ':' + item[1] + ':' + item[2] for item in pre_index]))
+        data = data.sort_index()
+        ########
         # Correcting the coverage by the genome length observed in each pairwise comparison
-        correction_cov = [[(min(cov_perc.loc[species, i], cov_perc.loc[species, j]) * genome_length) / 100 for i in data.columns] for j in data.columns]
-        dist = [[genetic_distance(data.iloc[:, i], data.iloc[:, j]) / correction_cov[j][i] for i in range(j + 1)] for j in range(len(data.columns))]
+        correction_coverage = [[(min(horizontal_coverage.loc[species, i], horizontal_coverage.loc[species, j]) * genome_length) / 100 for i in data.columns] for j in data.columns]
+        ########
+        # Vertical coverage in pi within : AvgCov / (AvgCov - 1)
+        for j,i in enumerate(data.columns):
+            correction_within = vertical_coverage.loc[species,i] / (vertical_coverage.loc[species,i] - 1)
+            correction_coverage[j][j] = correction_coverage[j][j] / correction_within
+
+        dist = [[genetic_distance(data.iloc[:, i], data.iloc[:, j]) / correction_coverage[j][i] for i in range(j + 1)] for j in range(len(data.columns))]
         FST = [[(1-(dist[i][i]+dist[j][j])/(2*dist[j][i])) for i in range(j + 1)] for j in range(len(dist))]
 
         dist = pd.DataFrame(dist, index=data.columns, columns=data.columns)
