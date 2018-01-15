@@ -76,16 +76,16 @@ def compute_opt(args):
 
 def get_header(args):
     use = open(args.all_samples).readline().rstrip()
-    o = subprocess.check_output(["samtools","view","-H",use])
+    o = subprocess.check_output(["samtools","view","-H",use]).decode("utf-8")
     f = open(args.project_dir + '/bed_header','w')
     for line in o.split('\n')[1:]:
-	line = line.rstrip().split('\t')
-	if len(line) != 3:
-		continue
-	line[1] = line[1].replace('SN:','')
-	line[2] = line[2].replace('LN:','')
-	f.write(line[1]+'\t1\t'+line[2]+'\n')
-    f.close()	
+        line = line.rstrip().split('\t')
+        if len(line) != 3:
+            continue
+        line[1] = line[1].replace('SN:','')
+        line[2] = line[2].replace('LN:','')
+        f.write(line[1]+'\t1\t'+line[2]+'\n')
+    f.close()
     args.ctg_len = args.project_dir + '/bed_header'
 
 def compute_summary(args):
@@ -96,14 +96,14 @@ def compute_summary(args):
     cov_files = glob(cov_dir + '/*.cov')
 
     if not cov_files:
-	if not args.print_commands:
-        	stderr.write("Coverage files not found.\n")
-	else:
-		stderr.write("Coverage files not found.\nFinish running the commands printed above and then run this command again.\n")
+        if not args.print_commands:
+            stderr.write("Coverage files not found.\n")
+        else:
+            stderr.write("Coverage files not found.\nFinish running the commands printed above and then run this command again.\n")
         exit(1)
     for f in cov_files:
         cmd = ['python',
-	            path.join(basedir, 'src/computeGenomeCoverage.py'),
+                path.join(basedir, 'src/computeGenomeCoverage.py'),
                 f,
                 f + '.detail',
                 f + '.summary']
@@ -115,7 +115,7 @@ def compute_summary(args):
     cmd = ['python',
             '{}/src/collapse_coverages.py'.format(basedir),
             args.project_dir]
-    subprocess.call(cmd)    
+    subprocess.call(cmd)
 
 def split_opt(args):
 
@@ -129,7 +129,7 @@ def split_opt(args):
         for f in older_files:
             os.unlink(f)
 
-    project_name = path.basename(args.project_dir) 
+    project_name = path.basename(args.project_dir)
 
     print("\nCalculating best database split:")
     # usage createOptimumSplit.sh <all_cov.tab> <all_perc.tab> <geneDefinitions> <INT_NrSplits> <.outfile>
@@ -246,26 +246,26 @@ SOLUTION: run getRefDB.sh or set up a custom database before running metaSNP cal
         exit(1)
 
     if not path.isfile(basedir+"/src/qaTools/qaCompute") or not path.isfile(basedir+"/src/snpCaller/snpCall"):
-	stderr.write('''
+        stderr.write('''
 ERROR:  No binaries found
 
-SOLUTION: make\n\n'''.format(basedir))	
-	exit(1)
+SOLUTION: make\n\n'''.format(basedir))
+        exit(1)
 
     if args.threads > 1 and args.n_splits==1:
-	args.n_splits=args.threads
+        args.n_splits=args.threads
 
     if path.exists(args.project_dir) and not args.print_commands:
-    	stderr.write("Project directory '{}' already exists\n\n\n".format(args.project_dir))
+        stderr.write("Project directory '{}' already exists\n\n\n".format(args.project_dir))
         exit(1)
 
     create_directories(args.project_dir)
     compute_opt(args)
     compute_summary(args)
     get_header(args)
-    
+
     if args.n_splits > 1:
-	split_opt(args)
+        split_opt(args)
     snp_call(args)
 
 if __name__ == '__main__':
