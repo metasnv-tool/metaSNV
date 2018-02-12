@@ -526,13 +526,32 @@ int main(int argc, char *argv[])
 	   ++duplicates;
 	 } else {
 	   if (!userOpt.spanCov) {
-	     //All entries in SAM file are represented on the forward strand! (See specs of SAM format for details)    
-	     ++entireChr[core->pos];
-	     ++usedReads;
-	     if ((uint32_t)(core->pos+core->l_qseq) >= chrSize)
-	       --entireChr[chrSize-1];
-	     else
-	       --entireChr[core->pos+core->l_qseq];
+	     //All entries in SAM file are represented on the forward strand! (See specs of SAM format for details)
+	     uint32_t* cigar = bam1_cigar(b);
+         uint32_t pp = core->pos+1;
+         int i = 0;
+         if(((*cigar) & BAM_CIGAR_MASK) == BAM_CSOFT_CLIP || ((*cigar) & BAM_CIGAR_MASK) == BAM_CHARD_CLIP) {//BWA is actively fucking with me.
+            //The start of the alignment is reported without this clip.
+            ++cigar; ++i;
+         }
+         while (i<core->n_cigar) {
+            ++i;
+            if (((*cigar) & BAM_CIGAR_MASK) != BAM_CMATCH) {
+                    pp = pp + ((*cigar) >> BAM_CIGAR_SHIFT);
+            } else {
+                    ++entireChr[pp];
+                    pp = pp + ((*cigar) >> BAM_CIGAR_SHIFT);
+                    --entireChr[pp];
+            }
+            ++cigar;
+         }
+
+         //++entireChr[core->pos];
+         ++usedReads;
+         //if ((uint32_t)(core->pos+core->l_qseq) >= chrSize)
+         //  --entireChr[chrSize-1];
+         //else
+         //  --entireChr[core->pos+core->l_qseq];
 	   } else {
 	     //Computing span coverage. 
 	     //Only consider first read in pair! and extend a bit to the end of the insert
