@@ -527,7 +527,7 @@ int main(int argc, char *argv[])
 	 } else {
 	   if (!userOpt.spanCov) {
 	     //All entries in SAM file are represented on the forward strand! (See specs of SAM format for details)
-	     uint32_t* cigar = bam1_cigar(b);
+	     uint32_t* cigar = bam_get_cigar(b);
          uint32_t pp = core->pos+1;
          int i = 0;
          if(((*cigar) & BAM_CIGAR_MASK) == BAM_CSOFT_CLIP || ((*cigar) & BAM_CIGAR_MASK) == BAM_CHARD_CLIP) {//BWA is actively fucking with me.
