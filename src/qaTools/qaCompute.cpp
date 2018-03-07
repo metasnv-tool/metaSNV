@@ -541,7 +541,12 @@ int main(int argc, char *argv[])
             } else {
                     ++entireChr[pp];
                     pp = pp + ((*cigar) >> BAM_CIGAR_SHIFT);
-                    --entireChr[pp];
+		    if (pp >= chrSize) {//These are mismatches that actually hang over the end. Silly mapper!
+				//fprintf(stderr,"you are fucked %d %d\n",pp,chrSize);
+				--entireChr[chrSize-1];
+			} else {
+                    		--entireChr[pp];
+			}
             }
             ++cigar;
          }
