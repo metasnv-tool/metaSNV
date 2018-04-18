@@ -28,7 +28,7 @@ def write_matrix(cov, header, ofile):
     out.write('TaxId\t')
     out.write('\t'.join([header for _ in bamfiles]))
     out.write('\n')
-    for taxid in sorted(avg_cov.keys(), key=int):
+    for taxid in sorted(avg_cov.keys()):
         c = cov[taxid]
         out.write('{}\t'.format(taxid))
         out.write('\t'.join([c[bf] for bf in bamfiles]))
