@@ -82,9 +82,10 @@ def get_header(args):
         line = line.rstrip().split('\t')
         if len(line) != 3:
             continue
-        line[1] = line[1].replace('SN:','')
-        line[2] = line[2].replace('LN:','')
-        f.write(line[1]+'\t1\t'+line[2]+'\n')
+        if line[0] == "@SQ":
+            line[1] = line[1].replace('SN:','')
+            line[2] = line[2].replace('LN:','')
+            f.write(line[1]+'\t1\t'+line[2]+'\n')
     f.close()
     args.ctg_len = args.project_dir + '/bed_header'
 
@@ -270,4 +271,3 @@ SOLUTION: make\n\n'''.format(basedir))
 
 if __name__ == '__main__':
     main()
-
