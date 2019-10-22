@@ -206,14 +206,16 @@ def snp_call(args):
         p.join()
         for r in results:
             v = r.wait()
+            if v is not none:
+                if v > 0:
+                    stderr.write("SNV calling failed")
+                    exit(1)
+    else:
+        v = execute_snp_call(args, snpCaller, indiv_out, called_SNP, None)
+        if v is not none:
             if v > 0:
                 stderr.write("SNV calling failed")
                 exit(1)
-    else:
-        v = execute_snp_call(args, snpCaller, indiv_out, called_SNP, None)
-        if v > 0:
-            stderr.write("SNV calling failed")
-            exit(1)
 
 
 
