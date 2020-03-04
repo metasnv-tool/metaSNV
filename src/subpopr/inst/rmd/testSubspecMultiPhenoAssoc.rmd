@@ -1,0 +1,512 @@
+---
+title: "Test for Association Between Subspecies Abundance and Metadata "
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    code_folding: hide
+    number_sections: yes
+    smart: no
+    toc: yes
+    df_print: paged
+    toc_float: yes
+params:
+  speciesID:
+    value: ""
+  subpopOutDir:
+    value: ""
+  sampleIDColumnName:
+    value: ""
+  metadataFile:
+    value: ""
+  sampleExtension:
+    value: ".RepGenomesv11.sorted.bam"
+  categoryColumnNames:
+    value: ""
+---
+
+
+```{r setup, include=FALSE}
+
+speciesID <- params$speciesID
+subpopOutDir <- params$subpopOutDir
+categoriesToShow <- params$categoryColumnNames
+metadataFile <- params$metadataFile
+sampleExtension <- params$sampleExtension
+sampleIDColumnName <- params$sampleIDColumnName
+
+library(kableExtra,warn.conflicts = FALSE)
+
+options(width=100)
+#knitr::knit_hooks$set(optipng = hook_optipng) # supposed to help avoid creating super large files
+knitr::opts_chunk$set(
+  comment=NA,
+  echo=TRUE,
+  warning=FALSE,
+  error=TRUE,# keep running even if error encountered
+  optipng='', # activate the hook, also set in some chunks below as -o7 for max compression
+  dev= "CairoPNG", #R.devices::png2, # "png" doesn't work on seneca
+  message=FALSE,
+  rows.print=25)
+
+library(ggplot2,warn.conflicts = FALSE)
+library(dplyr,warn.conflicts = FALSE)
+library(tidyr,warn.conflicts = FALSE)
+library(readr,warn.conflicts = FALSE)
+library(coin,warn.conflicts = FALSE)
+library(questionr,warn.conflicts = FALSE)
+
+theme_set(theme_bw())
+
+```
+
+```{r}
+# speciesID <- "refGenome2clus"
+# source("~/Dropbox/PostDocBork/subspecies/toolDevelopment/testingSubpopr/inSilicoMock/mine/smallerTestSet/smallGenomes/04_subpopr/SETTINGS.R")
+# subpopOutDir <- "~/Dropbox/PostDocBork/subspecies/toolDevelopment/testingSubpopr/inSilicoMock/mine/smallerTestSet/smallGenomes/04_subpopr/params.hr5.hs80.ps80/defaults/"
+# metadataFile <- "~/Dropbox/PostDocBork/subspecies/toolDevelopment/testingSubpopr/inSilicoMock/mine/smallerTestSet/smallGenomes/01_createData/outputs/metadata.csv"
+# categoriesToShow <- METADATA.COLS.TO.TEST
+# sampleExtension <- SAMPLE.ID.SUFFIX
+# sampleIDColumnName <- METADATA.COL.ID
+```
+
+```{r}
+# #subpopOutDir <- "/Users/rossum/Dropbox/PostDocBork/subspecies/toolDevelopment/subpopr/ES_PC/metaSNV/fr11_v1/subspec/fromServer/"
+# subpopOutDir <- "/Users/rossum/Dropbox/PostDocBork/subspecies/pancreaticCancer/2018-06_data/subpopr/stoolSubspecMod/"
+# speciesID <- 515620
+# catToAnalyse <- "status"
+# metadataFile <- "/Users/rossum/Dropbox/PostDocBork/subspecies/pancreaticCancer/2018-06_data/PC_totalmetadata_07.2018_pg1.csv"
+# sampleExtension <- ".RepGenomesv11.sorted.bam"
+# sampleIDColumnName <- "ID"
+
+# subpopOutDir <- "/Users/rossum/Dropbox/PostDocBork/subspecies/pancreaticCancer/2018-06_data/v2UL/stool/subpopr/minFilter/"
+#  speciesID <- 470146
+#  catToAnalyse <- "status"
+#  metadataFile <- "/Users/rossum/Dropbox/PostDocBork/subspecies/pancreaticCancer/2018-06_data/PC_totalmetadata_07.2018_pg1.csv"
+#  sampleExtension <- ".ULRepGenomesv11.unique.sorted.bam"
+#  sampleIDColumnName <- "ID"
+
+# 
+# subpopOutDir <- "/Users/rossum/serverFiles/tmp_subpopr-ggValInft-motus/params.hr10.hs80/defaults/"
+# speciesID <- "ref_mOTU_v2_0036"
+# metadataFile <- "/Users/rossum/Dropbox/PostDocBork/subspecies/toolDevelopment/runOnBigDataset/infantsAndGeogVal/metadata/fullMetadata_minCols.csv"
+# sampleExtension <- ".motusSNV.bam"
+# sampleIDColumnName <- "dirName"
+# 
+# categoriesToShow <- c("subject_id","gender","geographic_location","sampleType",
+#                       "studies","ageCategory","birthCat","DeliveryMode",
+#                       "Antibiotics","intervention","metaStudy")
+
+#library(lemon) # print tables nicely in knit result without explicit call to kable()
+#knit_print.data.frame <- lemon_print
+
+# subpopOutDir <- "/Volumes/KESU/scb2/metagenomes/human/subspecGeoValidation/all_v2/subpopr/fr11v2UL-human71/params.hr10.hs80.ps80_oneSamplePerSubj/subspec/"
+# speciesID <- "155864"
+# metadataFile <- "/Volumes/KESU/scb2/metagenomes/human/subspecGeoValidation/all_v2/metadata_allv2.csv"
+# sampleExtension <- ".fr11v2UL_subspec71.unique.sorted.bam"
+# sampleIDColumnName <- "sampleNames"
+# 
+# categoriesToShow <- c("gender","geographic_location",
+#                       "studies","subject_disease_status")
+
+```
+
+
+```{r}
+col_vector <- c("#7FC97F", "#BEAED4", "#FDC086", "#FFFF99", "#386CB0", "#F0027F", 
+"#BF5B17", "#666666", "#1B9E77", "#D95F02", "#7570B3", "#E7298A", 
+"#66A61E", "#E6AB02", "#A6761D", "#666666", "#A6CEE3", "#1F78B4", 
+"#B2DF8A", "#33A02C", "#FB9A99", "#E31A1C", "#FDBF6F", "#FF7F00", 
+"#CAB2D6", "#6A3D9A", "#FFFF99", "#B15928", "#FBB4AE", "#B3CDE3", 
+"#CCEBC5", "#DECBE4", "#FED9A6", "#FFFFCC", "#E5D8BD", "#FDDAEC", 
+"#F2F2F2", "#B3E2CD", "#FDCDAC", "#CBD5E8", "#F4CAE4", "#E6F5C9", 
+"#FFF2AE", "#F1E2CC", "#CCCCCC", "#E41A1C", "#377EB8", "#4DAF4A", 
+"#984EA3", "#FF7F00", "#FFFF33", "#A65628", "#F781BF", "#999999", 
+"#66C2A5", "#FC8D62", "#8DA0CB", "#E78AC3", "#A6D854", "#FFD92F", 
+"#E5C494", "#B3B3B3", "#8DD3C7", "#FFFFB3", "#BEBADA", "#FB8072", 
+"#80B1D3", "#FDB462", "#B3DE69", "#FCCDE5", "#D9D9D9", "#BC80BD", 
+"#CCEBC5", "#FFED6F")
+set.seed(3461)
+col_vector <- sample(col_vector, size = length(col_vector),replace = F)
+col_vector <- c(col_vector,col_vector,col_vector,col_vector)
+```
+
+# Species `r as.character(speciesID)`
+
+# Settings
+
+```{r}
+print(params)
+
+# below doesn't work for vectors
+# paramsDF <- data.frame(parameter = names(params),value=rep(NA,length(names(params))))
+# for(i in 1:length(params)){
+#   paramsDF[i,"value"] <- params[[i]]
+# }
+# paramsDF %>% kable() %>% kable_styling() 
+
+```
+
+# Load metadata data
+
+Using metadata file: `r metadataFile`
+
+Analysing category: `r paste(categoriesToShow,collapse=",")`
+
+```{r}
+phenoDf <- read_csv(file = metadataFile,col_names = T,guess_max = 10000)
+phenoDfToTest <- phenoDf %>% 
+  rename_("sampleName" = sampleIDColumnName) %>% 
+  select(!!!c("sampleName",categoriesToShow)) %>% 
+  mutate(sampleName = as.character(sampleName))
+  
+phenoDfToTest %>% kable() %>% kable_styling() %>% scroll_box(height = "200px")
+
+nSamples <- nrow(phenoDfToTest)
+
+```
+
+Number of samples total in phenotype data file: `r nSamples`
+
+(not all samples will necessarily be tested, since they may not have subspecies assignment)
+
+# Analyse samples that were used to define subspecies 
+
+```{r}
+subSpecSamps <- read.table(paste0(subpopOutDir,speciesID,"_mann_clustering.tab"),
+                            row.names = 1,as.is = T)
+subSpecSamps$sampleName <- rownames(subSpecSamps) %>% 
+  sub(pattern = sampleExtension, replacement = "", fixed = T)
+
+subSpecSamps <- subSpecSamps %>% 
+  mutate(clust = sub(x = clust,pattern = "^", replacement = "subspecies")) %>% 
+  rename(dominantSubspecies = clust) %>% 
+  mutate(dominantSubspecies = factor(dominantSubspecies,ordered = T)) %>% 
+  mutate(sampleName = factor(sampleName, ordered = T))
+
+nClus <- subSpecSamps$dominantSubspecies %>% unique() %>% length()
+```
+
+Number of samples with subspecies assignments: `r subSpecSamps$sampleName %>% unique() %>% length()`
+
+Number of subspecies: `r nClus`
+
+
+```{r}
+subSpecSamps %>% 
+  ggplot(aes(x=dominantSubspecies))+
+  geom_bar()+
+  ylab("Number of samples")+
+  xlab("Dominant subspecies")
+```
+
+
+```{r}
+
+clustering <- read.table(paste0(subpopOutDir,speciesID,"_mann_clustering.tab"),
+                            row.names = 1,as.is = T)
+distMa <- read.table(paste0(subpopOutDir,speciesID,"_mann_distMatrixUsedForClustMedoidDefns.txt"),
+                            row.names = 1,as.is = T)
+
+
+heatmap(as.matrix((distMa)),scale = "none", hclustfun = function(x){hclust(x,method="average")},
+        #RowSideColors = c("red","orange","yellow","purple","blue","pink")[clustering[row.names(distMa),]]
+        RowSideColors = c("grey80",viridisLite::viridis(n=nClus))[clustering[row.names(distMa),]+1]
+        )
+```
+
+```{r}
+allDataWide <- right_join(phenoDfToTest,subSpecSamps)
+
+allData <- phenoDfToTest %>% 
+  gather(key = "metadataValue",value = "value",-sampleName) %>% 
+  right_join(subSpecSamps, by="sampleName")
+
+nSamples <- allData$sampleName %>% unique() %>% length()
+```
+
+Number of samples with subspecies assignments and metadata: `r nSamples`
+
+```{r}
+# df <- allData %>% 
+#   mutate(value = paste0(metadataValue,":",value)) %>% 
+#   group_by(value,dominantSubspecies) %>% summarise(nSamples = n()) %>% 
+#   spread(key = dominantSubspecies,value = nSamples,fill = 0) 
+# dfMa <- df[,-1] %>% as.matrix()
+# row.names(dfMa) <- df[,1,T]
+# heatmap(dfMa,scale = "col")
+```
+
+```{r,fig.height=3,fig.width=2}
+# allData %>% 
+#   #mutate(value = ifelse(is.na(value),NA,paste0(metadataValue,":",value))) %>% 
+#   group_by(dominantSubspecies) %>% 
+#   mutate(nSamplesPerSubspecies = n()) %>% 
+#   group_by(metadataValue, value) %>% 
+#   mutate(nSamplesPerMdValue = n()) %>% 
+#   group_by(metadataValue, value, dominantSubspecies) %>% 
+#   summarise(nSamplesWithMdValueInSbSp = n(), 
+#             propSamples = nSamplesWithMdValueInSbSp / nSamples, 
+#             nSamplesWithMdValueInSbSpNormBySubspecAbund = 
+#               nSamplesWithMdValueInSbSp / unique(nSamplesPerSubspecies), 
+#             nSamplesWithMdValueInSbSpNormBySubspecAbundAndMdAbund = 
+#               nSamplesWithMdValueInSbSpNormBySubspecAbund / unique(nSamplesPerMdValue)) %>% 
+#   ggplot(aes(x=dominantSubspecies,y=value,fill=nSamplesWithMdValueInSbSpNormBySubspecAbund,
+#              label=nSamplesWithMdValueInSbSp))+
+#   geom_tile(color="black")+
+#   geom_text(color="grey50")+
+#   theme(legend.position = "bottom") + #,axis.text.x = element_blank(),axis.ticks.x = element_blank())+
+#   facet_grid(metadataValue~.,scales = "free",space="free",switch = "y")+
+#   scale_fill_continuous("Proportion of samples, \nnormalised by subspecies abundance")
+```
+
+
+```{r}
+# allData %>% 
+#   ggplot(aes(x=value,fill=dominantSubspecies))+
+#   geom_bar()+coord_flip()+
+#   facet_grid(metadataValue~.,scales = "free",space="free",switch = "y")+
+#   theme(legend.position = "bottom") 
+# 
+# allData %>% 
+#   ggplot(aes(x=value,fill=dominantSubspecies))+
+#   geom_bar(position="fill")+coord_flip()+
+#   facet_grid(metadataValue~.,scales = "free",space="free",switch = "y")+
+#   theme(legend.position = "bottom") 
+```
+
+
+```{r,fig.width=10}
+getMetadataOverviewPlot <- function(df){
+p <- df %>% 
+  mutate(value = ifelse( ( is.na(value) | value == "not assigned" ) ,
+                         NA,paste0(metadataValue,":",value))) %>% # so that it's blank in figure
+  arrange(dominantSubspecies,value) %>% 
+  mutate(sampleName = factor(sampleName,levels=unique(sampleName),ordered = T)) %>% # for ordering 
+  ggplot(aes(x=sampleName,y=metadataValue,fill=value,color=value))+
+  geom_tile(color="black")+
+  theme(legend.position = "bottom",axis.text.x = element_blank(),axis.ticks.x = element_blank())+
+  facet_grid(.~dominantSubspecies,scales = "free_x",space="free_x")+
+  scale_fill_manual(values = c(col_vector,"grey"))+xlab("Samples")
+return(p)
+}
+getMetadataOverviewPlot(allData)
+```
+
+
+
+```{r}
+knitr::knit_exit()
+```
+
+Do not analyse any values that are constant for all data. Remaining columns:
+
+```{r}
+# throws error if column has all same values
+notAllValsEqual <- function(x){length(unique(x))!=1}
+allDataWideToModel <- select_if(allDataWide,notAllValsEqual)
+colnames(allDataWideToModel)[colnames(allDataWideToModel)%in%categoriesToShow]
+```
+
+
+## Odds ratio with metadata
+
+### Multivariate analysis
+Based on model (`glm`) of all metadata variables at once
+
+```{r}
+wideData <- allDataWideToModel
+getOddsRatio <- function(wideData){
+  wideData[is.na(wideData)]<-"Unknown"
+  wideData$dominantSubspecies <- factor(wideData$dominantSubspecies,ordered = F)
+  #dataToModel <- select(wideData,!!!c("dominantSubspecies",categoriesToShow))
+  dataToModel <- select(wideData,-sampleName) %>% mutate_if(is.character,factor)
+  colnames(dataToModel)<- paste0(colnames(dataToModel),".") # for readability after model concats category and value
+  reg <- glm(dominantSubspecies. ~ metaVarForSpecies2. + metaVarForSpecies3., 
+             data=dataToModel, 
+             family= "binomial", #binomial("logit"), 
+             maxit=10000)#, family=binomial, maxit=10000)
+  summary(reg)
+  anova(reg)
+  resQ <- NULL
+  resQ <- questionr::odds.ratio(reg)
+  return(resQ)
+}
+
+handleOddsRatio <- function(resQ, fileSuffix="notExtended"){
+  if(is.null(resQ)){
+    cat("GLM or odds ratio test failed. This can be due to your metadata variables being correlated with one another.")
+  }else{
+    print(resQ)
+    df<-data.frame(resQ)
+    df$predictor <- row.names(df)
+    write_csv(select(df, predictor, everything()),
+              path = paste0(subpopOutDir,"/",speciesID,
+                            "_metadataMultivarOddsRatio_",fileSuffix,".csv"))  
+  }
+}
+```
+
+
+```{r}
+resQ <- getOddsRatio(allDataWideToModel)
+handleOddsRatio(resQ,fileSuffix = "notExtended")
+```
+
+### Univariate analysis
+
+Based on model (`glm`) of one metadata variable at a time
+
+```{r}
+keepPredictor <- function(x){
+    keep <- TRUE
+    if(is.character(x) | is.factor(x)){
+      x <- as.factor(x)
+      #print(length(levels(x)))
+      keep <- length(levels(x)) >= 2
+    }
+    return(keep)
+  }
+```
+
+
+```{r}
+testEachCat <- function(singleCat,wideData){
+    dtm <- wideData %>% 
+      select(!!!c("dominantSubspecies",singleCat)) %>%
+      mutate_if(is.character, as.factor) %>%
+      group_by(dominantSubspecies) %>%
+      select_if(keepPredictor) %>%
+      ungroup()
+    
+      df1 <- t(table(dtm))
+      
+    doFisher <- function(i){
+        #print(colnames(df1)[i])
+        df <- data.frame(inClus = df1[,i],total=rowSums(df1))
+        res <- fisher.test(df[,c(1,2)])  
+        #print(res)
+        list(clusterName = colnames(df1)[i], 
+             metadataVariable=singleCat, 
+             pValAssoc = res$p.value)
+      }
+    res <- map_dfr(1:nClus,doFisher)
+    return(res)
+}
+```
+
+Fisher test for enrichment of variable with subspecies:
+
+```{r}
+toTest <- colnames(wideData)[!colnames(wideData) %in% 
+                                      c("dominantSubspecies","sampleName")]
+map_dfr(toTest,testEachCat,allDataWideToModel) %>% DT::datatable()
+```
+
+
+```{r}
+```
+
+
+
+```{r}
+
+
+# df$oddsClust <- sum(df$inClus)/(sum(df$total)-sum(df$inClus)) # odds of being in this cluster
+# df$oddsMdVal <- df$total/(sum(df$total)-df$total) # odds of having this md val
+# df$oddsRatio <- df$oddsMdVal/df$oddsClust
+# df$oddsInLog <- log(df$oddsIn)
+# df$oddsInLog[df$oddsInLog == Inf]< -1
+# df$oddsInLog[df$oddsInLog == -Inf]<- -1
+# df
+
+```
+
+
+
+
+# Analyse *extended* subspecies *abundance* data
+
+```{r}
+extdFile <- paste0(subpopOutDir,speciesID,"_extended_clustering_wFreq.tab")
+if(!file.exists(extdFile)){
+  cat(paste0("No extended data available. File does not exist: ",extdFile))
+  knitr::knit_exit()
+}
+```
+
+
+```{r}
+
+subSpecFreqDf <- read.table(extdFile,
+                            row.names = 1,as.is = T)
+subSpecFreqDf$sampleName <- rownames(subSpecFreqDf) %>% 
+  sub(pattern = sampleExtension, replacement = "", fixed = T)
+
+subSpecFreqDf <- subSpecFreqDf %>% 
+  gather(key = "cluster",value = "freq",-sampleName) %>% 
+  mutate(cluster = sub(x = cluster,pattern = "^X", replacement = "subspecies")) %>% 
+  rename(subspecies = cluster) %>% 
+  group_by(sampleName) %>% 
+  arrange(sampleName,desc(freq)) %>% 
+  mutate(dominantSubspecies = paste(subspecies[1], "is dominant"),
+         maxFreq = max(freq)) %>% 
+  ungroup() %>% 
+  mutate(dominantSubspecies = factor(dominantSubspecies,ordered = T)) %>% 
+  arrange(dominantSubspecies, desc(freq)) %>% 
+  mutate(sampleName = factor(sampleName, ordered = T)) %>% 
+  #group_by(dominantSubspecies) %>% 
+  #mutate(sampleName = forcats::fct_reorder(f = sampleName,x = desc(maxFreq) ))
+  mutate(sampleName = forcats::fct_reorder2( sampleName, dominantSubspecies, desc(maxFreq) )) # params called .f .x .y or f x y depending on version of forcats so using positions here instead
+
+nClus <- subSpecFreqDf$subspecies %>% unique() %>% length()
+```
+
+Number of samples with extended subspecies assignments: `r subSpecFreqDf$sampleName %>% unique() %>% length()`
+
+Number of subspecies: `r nClus`
+
+```{r}
+subSpecFreqDf %>% 
+  ggplot(aes(fill=subspecies,x=sampleName,y=freq))+
+  geom_bar(stat = "identity")+
+  geom_hline(yintercept = 95)+geom_hline(yintercept = 5)+
+  coord_flip()+
+  facet_grid(dominantSubspecies~.,scales="free_y",space="free_y")
+```
+
+
+```{r}
+allDataWide <- right_join(phenoDfToTest,subSpecFreqDf, by="sampleName")
+
+allData <- phenoDfToTest %>% 
+  gather(key = "metadataValue",value = "value",-sampleName) %>% 
+  right_join(subSpecFreqDf, by="sampleName")
+
+```
+
+Number of samples with extended subspecies assignments and metadata: `r allData$sampleName %>% unique() %>% length()`
+
+```{r,fig.width=7}
+getMetadataOverviewPlot(allData)
+```
+
+## Odds ratio with metadata
+
+### Multivariate analysis
+Based on model (`glm`) of all metadata variables at once
+
+```{r}
+resQ <- getOddsRatio(allDataWide)
+handleOddsRatio(resQ,fileSuffix = "extended")
+```
+
+### Univariate analysis
+
+Based on model (`glm`) of all one metadata variable at a time
+
+```{r}
+testEachCat(allDataWide)
+```
+
+
+

@@ -1,0 +1,90 @@
+---
+title: "MetaSNV2 subpopulation/subspecies results summary"
+date: "`r Sys.Date()`"
+output:
+   html_document:
+    code_folding: hide
+    number_sections: yes
+    smart: no
+    toc: no
+    df_print: paged
+    toc_float: no
+params:
+  resultsDir:
+    value: ""
+---
+
+
+```{r setup}
+resultsDir <- params$resultsDir
+#resultsDir <- "/Volumes/KESU/scb2/metagenomes/human/subspecGeoValidation/all_v2/subpopr/fr11v2UL-human71/params.hr10.hs80.ps80_oneSamplePerSubj/subspec/"
+
+knitr::opts_chunk$set(
+  echo=TRUE,
+  warning=TRUE,
+  error=TRUE, # keep running even if error encountered
+  message=FALSE,
+  #dev= "CairoPNG", #R.devices::png2, # "png" doesn't work on seneca
+  rows.print=25)
+
+library(DT,warn.conflicts = F) #DT::datatable(...,filter = 'top')
+
+```
+
+```{r}
+fullSummary <- readRDS(paste0(resultsDir,"/summary_allResults.rds"))
+fullSummary <- data.frame(lapply(fullSummary, as.character),stringsAsFactors = F)
+
+formatAsLinks <- function(path){
+  if(is.na(path)){
+    return("Not performed")
+  }
+  paste0('<a href="',
+         sub(path, pattern = " ",replacement = "%20"),'"',
+         ' target="_blank"', # open in new tab
+         ' title="',basename(path),'"', # file name in hover text
+         '>',
+         #basename(path),
+         "report",
+         '</a>')
+}
+
+
+if("detailedClusteringResultsFile" %in% colnames(fullSummary)){
+  fullSummary$detailedClusteringResultsFile <- sapply(fullSummary$detailedClusteringResultsFile,formatAsLinks)
+}
+if("detailedMetadataAssocResultsFile" %in% colnames(fullSummary)){
+  fullSummary$detailedMetadataAssocResultsFile <- sapply(fullSummary$detailedMetadataAssocResultsFile,formatAsLinks)
+}
+if("detailedGeneFamCorrResultsFile" %in% colnames(fullSummary)){
+  fullSummary$detailedGeneFamCorrResultsFile <-  sapply(fullSummary$detailedGeneFamCorrResultsFile,formatAsLinks)
+}
+
+
+oldToNew = c("Species name" = "speciesName",
+             "Number of samples used for cluster detection" = "numberOfSamplesUsedForClusterDetection" ,
+             "Number of clusters" = "numberOfClusters" ,
+             "Prediction strength value" =  "predictionStrengthValue"  ,
+             "Confidence in number of clusters" ="confidenceInNumberOfClusters"  ,
+             "Confidence per cluster" ="confidencePerCluster" ,
+             "Cluster sizes"="clusterSizes" ,
+             "Link to detailed clustering results" ="detailedClusteringResultsFile"  ,
+             "Cluster genotyping" ="ClusterGenotyping"  ,
+             "Genotyped cluster sizes" ="GenotypedClusterSizes"  ,
+             "Association with metadata tested" ="assocWithMetadataTested" ,
+             "Any significant metadata associations found" ="anySignifAssocWithMetadata"  ,
+             "Link to detailed metadata association results" ="detailedMetadataAssocResultsFile",
+             "Correlation with gene family abundances tested" ="geneFamCorrTested" ,
+             "Any significant gene family correlations found" ="anySignifGeneFamCorrs"  ,
+             "Link to detailed gene family correlation association results" ="detailedGeneFamCorrResultsFile"
+)
+
+oldToNew <- oldToNew[oldToNew %in% colnames(fullSummary)]
+DT::datatable(fullSummary,filter = 'top', colnames = oldToNew,escape = F)
+```
+
+
+```{r}
+sessionInfo()
+```
+

@@ -1,0 +1,436 @@
+---
+title: "MetaSNV2 Gene Content Report"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    code_folding: hide
+    number_sections: yes
+    smart: no
+    toc: yes
+    df_print: paged
+    toc_float: yes
+params:
+  corrPcutOff_default:
+    value: 0.8
+  corrScutOff_default:
+    value: 0.6
+  speciesID:
+    value: null
+  statCutoff:
+    value: 0.05
+  rStatCutoff:
+    value: 0.5
+  minObs:
+    value: 10
+  subpopOutDir:
+    value: ''
+  familyType:
+    value: 'Kegg'
+  geneFamilyAbundancesFile:
+    value: ''
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(
+  echo=TRUE,
+  comment=NA,
+  warning=TRUE,
+  error=TRUE, # keep running even if error encountered
+  message=FALSE,
+  rows.print=25)
+
+library(ggplot2,warn.conflicts = FALSE)
+library(dplyr,warn.conflicts = FALSE)
+library(tidyr,warn.conflicts = FALSE)
+library(readr,warn.conflicts = FALSE)
+library(ggrepel,warn.conflicts = FALSE)
+library(DT,warn.conflicts = FALSE)
+library(lemon,warn.conflicts = FALSE)
+
+theme_set(theme_bw())
+#knit_print.data.frame <- lemon_print
+
+speciesID <- params$speciesID 
+subpopOutDir <- params$subpopOutDir 
+corrPcutOff_default <- params$corrPcutOff_default #<- 0.8
+corrScutOff_default <- params$corrScutOff_default #<- 0.6
+statCutoff <- params$statCutoff #<- 0.05
+rStatCutoff <- params$rStatCutoff # 0.5
+geneFamilyAbundancesFile <- params$geneFamilyAbundancesFile
+minObs <- params$minObs
+```
+
+to do:
+- consider pearson correlation confidence intervals
+- prettify settings print out
+
+- get geneFamily names in a way that works for COG too
+- add geneFamily pathway analysis
+
+- how is it that both clusters could be correlated with the same gene family???
+
+# Settings
+
+```{r}
+# speciesID = "357276"
+# subpopOutDir = "/Users/rossum/Dropbox/PostDocBork/subspecies/pancreaticCancer/2018-06_data/v2UL/stool/minFilter"
+# geneFamilyAbundancesFile = "/Users/rossum/Dropbox/PostDocBork/subspecies/pancreaticCancer/2018-06_data/mapped/igc/kegg.counts.all1.scaled.rmHeaderRenamed2UL.txt"
+
+#geneFamilyAbundancesFile <- "../../../../pancreaticCancer/2018-06_data/mapped/igc/kegg.counts.all1.scaled.rmHeaderRenamed.txt"
+#subpopOutDir <- "../../../../pancreaticCancer/2018-06_data/subpopr/stoolSubspecMod/"
+#speciesID <- "515620"
+
+#speciesID <- "1211813"
+#subpopOutDir <- panCanCommResults_subpopr
+
+# geneFamilyAbundancesFile <- "/Volumes/KESU/scb2/bork/rossum/subspecies/testingSubpopr/inSilicoMock/mine/smallerTestSet/smallGenomes/01_createData/outputs/geneAbundances.tsv"
+# subpopOutDir <- "/Volumes/KESU/scb2/bork/rossum/subspecies/testingSubpopr/inSilicoMock/mine/smallerTestSet/smallGenomes/04_subpopr_nonPack/params.hr5.hs80.ps80/defaults/"
+# speciesID <- "refGenome2clus"
+
+
+do.call(rbind,params) %>% data.frame(stringsAsFactors = F) %>% DT::datatable()
+```
+
+# Species: `r as.character(speciesID)`
+
+## Taxonomic classification
+
+```{r}
+#accomodate package and non-package
+taxaMap <- ifelse("subpopr" %in% tolower(.packages()),
+                    subpopr::TAXA.NCBI.MOTU.MAP, # from /data folder
+                    TAXA.NCBI.MOTU.MAP) # should be loaded in environment
+
+# could replace with subpopr::getSpeciesTaxonomy()
+#get taxa info
+if(speciesID %in% taxaMap$ncbiTaxID){
+  taxaMap %>% filter(ncbiTaxID == speciesID) %>% 
+    select(ncbiTaxID,everything(),-isRep) %>% 
+    gather() %>% 
+    distinct() #%>% 
+    #kable() %>% kable_styling()   
+}else if(speciesID %in% taxaMap$ref_mOTU_cluster){
+  taxaMap %>% filter(ref_mOTU_cluster == speciesID) %>%
+    select(ref_mOTU_cluster,everything(),-isRep) %>% 
+    gather() %>% 
+    distinct()  
+}else{
+  print(paste("Taxonomy unknown for ",speciesID))
+}
+```
+
+
+# Associations between subspecies and gene families
+
+Based on correlations between the abundances of the within-species clusters and the abundances of gene families
+
+```{r}
+
+corrP <- read_tsv(paste0(subpopOutDir,"/",speciesID,"_corrKegg-pearson.tsv"),col_names = T, col_types = cols(
+  geneFamily = col_character(),
+  cluster = col_integer(),
+  statistic = col_double(),
+  #parameter = col_logical(),
+  p.value = col_double(),
+  estimate = col_double(),
+  null.value = col_integer(),
+  alternative = col_character(),
+  method = col_character(),
+  #data.name = col_logical(),
+  conf.int = col_logical(),
+  conf.int.low = col_double(),
+  conf.int.high = col_double(),
+  nObs = col_double(),
+  q.valueBH = col_double()
+)
+)
+corrS <- read_tsv(paste0(subpopOutDir,"/",speciesID,"_corrKegg-spearman.tsv"),col_names = T, col_types = cols(
+  geneFamily = col_character(),
+  cluster = col_integer(),
+  statistic = col_double(),
+  #parameter = col_logical(),
+  p.value = col_double(),
+  estimate = col_double(),
+  null.value = col_integer(),
+  alternative = col_character(),
+  method = col_character(),
+  #data.name = col_logical(),
+  nObs = col_double(),
+  q.valueBH = col_double()
+))
+
+```
+
+```{r}
+
+if( max(corrS$nObs, corrP$nObs) < minObs ){
+  print(paste0("Number of observations in correlations (",max(corrS$nObs,max(corrP$nObs)), ") is too small to be meaningful. Aborting report."))
+  knitr::knit_exit()
+}
+
+```
+
+
+Number of Pearson correlations tested: `r nrow(corrP)`
+
+Number of significant Pearson correlations (q value < `r print(statCutoff)`):  `r sum(corrP$q.valueBH < statCutoff)`
+
+
+Number of Spearman correlations tested: `r nrow(corrS)`
+
+Number of significant Spearman correlations (q value < `r print(statCutoff)`): `r sum(corrS$q.valueBH < statCutoff)`
+
+
+```{r}
+corrS$conf.int <- NA
+corrS$conf.int.low <- NA
+corrS$conf.int.high <- NA
+corr <- rbind(corrP,corrS) %>% 
+  mutate(statSigLgl = q.valueBH < statCutoff,
+         statisticallySignificant = if_else(q.valueBH < statCutoff,true = paste0("q < ",statCutoff),false = paste0("q >= ",statCutoff)),
+         cluster = paste0("Subspecies ",cluster),
+         cluster=factor(cluster)) %>% 
+  rename(correlationR = estimate)
+```
+
+# Data distributions
+
+## Distribution of p & q pvalues (uncorrected and corrected)
+
+```{r}
+corr %>% 
+  select(method, p.value, statisticallySignificant) %>% 
+  ggplot(aes(x=p.value,fill=statisticallySignificant))+
+  facet_grid(method~.,switch = "y")+
+  geom_histogram(position="stack",color="black",binwidth = 0.025)#geom_density(alpha=0.5)
+```
+
+
+## Distribution of correlation R values
+
+```{r}
+corr %>% 
+  select(method, correlationR, statisticallySignificant) %>% 
+  ggplot(aes(x=correlationR,fill=statisticallySignificant))+
+    facet_grid(statisticallySignificant~method,switch = "y",margins = "statisticallySignificant") + 
+  geom_histogram(binwidth = 0.05)+
+  xlim(c(-1,1))+theme(legend.position = "bottom")+
+  ylab("Number of gene families")+
+  xlab("Strength of correlation (R)")
+```
+
+# Comparison of Pearson and Spearman correlation results
+
+`r print(unique(as.character(corr$method)))`
+
+```{r test for both cols}
+haveBothSP <- all( c("pearson","spearman") %in% unique(as.character(corr$method)) ) 
+```
+
+## All results
+
+```{r, eval=!haveBothSP}
+print("Results not found for both methods.")
+```
+
+Yellow box highlights correlations with high values in both methods
+
+```{r, eval=haveBothSP}
+corr %>% 
+  select(geneFamily, cluster, method, correlationR,statSigLgl) %>% 
+  spread(key = method,value = correlationR,fill = 0.4) %>% 
+  ggplot(aes(x=pearson,y=spearman))+
+  geom_polygon(data=data.frame(),
+               aes(x=c(corrPcutOff_default,corrPcutOff_default,1,1),
+                   y=c(corrScutOff_default,1,1,corrScutOff_default)),fill="yellow",alpha=0.25)+
+  #geom_hline(yintercept = rStatCutoff)+geom_vline(xintercept = rStatCutoff)+
+  geom_hline(yintercept = corrScutOff_default,color="grey80")+
+  geom_vline(xintercept = corrPcutOff_default,color="grey80")+
+  geom_point(aes(color=cluster,shape=statSigLgl))+
+  coord_equal()+ylim(c(NA,1))+xlim(c(NA,1))
+```
+
+## Statistically significant results 
+
+```{r}
+corrSig <- filter(corr,statSigLgl)
+haveBothSP <- all( c("pearson","spearman") %in% unique(as.character(corrSig$method)) ) 
+```
+
+```{r, eval=!haveBothSP}
+print("Significant results not found for both methods.")
+```
+
+```{r, eval=haveBothSP}
+
+df <- corrSig %>% 
+  filter(correlationR > rStatCutoff) %>% 
+  select(geneFamily, cluster, method, correlationR) %>% 
+  spread(key = method,value = correlationR) 
+
+if(ncol(df) == 4 & all(c("pearson","spearman") %in% colnames(df) ) ){ # has spearman and pearson
+  dff <- df %>% 
+    filter(pearson > corrPcutOff_default, spearman > corrScutOff_default)
+  
+  p <- dff %>% ggplot(aes(x=pearson,y=spearman,label=geneFamily))+
+    geom_point(aes(color=cluster))+
+    coord_equal()  
+  
+  if(nrow(dff)<50){
+    p+ggrepel::geom_text_repel()
+  }else{
+    p
+  }
+}
+
+```
+
+### Table of results
+
+Values will be NA if not statistically significant: 
+
+```{r, eval=haveBothSP}
+sigGeneFamsDF <- corrSig %>% 
+  select(geneFamily, cluster, method, correlationR) %>% 
+  group_by(geneFamily, cluster) %>% 
+  mutate(toOrder = median(correlationR,na.rm = T) ) %>% 
+  ungroup() %>% 
+  spread(key = method,value = correlationR) %>% 
+  filter( (is.na(pearson) | pearson > corrPcutOff_default) &
+            (is.na(spearman) | spearman > corrScutOff_default)) %>% 
+  arrange(desc(toOrder)) %>% 
+  select(-toOrder)
+
+sigGeneFamsDF %>% 
+  DT::datatable(filter="top") %>% 
+  formatRound(c("pearson","spearman"), digits=3) #%>% formatRound(c("q.valueBH"), digits=4)
+
+```
+
+# Focus on best correlations
+
+## Table of best correlations
+
+Here we consider all correlations with: 
+
+- q value < `r statCutoff`
+- minimum of `r minObs` observations (data points)
+- correlation R statistic > `r rStatCutoff` 
+
+```{r}
+corr %>% filter(statSigLgl & nObs >= minObs & correlationR > rStatCutoff ) %>% 
+  select(geneFamily,cluster,nObs,method,correlationR,conf.int.low,conf.int.high,q.valueBH) %>% 
+  mutate(q.valueBH = formatC(q.valueBH, format = "e", digits = 2)) %>% 
+  DT::datatable(filter="top") %>% 
+  formatRound(c("correlationR","conf.int.low","conf.int.high"), digits=2) #%>% formatRound(c("q.valueBH"), digits=4)
+```
+
+
+```{r}
+corr %>% 
+  filter(statSigLgl & correlationR > rStatCutoff) %>% 
+  ggplot(aes(x=correlationR))+
+    facet_grid(method~cluster,switch = "y",margins = "cluster") +
+  geom_histogram(binwidth = 0.025)+
+  xlim(c( (rStatCutoff-0.05),1.05))+ 
+  ylab("Number of gene families")+
+  xlab("Strength of correlation (R)")
+```
+
+
+## Example plots of some gene families
+
+Here we consider all *gene families* that have *at least one correlation with*: 
+
+- q value < `r statCutoff`
+- minimum of `r minObs` observations (data points)
+- correlation R statistic > `r rStatCutoff` (either Spearman or Pearson)
+
+```{r}
+sigGeneFams <- corr %>% 
+  filter(statSigLgl & nObs >= minObs & correlationR > rStatCutoff ) %>% 
+  arrange(-correlationR) %>% 
+  pull(geneFamily) %>% unique()
+
+maxToPlot <- 20
+tooManyToPlot <- length(sigGeneFams) > maxToPlot
+
+corr %>% filter(geneFamily %in% sigGeneFams) %>%  
+  select(geneFamily,cluster,nObs,method,correlationR,conf.int.low,conf.int.high,q.valueBH) %>%
+  arrange(cluster) %>% rename(Subspecies = cluster)%>% 
+  mutate(q.valueBH = formatC(q.valueBH, format = "e", digits = 2)) %>% 
+  DT::datatable(filter="top") %>% 
+  formatRound(c("correlationR","conf.int.low","conf.int.high"), digits=2)
+```
+
+
+```{r,warning=F}
+## Import gene family abundances
+geneFamilyAbundances <- read_tsv(file = geneFamilyAbundancesFile,comment = "#",trim_ws = T) %>% 
+  rename(geneFamily = X1) %>% gather(key = sampleID, value = geneFamAbund, -geneFamily)
+
+geneFamilyAbundancesToPlot <- geneFamilyAbundances %>% filter(geneFamily %in% sigGeneFams)
+
+allClustAbund <- read.table(paste(subpopOutDir,speciesID,'_allClust_relativeAbund.tab',sep=''),sep='\t')
+colnames(allClustAbund) <- sub(pattern = "X",replacement = "subspecies",x = colnames(allClustAbund))
+allClustAbund$sampleID <- rownames(allClustAbund)
+allClustAbund <- allClustAbund %>% gather(key = cluster,value = clustAbund,-sampleID)
+
+corrsToPlot <- merge(x = geneFamilyAbundancesToPlot,allClustAbund, by = "sampleID")
+
+
+plotFamCorr <- function(geneFam) {
+  print(geneFam)
+  corr %>% filter(geneFamily == geneFam)%>% 
+    select(geneFamily, cluster, method, correlationR, q.valueBH, statSigLgl) %>%
+    arrange(cluster) %>% rename(Subspecies = cluster) %>%  print()
+  
+  p <- corrsToPlot %>% filter(geneFamily == geneFam) %>% 
+    ggplot(aes(x= geneFamAbund, y=clustAbund)) + geom_point()+facet_grid(geneFamily~cluster)+
+    ggtitle(paste0("Species ",speciesID,": linear scale")) 
+  print(p)
+  
+  print(p+scale_x_log10()+scale_y_log10()+ggtitle(paste0("Species ",speciesID,": log10 scale")))
+}
+```
+
+```{r,eval=!tooManyToPlot}
+if( !tooManyToPlot){
+print("Plotting all 'best' correlations")
+  tmp <- sapply(sigGeneFams, plotFamCorr)
+  rm(tmp)
+}
+```
+
+```{r,eval=tooManyToPlot, results='asis'}
+if(tooManyToPlot){
+  cat("### Best correlations")
+  print(paste0("Too many gene families to plot all of them, only plotting best ",floor(maxToPlot/2),
+               " and 'worst' ",ceiling(maxToPlot/2), " (all above quality cutoffs)"))
+}
+```
+
+```{r,eval=tooManyToPlot}
+if(tooManyToPlot){
+
+  sigGeneFamsTop <- sigGeneFams[1:floor(maxToPlot/2)]
+  sigGeneFamsBottom <- sigGeneFams[(length(sigGeneFams)-ceiling(maxToPlot/2)):length(sigGeneFams)]
+
+  tmp <- sapply(sigGeneFamsTop, plotFamCorr)
+  rm(tmp)  
+}
+```
+
+```{r,eval=tooManyToPlot, results='asis'}
+if(tooManyToPlot){
+  cat("### 'Worst' of the best correlations")
+}
+```
+
+```{r,eval=tooManyToPlot}
+if(tooManyToPlot){
+  tmp <- sapply(sigGeneFamsBottom, plotFamCorr)
+  rm(tmp)  
+}
+```

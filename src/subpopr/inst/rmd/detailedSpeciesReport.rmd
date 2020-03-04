@@ -1,0 +1,718 @@
+---
+title: "MetaSNV2 Detailed Species Report"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    code_folding: hide
+    number_sections: yes
+    smart: no
+    toc: yes
+    df_print: paged
+    toc_float: yes
+params:
+  distMethod:
+    value: mann
+  metasnvOutDir:
+    value: ''
+  speciesID:
+    value: ''
+  subpopOutDir:
+    value: ''
+  bamSuffix:
+    value: '.RepGenomesv11UL.unique.sorted.bam'
+  doGenoPos:
+    value: TRUE
+  psCut:
+    value: 0.8
+---
+
+
+```{r setup,error=FALSE,warning=FALSE}
+
+# could add self_contained: false to html def'n above
+
+speciesID <- params$speciesID
+subpopOutDir <- params$subpopOutDir
+metasnvOutDir <- params$metasnvOutDir
+distMethod <- params$distMethod
+bamSuffix <- params$bamSuffix
+doGenoPos <- params$doGenoPos
+psCut <- params$psCut
+
+library(knitr,warn.conflicts = FALSE)
+library(Cairo,warn.conflicts = FALSE)
+
+knitr::knit_hooks$set(optipng = hook_optipng) # supposed to help avoid super large files
+knitr::opts_chunk$set(
+  echo=TRUE,
+  comment=NA,
+  warning=TRUE,
+  error=TRUE, # keep running even if error encountered
+  message=FALSE,
+  optipng='', # activate the hook, also set in some chunks below as -o7 for max compression
+  dev= "CairoPNG", #R.devices::png2, # "png" doesn't work on seneca
+  rows.print=25)
+
+library(ggplot2,warn.conflicts = FALSE)
+library(dplyr,warn.conflicts = FALSE)
+library(tidyr,warn.conflicts = FALSE)
+library(tibble,warn.conflicts = FALSE)
+library(readr,warn.conflicts = FALSE)
+library(forcats,warn.conflicts = FALSE)
+library(kableExtra,warn.conflicts = FALSE)
+library(reshape2,warn.conflicts = FALSE) # for 1 call to melt
+
+theme_set(theme_bw())
+
+```
+
+```{r}
+# speciesID <- "742765"# "155864"
+# subpopOutDir <- "/Volumes/KESU/scb2/metagenomes/human/subspecGeoValidation/all_v2/subpopr/fr11v2UL-human71/params.hr10.hs80.ps80_oneSamplePerSubj/subspec/"
+# subpopOutDir <- "/Volumes/KESU/scb2/metagenomes/human/subspecGeoValidation/all_v2/subpopr/fr11v2UL-human71/params.hr10.hs80.ps80/subspec/"
+# metasnvOutDir <- "/Volumes/KESU/scb2/metagenomes/human/subspecGeoValidation/all_v2/metaSNV/outputs_subspec/"
+# distMethod <- "mann"
+# bamSuffix <- ".fr11v2UL_subspec71.unique.sorted.bam"
+# doGenoPos <- F
+# psCut <- 0.8
+```
+
+# Species `r as.character(speciesID)`
+
+```{r}
+
+hclustMethodForHeatmaps <- "average" # = UPGMA; "mcquitty" (= WPGMA)
+
+```
+
+```{r}
+speciesFiles <- list.files(path = subpopOutDir,pattern = paste0(speciesID,"_*"))
+```
+
+```{r, results='asis'}
+if(length(speciesFiles)==0){
+  msg <- paste0("No files found for species ",speciesID," in ",subpopOutDir,"/",paste0(speciesID,"_*"))
+  cat(msg)
+  cat("\n\nExiting.")
+  knitr::knit_exit()
+}
+```
+
+## Taxonomic classification
+
+```{r}
+#accomodate package and non-package
+taxaMap <- ifelse("subpopr" %in% tolower(.packages()),
+                    subpopr::TAXA.NCBI.MOTU.MAP, # from /data folder
+                    TAXA.NCBI.MOTU.MAP) # should be loaded in environment
+
+# could replace with subpopr::getSpeciesTaxonomy()
+#get taxa info
+if(speciesID %in% taxaMap$ncbiTaxID){
+  taxaMap %>% filter(ncbiTaxID == speciesID) %>% 
+    select(ncbiTaxID,everything(),-isRep) %>% 
+    gather() %>% 
+    distinct() #%>% 
+    #kable() %>% kable_styling()   
+}else if(speciesID %in% taxaMap$ref_mOTU_cluster){
+  taxaMap %>% filter(ref_mOTU_cluster == speciesID) %>%
+    select(ref_mOTU_cluster,everything(),-isRep) %>% 
+    gather() %>% 
+    distinct()  
+}else{
+  print(paste("Taxonomy unknown for ",speciesID))
+}
+
+```
+
+# Full starting data
+
+
+```{r}
+# might contain NAs
+distMatrixRaw <- read.table(paste0(metasnvOutDir,"/distances/",speciesID,".filtered.",distMethod,".dist"),
+                         header=T,row.names=1,check.names=F,strip.white = F,sep="\t") %>% 
+  as.matrix()
+colnames(distMatrixRaw) <- gsub(colnames(distMatrixRaw),pattern = ".",replacement = "-",fixed = T)
+
+```
+
+Number of samples in metaSNV output, before any filtering: `r dim(distMatrixRaw)[1]`
+
+```{r}
+nasPerSample <- sort(colSums(is.na(distMatrixRaw)),decreasing = T)
+if(max(nasPerSample)>0){
+  print("Top samples by NA count:")
+  head(nasPerSample,n=5)
+}
+
+```
+
+
+```{r}
+naSamp <- names(nasPerSample[nasPerSample == dim(distMatrixRaw)[1]])
+if(length(naSamp)>0){
+  print("Some samples were removed because all their values from metaSNV were NA: ")
+  naSamp  
+}
+```
+
+
+```{r}
+naSampDots <- gsub(naSamp,pattern = "-",replacement = ".",fixed = T)
+x <- distMatrixRaw[! gsub(rownames(distMatrixRaw),pattern = "-",
+                         replacement = ".",fixed = T) %in% c(naSamp,naSampDots),
+              !colnames(distMatrixRaw) %in% c(naSamp,naSampDots)]
+heatmap(x,distfun = as.dist,scale="none",
+        hclustfun = function(x){hclust(x,method=hclustMethodForHeatmaps)})
+```
+
+```{r}
+clustering <- readRDS(file = paste(subpopOutDir,"/",speciesID,"_",distMethod,'_clusteringResult.rds',sep=''))
+  
+#distMatrixUsedForClustMedoidDefns
+distMatrixPostBasicQC <- clustering$distMatrixPostBasicQC %>% as.matrix()
+distMatrixUsedForClus <- clustering$dist %>%  #read.table(paste0(subpopOutDir,"/",speciesID,"_",distMethod,"_distMatrixUsedForClustMedoidDefns.txt")) %>% 
+  as.matrix()
+colnames(distMatrixUsedForClus) <- gsub(colnames(distMatrixUsedForClus),pattern = ".",replacement = "-",fixed = T)
+
+```
+
+Number of samples remaining after basic QC filtering and optional filtering based on input BAM list: `r dim(distMatrixPostBasicQC)[1]`
+
+```{r}
+if(!is.null(clustering$outliersRemoved) & length(clustering$outliersRemoved) > 0 ){
+  cat("Some samples removed due to lack of similarity to other samples (outliers). The samples removed were: ")
+  print(clustering$outliersRemoved)
+}
+```
+
+
+# Identifying ideal number of clusters and picking medoids
+
+## Samples filtered by proportion of SNVs with nearly homogenous alleles
+
+```{r snvFreq plots, error=T,comment=NA}
+
+fileSuffix = "_snvFreq_HighOrLow.png"
+f1 <- paste0(getSnvFreqPlotDir(subpopOutDir),"/",speciesID,fileSuffix)
+# HACK FIX : when kniting for files in ../noClustering the snvFreqPlots folder is one level up
+f2 <- paste0(getSnvFreqPlotDir(paste0(subpopOutDir,"/../")),"/",speciesID,fileSuffix)
+if(file.exists(f1)){ 
+  print(paste("Showing file:",f1))
+  knitr::include_graphics(f1)
+} else if(file.exists(f2)){ 
+  print(paste("Showing file:",f2))
+  knitr::include_graphics(f2) 
+}else{
+  print(paste0("Can't find file: ",f1," or ",f2))
+}
+
+fileSuffix = "_snvFreqFixedHist.png"
+f1 <- paste0(getSnvFreqPlotDir(subpopOutDir),"/",speciesID,fileSuffix)
+# HACK FIX : when kniting for files in ../noClustering the snvFreqPlots folder is one level up
+f2 <- paste0(getSnvFreqPlotDir(paste0(subpopOutDir,"/../")),"/",speciesID,fileSuffix)
+if(file.exists(f1)){ 
+  print(paste("Showing file:",f1))
+  knitr::include_graphics(f1)
+} else if(file.exists(f2)){ 
+  print(paste("Showing file:",f2))
+  knitr::include_graphics(f2) 
+}else{
+  print(paste0("Can't find file: ",f1," or ",f2))
+}
+
+
+# for(fileSuffix in c("_snvFreq_HighOrLow.png","_snvFreq_High.png","_snvFreq_Low.png")){
+#   f1 <- paste0(getSnvFreqPlotDir(subpopOutDir),"/",speciesID,fileSuffix)
+#   # HACK FIX : when kniting for files in ../noClustering the snvFreqPlots folder is one level up
+#   f2 <- paste0(getSnvFreqPlotDir(paste0(subpopOutDir,"/../")),"/",speciesID,fileSuffix)
+#   if(file.exists(f1)){ 
+#     print(f1)
+#     knitr::include_graphics(f1)
+#   } else if(file.exists(f2)){ 
+#     print(f2)
+#     knitr::include_graphics(f2) 
+#   }else{
+#     print(paste0("Can't find file: ",f1," or ",f2))
+#   }
+# }
+
+```
+
+## Samples used for medeoid definition
+
+Samples that have mostly homogenous alleles in most of their SNV positions
+
+Black side bar indicates the samples that were used in deciding the number of clusters
+
+```{r heat1, optipng='-o7'}
+inClusDist <- rownames(distMatrixPostBasicQC) %in% rownames(distMatrixUsedForClus)
+distMatrixToPlot <- distMatrixPostBasicQC
+rownames(distMatrixToPlot) <- sub(rownames(distMatrixToPlot),pattern = bamSuffix,replacement = "",fixed = T) 
+colnames(distMatrixToPlot) <- sub(colnames(distMatrixToPlot),pattern = bamSuffix,replacement = "",fixed = T)
+
+heatmap(symm = T,scale = "none",x = distMatrixToPlot,distfun = as.dist,
+        hclustfun = function(x){hclust(x,method=hclustMethodForHeatmaps)}, 
+        ColSideColors = c("white","black")[as.numeric(inClusDist)+1])
+
+```
+
+
+Number of samples used for clustering  (for medoid identification): `r dim(distMatrixUsedForClus)[1]`
+
+Heatmap re-drawn only with samples used for medoid identification:
+
+```{r heat2, optipng='-o7'}
+distMatrixToPlot <- distMatrixUsedForClus
+rownames(distMatrixToPlot) <- sub(rownames(distMatrixToPlot),pattern = bamSuffix,replacement = "",fixed = T) 
+colnames(distMatrixToPlot) <- sub(colnames(distMatrixToPlot),pattern = bamSuffix,replacement = "",fixed = T)
+heatmap(symm = T,scale = "none",x = distMatrixToPlot,distfun = as.dist,
+        hclustfun = function(x){hclust(x,method="complete")})
+
+```
+
+## Picking ideal number of clusters
+
+### Confidence (PS) values
+
+```{r}
+psFile <- paste0(subpopOutDir,"/",speciesID,"_",distMethod,"_PS_values.tab")
+if(!file.exists(psFile)){
+  print(paste0("File does not exist:",clustFile,"  Cluster medeoid definition likely failed for this sample."))
+  knit_exit()
+}
+
+#clustering$psVals
+psVals <- read_tsv(file = psFile,skip = 1,col_names = c("nClus","confidence"),col_types = 
+                     cols(
+  nClus = col_integer(),
+  confidence = col_double()
+) ) 
+psVals %>%
+ggplot(aes(x=as.factor(nClus),y=confidence))+
+  geom_bar(stat="identity")+
+  geom_hline(yintercept = psCut,linetype=2)+
+  geom_text(aes(label=round(confidence,2)),nudge_y = -0.05,color="white")+
+  xlab("Number of clusters/subspecies")+theme_bw()+ylab("Prediction Strength")
+```
+
+
+```{r}
+if(!is.null(clustering)){
+  # prediction for nclusters == 1 is 1
+  clustering$psValsAll[[1]] <- rep(1,length(clustering$psValsAll[[2]]))
+  psValMeans <- data.frame(predictionStrength = clustering$psVals,
+                           clusterNum=1:length(clustering$psVals))
+  do.call(rbind,clustering$psValsAll) %>% 
+    reshape2::melt(value.name ="predictionStrength",
+                   varnames=c("clusterNum","iter")) %>% 
+    ggplot(aes(x=factor(clusterNum),y=predictionStrength))+
+    geom_boxplot(outlier.colour = NA)+
+    geom_hline(yintercept = psCut,linetype=2)+
+    geom_point(alpha=0.5)+
+    xlab("Number of clusters")+ylab("Prediction Strength (50 iterations)\nAsterix is mean used for decision") + 
+    geom_point(data = psValMeans,mapping = aes(x=clusterNum,y=predictionStrength),color="red",shape=8,size=3)
+}
+```
+
+### Cluster stability
+
+#### Summary 
+
+Given the number of clusters from the Prediction Strength values above, how stable are the clusters:
+
+Confidence in the number of clusters: **`r clustering$stabilityAssessment$numClusStabScore`**
+
+Confidence in each cluster: 
+```{r}
+clustering$stabilityAssessment$clusMembStabScores
+```
+
+See plots below for detailed information.
+
+#### Number of clusters
+
+```{r clustNumStabPlotBoxHeat,error=TRUE}
+f<- paste0(subpopOutDir,"/",speciesID,"_",distMethod,"_clusNumStability-heatmap.png")
+if(file.exists(f)){try(knitr::include_graphics(f))}else{print(paste0("Can't find file: ",f))}
+```
+
+
+#### Confidence in each cluster
+
+```{r}
+if(clustering$numClusters == 1){
+  cat("Not applicable, only 1 cluster.")
+}
+```
+
+```{r clustMembStabPlotRcvr,error=TRUE}
+if(clustering$numClusters > 1){
+  f<- paste0(subpopOutDir,"/",speciesID,"_",distMethod,"_clusMembStability-recover.png")
+  if(file.exists(f)){try(knitr::include_graphics(f))}else{print(paste0("Can't find file: ",f))}
+}
+```
+
+
+```{r clustMembStabPlotJccrd,error=TRUE}
+if(clustering$numClusters > 1){
+  f<- paste0(subpopOutDir,"/",speciesID,"_",distMethod,"_clusMembStability-jaccard.png")
+  if(file.exists(f)){try(knitr::include_graphics(f))}else{print(paste0("Can't find file: ",f))}
+}
+```
+
+
+```{r}
+# if(clustering$numClusters == 1){
+#   print(paste0("No clusters detected for this species."))
+#   knit_exit()
+# }
+```
+
+
+```{r fuzzClustRes,eval=F,echo=F}
+### Fuzzy clustering result 
+
+# fuzzyClusterResult <-  clustering$fuzzyClusterResult
+# if(!is.null(fuzzyClusterResult)){
+# nClus <- ncol(fuzzyClusterResult$membership)
+# c10 <- viridisLite::plasma(n=nClus)# colorspace::qualitative_hcl(4, palette = "Set 2")
+# plot(fuzzyClusterResult,which=1,main = "Fuzzy clustering result",
+#      dist=clustering$dist)
+# toPlot <- fuzzyClusterResult$membership[names(sort(fuzzyClusterResult$clustering)),]
+# heatmap(toPlot,
+#           scale = "none",Rowv = NA,
+#           RowSideColors = c10[fuzzyClusterResult$clustering[rownames(toPlot)]])
+# }
+```
+
+
+## Initial cluster assignments
+
+
+```{r}
+clustFile <- paste0(subpopOutDir,"/",speciesID,"_",distMethod,"_clustering.tab")
+if(!file.exists(clustFile)){
+  print(paste0("Expected file does not exist:",clustFile,"."))
+  knit_exit()
+}
+```
+
+Clusters are made using fpc::claraCBI. 
+Heatmap here is only for illustration; it uses centroid clustering overall (i.e. a different method from actualy clustering algorithm)
+
+Clusters that are too small have been discarded here
+
+```{r heat3, optipng='-o7'}
+clusterAssignments_init <- read_tsv(clustFile,skip = 1,col_names = c("sampleID","cluster"),
+                                    col_types = cols(
+  sampleID = col_character(),
+  cluster = col_factor(levels = NULL)
+))
+
+clustAssign <-  data.frame(sampleID=rownames(distMatrixPostBasicQC),stringsAsFactors = F) %>% left_join(clusterAssignments_init,by = "sampleID")
+
+distMatrixToPlot <- distMatrixPostBasicQC
+rownames(distMatrixToPlot) <- sub(rownames(distMatrixToPlot),pattern = bamSuffix,replacement = "",fixed = T) 
+colnames(distMatrixToPlot) <- sub(colnames(distMatrixToPlot),pattern = bamSuffix,replacement = "",fixed = T)
+
+inClusDist <- rownames(distMatrixPostBasicQC) %in% rownames(distMatrixUsedForClus)
+nClus <- length(unique(as.numeric(clustAssign$cluster)))
+
+```
+
+The coloured side bar indicates cluster sample belongs to, the black and white top bar indicates whether sample was used to define cluster medioids.
+
+```{r heat4, optipng='-o7'}
+heatmap(symm = T,scale = "none",x = distMatrixToPlot,distfun = as.dist,
+        hclustfun = function(x){hclust(x,method=hclustMethodForHeatmaps)},
+        RowSideColors = c("grey80",viridisLite::viridis(n=nClus))[as.numeric(clustAssign$cluster)+1],
+        ColSideColors = c("white","black")[as.numeric(inClusDist)+1],
+        main = "Cluster construction")
+```
+
+
+```{r clustering pca,error=TRUE}
+
+f<- paste0(subpopOutDir,"/",speciesID,"_",distMethod,"_clustering.png")
+if(file.exists(f)){try(knitr::include_graphics(f))}else{print(paste0("Can't find file: ",f))}
+
+```
+
+```{r}
+# if only one cluster, stop here
+if( length(unique(clusterAssignments_init$cluster)) == 1 ){
+  print("No substructure detected. Stopping.")
+  knit_exit()
+}
+```
+
+
+# Subspecies genotyping positions
+
+```{r}
+
+genotypingPositionFiles <- list.files(path = subpopOutDir,
+                                      pattern = paste0(speciesID,"_.*_hap_positions.tab") )
+
+parseGenoPosFile <- function(genotypingPositionFile){
+  genoPos <- read_tsv(paste0(subpopOutDir,"/",genotypingPositionFile),
+                      skip = 1,
+                      col_names = c("x1","posId","majorAllele"),
+                      col_types = cols(
+    x1 = col_integer(),
+    posId = col_character(),
+    majorAllele = col_logical()
+  )) %>% select(-x1) %>%
+    separate(col = posId,sep = ":",into = c("refGenome","annotation","position","snv","x1"),convert = T) 
+#     separate(col = posId,sep = ":",into = c("refGenome","refLength","annotation","position","snv","x1"),convert = T) %>% 
+#     separate(col=refLength,into = c("refStart","refEnd"),sep = "-",convert = T)
+  return(genoPos)
+}
+
+clusterNames <- sub(genotypingPositionFiles,
+                    pattern = "_hap_positions.tab",replacement = "")
+
+names(genotypingPositionFiles) <- clusterNames
+genoPos <- purrr::map_df(genotypingPositionFiles,
+                         parseGenoPosFile,.id = "cluster")
+
+```
+
+Number of distinctive SNVs per genotype:
+
+```{r}
+count(genoPos,cluster,name = "numberSNVPositions")
+
+```
+
+
+
+```{r,optipng='-o7', eval=doGenoPos}
+if(doGenoPos){
+  ggplot(genoPos, aes(x=snv,fill=majorAllele))+
+    geom_bar(stat="count")+facet_grid(cluster~.)
+}
+```
+
+
+```{r,optipng='-o7', eval=doGenoPos}
+if(doGenoPos){
+if(nrow(genoPos)<5000){ # otherwise this image is too huge
+ggplot(genoPos, aes(x=position,y=cluster,color=majorAllele))+geom_point(alpha=0.2)+
+  #+xlim(c(min(genoPos$refStart),max(genoPos$refEnd)))
+  facet_grid(snv~.,margins = T)
+}else{
+  print("Cannot render plot, too many data points (>5000). See summary plots below")
+}
+}
+``` 
+
+```{r,optipng='-o7', eval=doGenoPos}
+if(doGenoPos){
+ggplot(genoPos, aes(x=position))+geom_histogram()+
+  #+xlim(c(min(genoPos$refStart),max(genoPos$refEnd)))
+  facet_grid(.~cluster)
+
+ggplot(genoPos, aes(x=position,fill=majorAllele))+geom_histogram(bins = 30)+
+  #+xlim(c(min(genoPos$refStart),max(genoPos$refEnd)))
+  facet_grid(snv~cluster,margins = "snv")
+
+ggplot(genoPos, aes(x=position,fill=majorAllele))+geom_histogram(bins = 30)+
+  #+xlim(c(min(genoPos$refStart),max(genoPos$refEnd)))
+  facet_grid(snv~cluster,margins = "snv",scale="free_y")
+}
+```
+
+```{r,optipng='-o7', eval=doGenoPos}
+if(doGenoPos){
+ggplot(genoPos, aes(x=position))+geom_freqpoly()+
+  #+xlim(c(min(genoPos$refStart),max(genoPos$refEnd)))
+  facet_grid(.~cluster)
+
+ggplot(genoPos, aes(x=position))+geom_freqpoly()+
+  #+xlim(c(min(genoPos$refStart),max(genoPos$refEnd)))
+  facet_wrap(cluster~snv,scales="free_y")
+
+# ggplot(genoPos, aes(x=position))+geom_density()+
+#   #+xlim(c(min(genoPos$refStart),max(genoPos$refEnd)))
+#   facet_grid(.~cluster)
+# 
+# ggplot(genoPos, aes(x=position))+geom_density()+
+#   #+xlim(c(min(genoPos$refStart),max(genoPos$refEnd)))
+#   facet_wrap(cluster~snv,scales="free_y")
+}
+```
+
+
+
+
+# Genotype frequency in samples used to define genotype
+
+```{r}
+hfmedianFile <- paste0(subpopOutDir,"/",speciesID,"_hap_freq_median.tab")
+hfmeanFile <- paste0(subpopOutDir,"/",speciesID,"_hap_freq_mean.tab")
+if(!file.exists(hfmedianFile) | !file.exists(hfmeanFile)){
+  print("Missing files from SNV-based cluster profiling. Stopping.")
+  print(paste("See info in file:", paste0(subpopOutDir,"/",speciesID,"_hap_out.txt") ) )
+  if(!file.exists(hfmedianFile)){
+    print(paste("Missing file: ", hfmedianFile))
+  }
+  if(!file.exists(hfmeanFile)){
+    print(paste("Missing file: ", hfmeanFile))
+  }
+  sessionInfo()
+  knitr::knit_exit()
+}
+```
+
+```{r}
+
+hap_freq_median <- read_tsv(file = hfmedianFile,skip = 1,
+                            col_names = c("sampleID","freq","cluster"),
+                            cols(
+  sampleID = col_character(),
+  freq = col_double(),
+  cluster = col_integer()
+)) %>% mutate(averagingMethod = "median")
+
+hap_freq_mean <- read_tsv(file = hfmeanFile,skip = 1,
+                            col_names = c("sampleID","freq","cluster"),
+                            cols(
+  sampleID = col_character(),
+  freq = col_double(),
+  cluster = col_integer()
+)) %>% mutate(averagingMethod = "mean")
+
+hap_freq <- rbind.data.frame(hap_freq_mean,hap_freq_median)
+hap_freq$sampleIDtoPlot <- sub(hap_freq$sampleID,pattern = bamSuffix,replacement = "",fixed = T)
+
+```
+
+Number of samples:
+```{r}
+hap_freq$sampleID %>% unique() %>% length()
+```
+
+
+```{r,optipng='-o7'}
+
+ggplot(hap_freq,aes(y=sampleIDtoPlot,x=freq))+
+  geom_point(alpha=0.2)+
+  facet_grid(cluster~averagingMethod)+theme(panel.grid = element_blank())
+ggplot(hap_freq,aes(x=freq))+
+  geom_histogram(binwidth = 5)+
+  facet_grid(cluster~averagingMethod)
+
+```
+
+
+```{r,optipng='-o7'}
+hap_freq <- hap_freq %>% 
+  group_by(sampleID,averagingMethod) %>% 
+  arrange(sampleID,desc(freq),averagingMethod) %>% 
+  mutate(majorCluster = cluster[1]) %>% 
+  arrange(sampleID,cluster,averagingMethod) %>%
+  mutate(freqClus1 = freq[1]) %>% 
+  ungroup() %>%  
+  mutate(sampleID = sub(sampleID,pattern = bamSuffix,replacement = "",fixed = T)) %>% 
+  mutate(sampleID = factor(sampleID)) %>% 
+  mutate(sampleID = forcats::fct_reorder(sampleID,freqClus1)) %>% 
+  ungroup() %>% 
+  mutate(majorCluster = paste("Samples that defined subspecies",majorCluster)) %>% 
+  mutate(cluster = as.factor(sub(x = cluster, pattern = "^X",replacement = "subspecies genotype "))) 
+
+hap_freq %>% 
+ggplot(aes(fill=cluster,x=sampleID,y=freq))+
+  geom_bar(stat = "identity")+
+  coord_flip()+
+  facet_grid(majorCluster~averagingMethod,scales="free_y",space="free_y")+
+  ylab("Average frequency (percent abundance) of subspecies' genotype")+
+  xlab("Samples")+
+  #scale_fill_discrete(name="Subspecies")
+  scale_fill_viridis_d("Subspecies")
+
+```
+
+```{r,optipng='-o7'}
+hap_freq %>% 
+ggplot(aes(x=cluster,y=freq))+
+  geom_boxplot()+
+  geom_violin(alpha=0.1)+#geom_dotplot(binaxis = "y",binwidth = 2)+
+  facet_grid(.~majorCluster,scales="free_y")+
+  ylab("Abundance of cluster's genotype /n in samples assigned to each cluster")+
+  xlab("Genotype")
+
+```
+
+
+# Extended clustering
+
+```{r}
+extClus <- paste0(subpopOutDir,speciesID,"_extended_clustering_wFreq.tab") 
+if(file.exists(extClus)){
+    
+  subSpecFreqDf <- read.table(extClus,row.names = 1,as.is = T)
+  subSpecFreqDf$majorCluster <- max.col(subSpecFreqDf)
+  subSpecFreqDf$sampleID <- rownames(subSpecFreqDf)
+  subSpecFreqDf <- subSpecFreqDf %>% 
+    mutate(sampleID = sub(sampleID,pattern = bamSuffix,replacement = "",fixed = T)) %>% 
+    mutate(sampleID = factor(sampleID)) %>% 
+    mutate(sampleID = forcats::fct_reorder2(sampleID,X1,X2)) %>% 
+    mutate(majorCluster = paste("Cluster",majorCluster,"dominant")) %>% 
+    gather(key = "cluster",value = "freq",-sampleID,-majorCluster) %>% 
+    mutate(cluster = as.factor(sub(x = cluster, pattern = "^X",
+                                   replacement = "Genotype "))) 
+  
+  print(paste0("Number of samples in extended clustering: ", length(unique(subSpecFreqDf$sampleID))))
+  
+  p <- subSpecFreqDf %>% 
+  ggplot(aes(fill=cluster,x=sampleID,y=freq))+
+    geom_bar(stat = "identity")+coord_flip()+
+    facet_grid(majorCluster~.,scales="free_y",space="free_y")+
+    scale_fill_viridis_d("Subspecies")#scale_fill_brewer(palette = 3,type = "qual")
+
+  print(p)
+  
+  # this one is a little confusing
+  p2 <- subSpecFreqDf %>%
+  ggplot(aes(x=cluster,y=freq))+
+  geom_boxplot()+
+  geom_violin(alpha=0.1)+#geom_dotplot(binaxis = "y",binwidth = 2)+
+  facet_grid(.~majorCluster,scales="free_y")+
+  ylab("Abundance of cluster's genotype in sample")+
+  xlab("Genotype")
+
+  print(p2)
+  
+  subSpecFreqDf %>% select(majorCluster,sampleID) %>% 
+    distinct() %>% 
+    arrange(majorCluster,sampleID) %>% as_tibble()
+  
+  for(mjclus in unique(subSpecFreqDf$majorCluster)){
+    print(mjclus)
+    print(unique(as.character(subSpecFreqDf[subSpecFreqDf$majorCluster==mjclus,"sampleID",drop=T])))
+  }
+  
+}else{
+  print(paste0("Extended clustering results non-existant. File does not exist: ",extClus))
+}
+```
+
+
+# Relevant files produced by subpopr
+
+Files for this species in: 
+
+```{r}
+print(subpopOutDir)
+speciesFiles %>% tibble::enframe(name = NULL)
+```
+
+# Session Info
+
+```{r}
+sessionInfo()
+```
+
