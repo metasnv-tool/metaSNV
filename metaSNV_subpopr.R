@@ -95,7 +95,7 @@ METADATA.PATH <- opt$metadata
 METADATA.COL.ID <- opt$metadataSampleIDCol
 
 makeReports <- TRUE
-toScreen <- FALSE # if TRUE, lots gets printed to screen, if FALSE, only goes to log file
+toScreen <- TRUE # if TRUE, lots gets printed to screen, if FALSE, only goes to log file
 
 if (is.null(opt$metaSnvResultsDir)){
   print_help(opt_parser)
@@ -120,10 +120,11 @@ OUT.DIR=paste0(SUBPOPR_RESULTS_DIR,"/",basename(METASNV.DIR),"/")
 dir.create(OUT.DIR, recursive = T, showWarnings = FALSE)
 logFile <- paste0(OUT.DIR,"/log.txt")
 print(paste("Log written to:",logFile))
-sink(file = logFile, append = FALSE, type = c("output", "message"), split = toScreen)
-
 rm(option_list)
-ls.str()  # print all variables (and values for strings)
+capture.output(ls.str(),file = logFile) # print all variables (and values for strings)
+sink(file = logFile, append = TRUE, type = c("output", "message"), split = toScreen)
+
+
 
 # Load library dependencies -------------------------------------------
 print("Loading R libraries...")
