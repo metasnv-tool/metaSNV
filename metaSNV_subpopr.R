@@ -117,13 +117,11 @@ SUBPOPR_RESULTS_DIR=paste0(OUT.DIR.BASE,"/params.",
                            ".ps",CLUSTERING.PS.CUTOFF*100,"/")
 OUT.DIR=paste0(SUBPOPR_RESULTS_DIR,"/",basename(METASNV.DIR),"/")
 
-dir.create(OUT.DIR, recursive = TRUE, showWarnings = FALSE)
+dir.create(OUT.DIR, recursive = T, showWarnings = FALSE)
 logFile <- paste0(OUT.DIR,"/log.txt")
 print(paste("Log written to:",logFile))
+sink(file = logFile, append = FALSE, type = c("output", "message"), split = toScreen)
 
-sink(file = logFile, append = TRUE,
-     type = c(#"output",
-              "message"), split = toScreen)
 rm(option_list)
 ls.str()  # print all variables (and values for strings)
 
