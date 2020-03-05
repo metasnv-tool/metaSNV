@@ -6,7 +6,7 @@ renderDetailedSpeciesReport <- function(speciesID, distMethod= "mann", metasnvOu
 
   tf <- paste0(subpopOutDir,"/tmp_",speciesID,"_",format(Sys.time(), "%Y-%m-%d-%H%M%S"))
   dir.create(tf)
-  rmarkdown::render(rmdPath,
+  rmarkdown::render(rmdPath,quiet = T,
                     params = list(
                       speciesID = speciesID,
                       subpopOutDir = subpopOutDir,
@@ -28,7 +28,7 @@ renderGeneContentReport <- function(speciesID, subpopOutDir, geneFamilyAbundance
 
   tf <- paste0(subpopOutDir,"/tmp_",speciesID,format(Sys.time(), "%Y-%m-%d-%H%M%S"))
   dir.create(tf)
-  rmarkdown::render(rmdPath,
+  rmarkdown::render(rmdPath,quiet = T,
                     params = list(
                       speciesID = speciesID,
                       subpopOutDir = subpopOutDir,
@@ -58,7 +58,7 @@ renderTestPhenotypeAssocReport <- function(speciesID, subpopOutDir, metadataFile
   dir.create(tf)
   #the original subspeceis defined from dist matrix clustering
   rmdPath <- paste0(rmdDir, "/testSubspecMultiPhenoAssoc.rmd")
-  rmarkdown::render(rmdPath,
+  rmarkdown::render(rmdPath,quiet = T,
                     params = list(
                       speciesID = speciesID,
                       subpopOutDir = subpopOutDir,
@@ -77,7 +77,7 @@ renderResultsSummaryReport <- function(subpopOutDir,
                                        rmdDir){
 
   rmdPath <- paste0(rmdDir, "/resultsSummary.Rmd")
-  rmarkdown::render(rmdPath,
+  rmarkdown::render(rmdPath,quiet = T,
                     params = list(
                       resultsDir = subpopOutDir),
                     output_dir = subpopOutDir,
