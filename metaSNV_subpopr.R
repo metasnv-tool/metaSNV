@@ -35,7 +35,8 @@ scriptDir <- dirname(thisFile())
 
 # PARSE PARAMS -------------------------------------------------------------
 
-suppressPackageStartupMessages(library(getopt,optparse))
+suppressPackageStartupMessages(library(getopt))
+suppressPackageStartupMessages(library(optparse))
 
 option_list = list(
   #make_option(c("-s", "--settings"), type="character", default="SETTINGS.R",  # default=NULL,
@@ -153,11 +154,16 @@ if(!is.null(LIB.DIR) && dir.exists(LIB.DIR)){
 
 # REQUIRES CAIRO TO BE INSTALLED, EITHER THROUGH 'install.packages()' OR THROUGH 'conda install -c anaconda cairo'
 # requires pandoc
-suppressPackageStartupMessages(library(fpc,ape,ggplot2,
-                                       gridExtra,cluster,
-                                       dplyr,tidyr,readr,
-                                       ggrepel,
-                                       data.table))
+suppressPackageStartupMessages(library(fpc))
+suppressPackageStartupMessages(library(ape))
+suppressPackageStartupMessages(library(ggplot2))
+suppressPackageStartupMessages(library(gridExtra))
+suppressPackageStartupMessages(library(cluster))
+suppressPackageStartupMessages(library(dplyr))
+suppressPackageStartupMessages(library(tidyr))
+suppressPackageStartupMessages(library(readr))
+suppressPackageStartupMessages(library(ggrepel))
+suppressPackageStartupMessages(library(data.table))
 suppressPackageStartupMessages(library(kableExtra)) # to do: remove this from package
 suppressPackageStartupMessages(library(rmarkdown)) # for report rendering
 
@@ -171,7 +177,8 @@ if(makeReports & !rmarkdown::pandoc_available(version = "1.12.3",error = F)){
   makeReports <- FALSE
 }
 
-suppressPackageStartupMessages(library(BiocParallel,batchtools))
+suppressPackageStartupMessages(library(BiocParallel))
+suppressPackageStartupMessages(library(batchtools))
 
 suppressPackageStartupMessages(library(coin)) # only used in phenotype assoc test part -- remove?
 suppressPackageStartupMessages(library(questionr)) # only used in phenotype assoc test part -- remove?
