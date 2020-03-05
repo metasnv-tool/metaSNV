@@ -51,10 +51,10 @@ option_list = list(
               metavar="file path"),
   make_option(c("-p", "--procs"), type="integer",
               default=1,
-              help="Number of cores to use for parallel processing", metavar="integer"),
+              help="Number of cores to use for parallel processing. Default is 1.", metavar="integer"),
   make_option(c("-a", "--speciesAbundance"), type="character",
               default=NULL,
-              help="Path to file with species abundances (optional)",
+              help="Path to file with species abundances (tsv, optional)",
               metavar="file path"),
   make_option(c("-m", "--isMotus"), type="logical",
               default=TRUE,
@@ -62,7 +62,7 @@ option_list = list(
               metavar="logical"),
   make_option(c("-g", "--geneAbundance"), type="character",
               default=NULL,
-              help="Path to file with gene faily abundances (optional)",
+              help="Path to file with gene family abundances (tsv, optional)",
               metavar="file path"),
   make_option(c("-d", "--metadata"), type="character",
               default=NULL,
@@ -74,7 +74,7 @@ option_list = list(
               metavar="character"),
   make_option(c("-r", "--createReports"), type="logical",
               default=TRUE,
-              help="Whether or not to compile html summary reports (uses Rmarkdown)",
+              help="Whether or not to compile html summary reports (uses Rmarkdown)  (TRUE or FALSE). Default is TRUE.",
               metavar="logical"),
   make_option(c("-s", "--settings"), type="character",
               #default="./src/subpopr/inst/SETTINGS.R",
@@ -87,7 +87,7 @@ opt_parser = OptionParser(option_list=option_list);
 opt = parse_args(opt_parser);
 
 
-N.CORES <- opt$ncores # overrides settings file
+N.CORES <- opt$procs
 SPECIES.ABUNDANCE.PROFILE<-opt$speciesAbundance
 SPECIES.ABUND.PROFILE.IS.MOTUS<-opt$isMotus
 KEGG.PATH <- opt$geneAbundance
@@ -120,9 +120,11 @@ OUT.DIR=paste0(SUBPOPR_RESULTS_DIR,"/",basename(METASNV.DIR),"/")
 dir.create(OUT.DIR, recursive = T, showWarnings = FALSE)
 logFile <- paste0(OUT.DIR,"/log.txt")
 print(paste("Logging to:",logFile))
+capture.output(commandArgs(trailingOnly = FALSE),file = logFile,append = FALSE)
 rm(option_list)
-capture.output(ls.str(),file = logFile) # print all variables (and values for strings)
+capture.output(ls.str(),file = logFile,append = TRUE) # print all variables (and values for strings)
 sink(file = logFile, append = TRUE, type = c("output", "message"), split = toScreen)
+
 
 
 
@@ -215,9 +217,6 @@ ptm <- proc.time()
 # Set up parallel processing ----------------------------------------
 
 ncoresUsing <- min(N.CORES,length(species))
-#cl <- makeCluster(min(N.CORES,length(species)), outfile=logFile)
-#registerDoParallel(cl)  #alt: registerDoParallel(cores=2) crashes silently when trying to write png()
-#ncoresUsing <- getDoParWorkers()
 
 bpParam <- MulticoreParam(workers = min(N.CORES,length(species)),
                           stop.on.error = FALSE,
@@ -230,7 +229,7 @@ print(paste("Running subpopr on",length(species),"species using",ncoresUsing,"co
 
 printBpError <- function(result){
   if(all(bpok(result))){
-    return(NULL)
+    return("")
   }else{
     print("Error:")
     tail(attr(result[[which(!bpok(result))]], "traceback"))
@@ -448,7 +447,8 @@ if(!is.null(METADATA.PATH) && file.exists(METADATA.PATH)){
 
 # Test for gene correlations ##########
 if(!is.null(KEGG.PATH) && file.exists(KEGG.PATH)){
-  print(paste("Testing for gene correlations for",length(allSubstrucSpecies),"species using",getDoParWorkers(),"cores"))
+  print(paste("Testing for gene correlations for",length(allSubstrucSpecies),
+              "species using",ncoresUsing,"cores"))
 
   #tmp <- foreach(spec=allSubstrucSpecies) %dopar% correlateSubpopProfileWithGeneProfiles(spec,OUT.DIR,KEGG.PATH,geneFamilyType="Kegg", corrMethod="pearson")
   tmp <- BiocParallel::bptry(BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
