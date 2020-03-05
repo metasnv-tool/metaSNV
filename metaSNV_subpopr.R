@@ -33,7 +33,7 @@ thisFile <- function() {
 scriptDir <- dirname(thisFile())
 
 
-# PARSE PARAMS -------------------------------------------------------------
+# Parse params -------------------------------------------------------------
 
 suppressPackageStartupMessages(library(getopt))
 suppressPackageStartupMessages(library(optparse))
@@ -106,7 +106,6 @@ if (is.null(opt$outputDir)){
   print_help(opt_parser)
   stop("Path to output directory must be supplied [-o]", call.=FALSE)
 }
-dir.create(opt$outputDir,recursive = T)
 OUT.DIR.BASE <- opt$outputDir
 
 source(paste0(scriptDir,"/src/subpopr/inst/metaSNV_subpopr_SETTINGS.R"))
@@ -118,39 +117,27 @@ SUBPOPR_RESULTS_DIR=paste0(OUT.DIR.BASE,"/params.",
                            ".ps",CLUSTERING.PS.CUTOFF*100,"/")
 OUT.DIR=paste0(SUBPOPR_RESULTS_DIR,"/",basename(METASNV.DIR),"/")
 
-# LOAD SETTINGS ------------------------------------------------------------
-
-# load settings for this run of subpopr
-# settingsFilePath<-opt$settings
-# if(!file.exists(settingsFilePath)){
-#   stop(paste("Error. Required settings file does not exist:",settingsFilePath))
-# }
-#
-# source(settingsFilePath)
-
 dir.create(OUT.DIR, recursive = TRUE, showWarnings = FALSE)
 logFile <- paste0(OUT.DIR,"/log.txt")
 print(paste("Log written to:",logFile))
-sink(file = logFile, append = FALSE, type = c("output", "message"), split = toScreen)
 
+sink(file = logFile, append = FALSE,
+     type = c("output", "message"), split = FALSE)
 rm(option_list)
 ls.str()  # print all variables (and values for strings)
 
-# LOAD LIBRARY DEPENDENCIES -------------------------------------------
+
+sink(file = logFile, append = TRUE,
+     type = c("output", "message"), split = toScreen)
+
+
+# Load library dependencies -------------------------------------------
+print("Loading R libraries...")
 
 if(!is.null(LIB.DIR) && dir.exists(LIB.DIR)){
   .libPaths(c(LIB.DIR))
   print(paste0("Using R library directories:",paste(.libPaths(),collapse=" : ")))
 }
-
-#install.packages(c("fpc", "ape", "ggplot2", "gridExtra", "cluster","doParallel","readr","dplyr","tidyr","data.table"))
-#install.packages('BiocManager')
-#BiocManager::install(c("BiocParallel", "BatchJobs")) #batchtools ?
-
-#install.packages("./doParallel_1.0.11.tgz", repos = NULL, type = .Platform$pkgType)
-#install.packages("doParallel")
-
-# subpopr dependnecies
 
 # REQUIRES CAIRO TO BE INSTALLED, EITHER THROUGH 'install.packages()' OR THROUGH 'conda install -c anaconda cairo'
 # requires pandoc
