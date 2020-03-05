@@ -121,15 +121,11 @@ dir.create(OUT.DIR, recursive = TRUE, showWarnings = FALSE)
 logFile <- paste0(OUT.DIR,"/log.txt")
 print(paste("Log written to:",logFile))
 
-sink(file = logFile, append = FALSE,
-     type = c("output", "message"), split = FALSE)
+sink(file = logFile, append = TRUE,
+     type = c(#"output",
+              "message"), split = toScreen)
 rm(option_list)
 ls.str()  # print all variables (and values for strings)
-
-
-sink(file = logFile, append = TRUE,
-     type = c("output", "message"), split = toScreen)
-
 
 # Load library dependencies -------------------------------------------
 print("Loading R libraries...")
@@ -401,7 +397,8 @@ if(length(speciesToAssess)>0){
 }
 
 # Get subspecies abundances relative to whole community ---------------------------------------
-if(file.exists(SPECIES.ABUNDANCE.PROFILE)){
+if(!is.null(SPECIES.ABUNDANCE.PROFILE) &
+   file.exists(SPECIES.ABUNDANCE.PROFILE)){
   # get relative abundances of subspecies *across* species
   # (based on relative abundance within species and species abundances)
   # tmp <- foreach(spec=allSubstrucSpecies) %dopar%
@@ -422,7 +419,7 @@ if(file.exists(SPECIES.ABUNDANCE.PROFILE)){
 
 
 # Test metadata associations ##########
-if(file.exists(METADATA.PATH)){
+if(!is.null(METADATA.PATH) & file.exists(METADATA.PATH)){
   if(makeReports){
     # tmp <- foreach(spec=allSubstrucSpecies) %dopar%
     #   renderTestPhenotypeAssocReport(speciesID = spec,
@@ -451,7 +448,7 @@ if(file.exists(METADATA.PATH)){
 }
 
 # Test for gene correlations ##########
-if(file.exists(KEGG.PATH)){
+if(!is.null(KEGG.PATH) & file.exists(KEGG.PATH)){
   print(paste("Testing for gene correlations for",length(allSubstrucSpecies),"species using",getDoParWorkers(),"cores"))
 
   #tmp <- foreach(spec=allSubstrucSpecies) %dopar% correlateSubpopProfileWithGeneProfiles(spec,OUT.DIR,KEGG.PATH,geneFamilyType="Kegg", corrMethod="pearson")
