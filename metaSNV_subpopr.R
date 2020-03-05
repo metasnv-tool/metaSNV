@@ -109,6 +109,7 @@ dir.create(opt$outputDir,recursive = T)
 OUT.DIR.BASE <- opt$outputDir
 
 source(paste0(scriptDir,"/src/subpopr/inst/metaSNV_subpopr_SETTINGS.R"))
+SUBPOPR.DIR<-paste0(scriptDir,"/src/subpopr/")
 
 SUBPOPR_RESULTS_DIR=paste0(OUT.DIR.BASE,"/params.",
                            "hr",MAX.PROP.READS.NON.HOMOG*100,

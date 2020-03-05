@@ -7,7 +7,6 @@ MIN.PROP.SNV.HOMOG = 0.8 # default = 0.8
 CLUSTERING.PS.CUTOFF = 0.8 # default = 0.8
 SNV.SUBSPEC.UNIQ.CUTOFF = 0.8 # default = 0.8
 
-SUBPOPR.DIR="./src/subpopr/" # where the subpopr package binary is located
 LIB.DIR=NULL # set as NULL or leave blank to use default location for R libraries
 
 
