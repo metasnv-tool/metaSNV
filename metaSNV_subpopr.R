@@ -119,7 +119,7 @@ OUT.DIR=paste0(SUBPOPR_RESULTS_DIR,"/",basename(METASNV.DIR),"/")
 
 dir.create(OUT.DIR, recursive = T, showWarnings = FALSE)
 logFile <- paste0(OUT.DIR,"/log.txt")
-print(paste("Log written to:",logFile))
+print(paste("Logging to:",logFile))
 rm(option_list)
 capture.output(ls.str(),file = logFile) # print all variables (and values for strings)
 sink(file = logFile, append = TRUE, type = c("output", "message"), split = toScreen)
@@ -223,8 +223,8 @@ bpParam <- MulticoreParam(workers = min(N.CORES,length(species)),
                           stop.on.error = FALSE,
                           threshold = "DEBUG",
                           log = TRUE,
-                          logdir = "logs")
-dir.create("logs", recursive = T, showWarnings = FALSE)
+                          logdir = paste0(OUT.DIR,"/threadLogs"))
+dir.create(paste0(OUT.DIR,"/threadLogs"), recursive = T, showWarnings = FALSE)
 
 print(paste("Running subpopr on",length(species),"species using",ncoresUsing,"cores"))
 
