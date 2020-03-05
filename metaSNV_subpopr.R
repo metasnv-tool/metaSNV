@@ -16,13 +16,21 @@ rm(list=ls())
 # which will include a directory ./src/subpopr
 
 # try to set the current working directory to the location of this file
-# only works if this file has been called from cmd line (e.g. Rscript metaSNV_subpop.R [...])
-setWdToSrcFileLoc <- function(){
-  script.dir <- dirname(sys.frame(1)$ofile)
-  setwd(script.dir)
+# works if this file is sourced() or has been called from cmd line (e.g. Rscript metaSNV_subpop.R [...])
+thisFile <- function() {
+        cmdArgs <- commandArgs(trailingOnly = FALSE)
+        needle <- "--file="
+        match <- grep(needle, cmdArgs)
+        if (length(match) > 0) {
+                # Rscript
+                return(normalizePath(sub(needle, "", cmdArgs[match])))
+        } else {
+                # 'source'd via R console
+                return(normalizePath(sys.frames()[[1]]$ofile))
+        }
 }
-try(setWdToSrcFileLoc(),silent = T)
-scriptDir<-getwd()
+
+scriptDir <- dirname(thisFile())
 
 
 # PARSE PARAMS -------------------------------------------------------------
