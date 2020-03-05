@@ -395,7 +395,7 @@ if(length(speciesToAssess)>0){
 }
 
 # Get subspecies abundances relative to whole community ---------------------------------------
-if(!is.null(SPECIES.ABUNDANCE.PROFILE) &
+if(!is.null(SPECIES.ABUNDANCE.PROFILE) &&
    file.exists(SPECIES.ABUNDANCE.PROFILE)){
   # get relative abundances of subspecies *across* species
   # (based on relative abundance within species and species abundances)
@@ -417,7 +417,7 @@ if(!is.null(SPECIES.ABUNDANCE.PROFILE) &
 
 
 # Test metadata associations ##########
-if(!is.null(METADATA.PATH) & file.exists(METADATA.PATH)){
+if(!is.null(METADATA.PATH) && file.exists(METADATA.PATH)){
   if(makeReports){
     # tmp <- foreach(spec=allSubstrucSpecies) %dopar%
     #   renderTestPhenotypeAssocReport(speciesID = spec,
@@ -446,7 +446,7 @@ if(!is.null(METADATA.PATH) & file.exists(METADATA.PATH)){
 }
 
 # Test for gene correlations ##########
-if(!is.null(KEGG.PATH) & file.exists(KEGG.PATH)){
+if(!is.null(KEGG.PATH) && file.exists(KEGG.PATH)){
   print(paste("Testing for gene correlations for",length(allSubstrucSpecies),"species using",getDoParWorkers(),"cores"))
 
   #tmp <- foreach(spec=allSubstrucSpecies) %dopar% correlateSubpopProfileWithGeneProfiles(spec,OUT.DIR,KEGG.PATH,geneFamilyType="Kegg", corrMethod="pearson")
