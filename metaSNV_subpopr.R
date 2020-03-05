@@ -2,56 +2,130 @@
 
 # qlogin -pe smp 12 -l h_vmem=10G # 10G memory per core is plenty
 # REQUIRES PYTHON (2 or 3)
-# nohup Rscript runSubpopr.R
+# nohup Rscript metaSNV_supopr.R
 
 # mkdir subpoprLocalTest
 # cp -r ~/Dropbox/PostDocBork/subspecies/toolDevelopment/subpopr/R ./subpoprLocalTest/
 # cp -r ~/Dropbox/PostDocBork/subspecies/toolDevelopment/subpopr/inst ./subpoprLocalTest/
 # cp -r ~/Dropbox/PostDocBork/subspecies/toolDevelopment/subpopr/data ./subpoprLocalTest/
 
-
 # clear the environment
 rm(list=ls())
 
+# Expectation is that this script will sit in the metaSNV directory,
+# which will include a directory ./src/subpopr
+
+# try to set the current working directory to the location of this file
+# only works if this file has been called from cmd line (e.g. Rscript metaSNV_subpop.R [...])
+setWdToSrcFileLoc <- function(){
+  script.dir <- dirname(sys.frame(1)$ofile)
+  setwd(script.dir)
+}
+try(setWdToSrcFileLoc(),silent = T)
+scriptDir<-getwd()
+
+
 # PARSE PARAMS -------------------------------------------------------------
 
-library(getopt)
-library(optparse)
+suppressPackageStartupMessages(library(getopt))
+suppressPackageStartupMessages(library(optparse))
 
 option_list = list(
   #make_option(c("-s", "--settings"), type="character", default="SETTINGS.R",  # default=NULL,
   #            help="Settings file, default is %default in current directory", metavar="character")
-  make_option(c("-s", "--settings"), type="character", default=NULL,
-              help="Settings file", metavar="character")
+  make_option(c("-i", "--metaSnvResultsDir"), type="character",
+              default=NULL,
+              help="Path to directory that has the metaSNV results, used as input (required)",
+              metavar="file path"),
+  make_option(c("-o", "--outputDir"), type="character",
+              default=NULL,
+              help="Path to directory where subpopr results will be stored (required)",
+              metavar="file path"),
+  make_option(c("-p", "--procs"), type="integer",
+              default=1,
+              help="Number of cores to use for parallel processing", metavar="integer"),
+  make_option(c("-a", "--speciesAbundance"), type="character",
+              default=NULL,
+              help="Path to file with species abundances (optional)",
+              metavar="file path"),
+  make_option(c("-m", "--isMotus"), type="logical",
+              default=TRUE,
+              help="Is the species abundance profile produced by mOTUs2? (TRUE or FALSE)",
+              metavar="logical"),
+  make_option(c("-g", "--geneAbundance"), type="character",
+              default=NULL,
+              help="Path to file with gene faily abundances (optional)",
+              metavar="file path"),
+  make_option(c("-d", "--metadata"), type="character",
+              default=NULL,
+              help="Path to file with metadata csv for odds ratio testing (optional)",
+              metavar="file path"),
+  make_option(c("-n", "--metadataSampleIDCol"), type="character",
+              default="sampleID",
+              help="Name of column with sample IDs in metadata csv for odds ratio testing (optional)",
+              metavar="character"),
+  make_option(c("-r", "--createReports"), type="logical",
+              default=TRUE,
+              help="Whether or not to compile html summary reports (uses Rmarkdown)",
+              metavar="logical"),
+  make_option(c("-s", "--settings"), type="character",
+              #default="./src/subpopr/inst/SETTINGS.R",
+              default=NULL,
+              help="Use this settings file instead of the command line arguments",
+              metavar="file path")
 );
 
 opt_parser = OptionParser(option_list=option_list);
 opt = parse_args(opt_parser);
 
-if (is.null(opt$settings)){
+
+N.CORES <- opt$ncores # overrides settings file
+SPECIES.ABUNDANCE.PROFILE<-opt$speciesAbundance
+SPECIES.ABUND.PROFILE.IS.MOTUS<-opt$isMotus
+KEGG.PATH <- opt$geneAbundance
+METADATA.PATH <- opt$metadata
+METADATA.COL.ID <- opt$metadataSampleIDCol
+
+makeReports <- TRUE
+toScreen <- FALSE # if TRUE, lots gets printed to screen, if FALSE, only goes to log file
+
+if (is.null(opt$metaSnvResultsDir)){
   print_help(opt_parser)
-  stop("Settings file must be supplied [-s]", call.=FALSE)
+  stop("Path to metaSNV results must be supplied [-i]", call.=FALSE)
 }
+METASNV.DIR <- opt$metaSnvResultsDir
+if (is.null(opt$outputDir)){
+  print_help(opt_parser)
+  stop("Path to output directory must be supplied [-o]", call.=FALSE)
+}
+dir.create(opt$outputDir,recursive = T)
+OUT.DIR.BASE <- opt$outputDir
+
+source(paste0(scriptDir,"/src/subpopr/inst/metaSNV_subpopr_SETTINGS.R"))
+
+SUBPOPR_RESULTS_DIR=paste0(OUT.DIR.BASE,"/params.",
+                           "hr",MAX.PROP.READS.NON.HOMOG*100,
+                           ".hs",MIN.PROP.SNV.HOMOG*100,
+                           ".ps",CLUSTERING.PS.CUTOFF*100,"/")
+OUT.DIR=paste0(SUBPOPR_RESULTS_DIR,"/",basename(METASNV.DIR),"/")
 
 # LOAD SETTINGS ------------------------------------------------------------
 
 # load settings for this run of subpopr
-settingsFilePath<-opt$settings
-if(!file.exists(settingsFilePath)){
-  stop(paste("Error. Required settings file does not exist:",settingsFilePath))
-}
-
-source(settingsFilePath)
+# settingsFilePath<-opt$settings
+# if(!file.exists(settingsFilePath)){
+#   stop(paste("Error. Required settings file does not exist:",settingsFilePath))
+# }
+#
+# source(settingsFilePath)
 
 dir.create(OUT.DIR, recursive = TRUE, showWarnings = FALSE)
 logFile <- paste0(OUT.DIR,"/log.txt")
-sink(file = logFile, append = FALSE, type = c("output", "message"), split = TRUE)
+print(paste("Log written to:",logFile))
+sink(file = logFile, append = FALSE, type = c("output", "message"), split = toScreen)
 
-makeReports <- TRUE
-
+rm(option_list)
 ls.str()  # print all variables (and values for strings)
-
-
 
 # LOAD LIBRARY DEPENDENCIES -------------------------------------------
 
@@ -257,7 +331,7 @@ if(makeReports){
                                                     bamSuffix = SAMPLE.ID.SUFFIX,
                                                     rmdDir = rmdDir ),
                              rmdDir = rmdDir)
-  
+
   printBpError(tmp)
 }
 # Handle species with subspecies #######################################################################
@@ -324,7 +398,7 @@ if(makeReports){
                                                     distMethod = DIST.METH.REPORTS ,
                                                     bamSuffix = SAMPLE.ID.SUFFIX,
                                                     rmdDir = rmdDir))
-  
+
   printBpError(tmp)
 }
 speciesToAssess <- list.files(path=OUT.DIR,pattern = '.*_extended_clustering_wFreq.tab$',full.names = F) %>%
@@ -345,7 +419,7 @@ if(file.exists(SPECIES.ABUNDANCE.PROFILE)){
                                                     speciesAbundanceProfileFilePath=SPECIES.ABUNDANCE.PROFILE,
                                                     outDir=OUT.DIR,
                                                     speciesProfileIsMotus = SPECIES.ABUND.PROFILE.IS.MOTUS))
-  
+
   printBpError(tmp)
   abunds <- collectSubpopAbunds(OUT.DIR)
 
@@ -376,7 +450,7 @@ if(file.exists(METADATA.PATH)){
                                                       sampleExtension = SAMPLE.ID.SUFFIX, #".ULRepGenomesv11.unique.sorted.bam",
                                                       metadataFile = METADATA.PATH,
                                                       rmdDir = rmdDir))
-    
+
     printBpError(tmp)
   }
   summariseMetadataAssocResultsForAll(OUT.DIR)
@@ -394,7 +468,7 @@ if(file.exists(KEGG.PATH)){
                                                     OUT.DIR,KEGG.PATH,
                                                     geneFamilyType="Kegg",
                                                     corrMethod="pearson"))
-  
+
   printBpError(tmp)
   #tmp <- foreach(spec=allSubstrucSpecies) %dopar% correlateSubpopProfileWithGeneProfiles(spec,OUT.DIR,KEGG.PATH,geneFamilyType="Kegg", corrMethod="spearman")
   tmp <- BiocParallel::bptry(BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
@@ -402,9 +476,9 @@ if(file.exists(KEGG.PATH)){
                                                     OUT.DIR,KEGG.PATH,
                                                     geneFamilyType="Kegg",
                                                     corrMethod="spearman"))
-  
+
   printBpError(tmp)
-  
+
   if(makeReports){
     # render report
     # tmp <- foreach(spec=allSubstrucSpecies) %dopar%
@@ -412,7 +486,7 @@ if(file.exists(KEGG.PATH)){
     #                                    subpopOutDir = OUT.DIR,
     #                                    geneFamilyAbundancesFile = KEGG.PATH,
     #                                   rmdDir = rmdDir)
-    tmp <- BiocParallel::bptry(BiocParallel::bplapply(allSubstrucSpecies, 
+    tmp <- BiocParallel::bptry(BiocParallel::bplapply(allSubstrucSpecies,
                                                       BPPARAM = SerialParam(),#bpParam, # for some reason, parallel fails here
                                                       renderGeneContentReport,
                                                       subpopOutDir = OUT.DIR,
