@@ -138,10 +138,19 @@ checkFile(KEGG.PATH, "Gene family abundance")
 # Set up logging -----------------------------------------------------
 logFile <- paste0(OUT.DIR,"/log.txt")
 print(paste("Logging to:",logFile))
-capture.output(paste(commandArgs(trailingOnly = FALSE),collapse = " "),file = logFile,append = FALSE)
+
+capture.output(paste("Command was -------------------------------------------------- \n",
+                     paste(commandArgs(trailingOnly = FALSE),collapse = " ")),
+               file = logFile,append = FALSE)
+
+capture.output(print("\nVariable values -------------------------------------------------- \n"))
 rm(option_list)
-capture.output(ls.str(),file = logFile,append = TRUE) # print all variables (and values for strings)
-sink(file = logFile, append = TRUE, type = c("output", "message"), split = toScreen)
+capture.output(ls.str(),file = logFile,
+               append = TRUE) # print all variables (and values for strings)
+
+capture.output(print("\nRun output -------------------------------------------------- \n"))
+sink(file = logFile, append = TRUE,
+     type = c("output", "message"), split = toScreen)
 
 
 
