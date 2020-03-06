@@ -113,11 +113,11 @@ Based on correlations between the abundances of the within-species clusters and 
 pathCorrP <- paste0(subpopOutDir,"/",speciesID,"_corrKegg-pearson.tsv")
 pathCorrS <- paste0(subpopOutDir,"/",speciesID,"_corrKegg-spearman.tsv")
 if(!file.exists(pathCorrP)){
-  print(paste0("Aborting due to missing file: ",corrP))
+  print(paste0("Aborting due to missing file: ",pathCorrP))
   knitr::knit_exit()
 }
 if(!file.exists(pathCorrS)){
-  print(paste0("Aborting due to missing file: ",corrS))
+  print(paste0("Aborting due to missing file: ",pathCorrS))
   knitr::knit_exit()
 }
 
@@ -154,9 +154,14 @@ corrS <- read_tsv(paste0(subpopOutDir,"/",speciesID,"_corrKegg-spearman.tsv"),co
   q.valueBH = col_double()
 ))
 
-```
-
-```{r}
+if(!"corrP" %in% ls()){
+  print(paste0("Aborting due to error in loading file: ",corrP))
+  knitr::knit_exit()
+}
+if(!"corrS" %in% ls()){
+  print(paste0("Aborting due to error in loading file: ",corrS))
+  knitr::knit_exit()
+}
 
 if( max(corrS$nObs, corrP$nObs) < minObs ){
   print(paste0("Number of observations in correlations (",max(corrS$nObs,max(corrP$nObs)), ") is too small to be meaningful. Aborting report."))
@@ -174,6 +179,8 @@ Number of significant Pearson correlations (q value < `r print(statCutoff)`):  `
 Number of Spearman correlations tested: `r nrow(corrS)`
 
 Number of significant Spearman correlations (q value < `r print(statCutoff)`): `r sum(corrS$q.valueBH < statCutoff)`
+
+
 
 
 ```{r}

@@ -6,7 +6,9 @@ renderDetailedSpeciesReport <- function(speciesID, distMethod= "mann", metasnvOu
 
   tf <- paste0(subpopOutDir,"/tmp_",speciesID,"_",format(Sys.time(), "%Y-%m-%d-%H%M%S"))
   dir.create(tf)
-  rmarkdown::render(rmdPath,quiet = T,
+  rmarkdown::render(rmdPath,
+                    quiet = T,
+                    knit_root_dir = getwd(),
                     params = list(
                       speciesID = speciesID,
                       subpopOutDir = subpopOutDir,
@@ -15,6 +17,7 @@ renderDetailedSpeciesReport <- function(speciesID, distMethod= "mann", metasnvOu
                       bamSuffix = bamSuffix),
                     intermediates_dir=tf, # so that reports can be rendered in parallel
                     output_dir = subpopOutDir,
+
                     output_file = paste0(speciesID,"_detailedSpeciesReport.html") )
   unlink(tf,recursive = T)
 }
@@ -29,6 +32,7 @@ renderGeneContentReport <- function(speciesID, subpopOutDir, geneFamilyAbundance
   tf <- paste0(subpopOutDir,"/tmp_",speciesID,format(Sys.time(), "%Y-%m-%d-%H%M%S"))
   dir.create(tf)
   rmarkdown::render(rmdPath,quiet = T,
+                    knit_root_dir = getwd(),
                     params = list(
                       speciesID = speciesID,
                       subpopOutDir = subpopOutDir,
@@ -59,6 +63,7 @@ renderTestPhenotypeAssocReport <- function(speciesID, subpopOutDir, metadataFile
   #the original subspeceis defined from dist matrix clustering
   rmdPath <- paste0(rmdDir, "/testSubspecMultiPhenoAssoc.rmd")
   rmarkdown::render(rmdPath,quiet = T,
+                    knit_root_dir = getwd(),
                     params = list(
                       speciesID = speciesID,
                       subpopOutDir = subpopOutDir,
@@ -78,6 +83,7 @@ renderResultsSummaryReport <- function(subpopOutDir,
 
   rmdPath <- paste0(rmdDir, "/resultsSummary.Rmd")
   rmarkdown::render(rmdPath,quiet = T,
+                    knit_root_dir = getwd(),
                     params = list(
                       resultsDir = subpopOutDir),
                     output_dir = subpopOutDir,
