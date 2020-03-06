@@ -53,7 +53,7 @@ option_list = list(
               default=1,
               help="Number of cores to use for parallel processing. Default is 1.", metavar="integer"),
   make_option(c("-a", "--speciesAbundance"), type="character",
-              default=NULL,
+              default="doNotRun",
               help="Path to file with species abundances (tsv, optional)",
               metavar="file path"),
   make_option(c("-m", "--isMotus"), type="logical",
@@ -61,11 +61,11 @@ option_list = list(
               help="Is the species abundance profile produced by mOTUs2? (TRUE or FALSE)",
               metavar="logical"),
   make_option(c("-g", "--geneAbundance"), type="character",
-              default="",
+              default="doNotRun",
               help="Path to file with gene family abundances (tsv, optional)",
               metavar="file path"),
   make_option(c("-d", "--metadata"), type="character",
-              default="",
+              default="doNotRun",
               help="Path to file with metadata csv for odds ratio testing (optional)",
               metavar="file path"),
   make_option(c("-n", "--metadataSampleIDCol"), type="character",
@@ -122,11 +122,11 @@ dir.create(OUT.DIR, recursive = T, showWarnings = FALSE)
 
 checkFile <- function(path, fileTypeName){
   if(!is.null(path) && !is.na(path) &&
-     nchar(path) > 0){
-     if(!file.exists(path)){
-       stop(fileTypeName, " file specified but does not exist: ",
-            path)
-     }
+     nchar(path) > 0 && path != "doNotRun"){
+    if(!file.exists(path)){
+      stop(fileTypeName, " file specified but does not exist: ",
+           path)
+    }
   }
 }
 
@@ -135,20 +135,23 @@ checkFile(METADATA.PATH,"Metadata")
 checkFile(KEGG.PATH, "Gene family abundance")
 
 
-# Set up logging -----------------------------------------------------
+# Logging set up -----------------------------------------------------
 logFile <- paste0(OUT.DIR,"/log.txt")
 print(paste("Logging to:",logFile))
 
-capture.output(paste("Command was -------------------------------------------------- \n",
-                     paste(commandArgs(trailingOnly = FALSE),collapse = " ")),
+capture.output(cat("Command was --------------------------------------------------"),
                file = logFile,append = FALSE)
+capture.output(paste(commandArgs(trailingOnly = FALSE),collapse = " "),
+               file = logFile,append = TRUE)
 
-capture.output(print("\nVariable values -------------------------------------------------- \n"))
+capture.output(print("Variable values --------------------------------------------------"),
+               file = logFile,append = TRUE)
 rm(option_list)
 capture.output(ls.str(),file = logFile,
                append = TRUE) # print all variables (and values for strings)
 
-capture.output(print("\nRun output -------------------------------------------------- \n"))
+capture.output(print("Run output --------------------------------------------------"),
+               file = logFile,append = TRUE)
 sink(file = logFile, append = TRUE,
      type = c("output", "message"), split = toScreen)
 
@@ -256,7 +259,7 @@ print(paste("Running subpopr on",length(species),"species using",ncoresUsing,"co
 
 printBpError <- function(result){
   if(all(bpok(result))){
-    return()
+    return("") # blank prints "NULL"
   }else{
     print( paste("Error in one thread, see ",paste0(OUT.DIR,"/threadLogs") ))
     print(tail(attr(result[[which(!bpok(result))]], "traceback")))
@@ -278,8 +281,10 @@ runDefine <- function(spec){
                        usePackagePredStrength = USE.PACKAGE.PREDICTION.STRENGTH)
 }
 
-resultsPerSpecies <- BiocParallel::bptry(BiocParallel::bplapply(species, runDefine, BPPARAM = bpParam))
-resultsPerSpeciesDF <- cbind.data.frame(SpeciesID=species, ClusteringResult=unlist(resultsPerSpecies))
+resultsPerSpecies <- BiocParallel::bptry(
+  BiocParallel::bplapply(species, runDefine, BPPARAM = bpParam))
+resultsPerSpeciesDF <- cbind.data.frame(SpeciesID=species,
+                                       ClusteringResult=unlist(resultsPerSpecies))
 write.csv(x = resultsPerSpeciesDF,file = paste0(OUT.DIR,"/log_clusteringSummaryPerSpecies.csv"))
 
 # summarise the results from clustering
@@ -290,23 +295,35 @@ summariseClusteringResultsForAll(OUT.DIR,distMeth="mann")
 
 # get all species where no potential cluster medoids could be defined
 noSubstruc1dir <- getClustMedoidDefnFailedDir(OUT.DIR)
-noSubstruc1 <- list.files(path=noSubstruc1dir,pattern = paste0(DIST.METH.REPORTS ,'_distMatrixUsedForClustMedoidDefns\\.txt$'),full.names = T)
-noSubstrucSpecies <- unique(sub(basename(noSubstruc1) ,pattern = paste0("_",DIST.METH.REPORTS ,"_distMatrixUsedForClustMedoidDefns\\.txt"),replacement = ""))
+noSubstruc1 <- list.files(path=noSubstruc1dir,
+                          pattern = paste0(DIST.METH.REPORTS ,
+                                           '_distMatrixUsedForClustMedoidDefns\\.txt$'),
+                          full.names = T)
+noSubstrucSpecies <- unique(sub(basename(noSubstruc1) ,
+                                pattern = paste0("_",DIST.METH.REPORTS ,
+                                                 "_distMatrixUsedForClustMedoidDefns\\.txt"),
+                                replacement = ""))
 
 if(makeReports){
-  tmp <- BiocParallel::bptry(BiocParallel::bplapply(noSubstrucSpecies, BPPARAM = bpParam,
-                                                    renderDetailedSpeciesReport,
-                                                    metasnvOutDir = METASNV.DIR,
-                                                    distMethod = DIST.METH.REPORTS ,
-                                                    subpopOutDir = noSubstruc1dir,
-                                                    bamSuffix = SAMPLE.ID.SUFFIX,
-                                                    rmdDir = rmdDir ))
+  tmp <- BiocParallel::bptry(
+    BiocParallel::bplapply(noSubstrucSpecies, BPPARAM = bpParam,
+                           renderDetailedSpeciesReport,
+                           metasnvOutDir = METASNV.DIR,
+                           distMethod = DIST.METH.REPORTS ,
+                           subpopOutDir = noSubstruc1dir,
+                           bamSuffix = SAMPLE.ID.SUFFIX,
+                           rmdDir = rmdDir ))
   printBpError(tmp)
 }
-# get all species where cluster medoids could be defined but clusters were not significant (PS values < threshold)
+# get all species where cluster medoids could be defined
+# but clusters were not significant (PS values < threshold)
 noSubstruc2dir <- getNoClusteringDir(OUT.DIR)
-noSubstruc2 <- list.files(path=noSubstruc2dir,pattern = paste0(DIST.METH.REPORTS ,'_distMatrixUsedForClustMedoidDefns\\.txt$'),full.names = T)
-noSubstrucSpecies <- unique(sub(basename(noSubstruc2) ,pattern = paste0("_",DIST.METH.REPORTS ,"_distMatrixUsedForClustMedoidDefns\\.txt"),replacement = ""))
+noSubstruc2 <- list.files(path=noSubstruc2dir,
+                          pattern = paste0(DIST.METH.REPORTS ,'_distMatrixUsedForClustMedoidDefns\\.txt$'),
+                          full.names = T)
+noSubstrucSpecies <- unique(sub(basename(noSubstruc2) ,
+                                pattern = paste0("_",DIST.METH.REPORTS ,"_distMatrixUsedForClustMedoidDefns\\.txt"),
+                                replacement = ""))
 if(makeReports){
   tmp <- BiocParallel::bptry(BiocParallel::bplapply(noSubstrucSpecies,
                                                     renderDetailedSpeciesReport,
@@ -324,10 +341,13 @@ if(makeReports){
 # continue processing those species that could be used to define subspecies
 
 # get all species with clustering/substructure
-allSubstruc <- list.files(path=OUT.DIR,pattern = '_hap_out\\.txt$',full.names = T)
-allSubstrucSpecies <- unique(sub(basename(allSubstruc) ,pattern = "_hap_out\\.txt$",replacement = ""))
+allSubstruc <- list.files(path=OUT.DIR,
+                          pattern = '_hap_out\\.txt$',full.names = T)
+allSubstrucSpecies <- unique(sub(basename(allSubstruc) ,
+                                 pattern = "_hap_out\\.txt$",replacement = ""))
 
-print(paste0("Species with substructure: ",length(allSubstrucSpecies),"/",length(species)))
+print(paste0("Species with substructure: ",
+             length(allSubstrucSpecies),"/",length(species)))
 
 if(length(allSubstrucSpecies) == 0){
   stopCluster(cl)
@@ -342,36 +362,41 @@ if(length(allSubstrucSpecies) == 0){
 # 2) get abundances of these genotypes per sample (~subspecies abundace)
 
 print("Genotyping clusters")
-pyGetPlacingRelevantSubset(outDir=OUT.DIR, metaSnvDir=METASNV.DIR,scriptDir = pyScriptDir)
+pyGetPlacingRelevantSubset(outDir=OUT.DIR,
+                           metaSnvDir=METASNV.DIR,
+                           scriptDir = pyScriptDir)
 
 # get all posFiles
 allPos <- list.files(path=OUT.DIR,pattern = '.*_.\\.pos$',full.names = T)
 
 #tmp <- foreach(pos=allPos) %dopar% pyConvertSNPtoAllelTable(posFile = pos)
-tmp <- BiocParallel::bptry(BiocParallel::bplapply(allPos, BPPARAM = bpParam,
-                                                  pyConvertSNPtoAllelTable,
-                                                  scriptDir = pyScriptDir))
+tmp <- BiocParallel::bptry(
+  BiocParallel::bplapply(allPos, BPPARAM = bpParam,
+                         pyConvertSNPtoAllelTable,
+                         scriptDir = pyScriptDir))
 
 printBpError(tmp)
 
 #tmp <- foreach(spec=allSubstrucSpecies) %dopar% useGenotypesToProfileSubpops(spec, metaSNVdir=METASNV.DIR, outDir=OUT.DIR )
-tmp <- BiocParallel::bptry(BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
-                                                  useGenotypesToProfileSubpops,
-                                                  metaSNVdir=METASNV.DIR,
-                                                  outDir=OUT.DIR ))
+tmp <- BiocParallel::bptry(
+  BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
+                         useGenotypesToProfileSubpops,
+                         metaSNVdir=METASNV.DIR,
+                         outDir=OUT.DIR ))
 
 printBpError(tmp)
 
 summariseClusteringExtensionResultsForAll(resultsDir=OUT.DIR,distMeth="mann")
 
 if(makeReports){
-  tmp <- BiocParallel::bptry(BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
-                                                    renderDetailedSpeciesReport,
-                                                    subpopOutDir = OUT.DIR,
-                                                    metasnvOutDir = METASNV.DIR,
-                                                    distMethod = DIST.METH.REPORTS ,
-                                                    bamSuffix = SAMPLE.ID.SUFFIX,
-                                                    rmdDir = rmdDir))
+  tmp <- BiocParallel::bptry(
+    BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
+                           renderDetailedSpeciesReport,
+                           subpopOutDir = OUT.DIR,
+                           metasnvOutDir = METASNV.DIR,
+                           distMethod = DIST.METH.REPORTS ,
+                           bamSuffix = SAMPLE.ID.SUFFIX,
+                           rmdDir = rmdDir))
 
   printBpError(tmp)
 }
@@ -387,17 +412,20 @@ if(length(speciesToAssess)>0){
 if(!is.null(SPECIES.ABUNDANCE.PROFILE) &&
    file.exists(SPECIES.ABUNDANCE.PROFILE)){
   print("Calculating cluster abundances using species abundances...")
-  tmp <- BiocParallel::bptry(BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
-                                                    useSpeciesAbundToCalcSubspeciesAbund,
-                                                    speciesAbundanceProfileFilePath=SPECIES.ABUNDANCE.PROFILE,
-                                                    outDir=OUT.DIR,
-                                                    speciesProfileIsMotus = SPECIES.ABUND.PROFILE.IS.MOTUS))
+  tmp <- BiocParallel::bptry(
+    BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
+                           useSpeciesAbundToCalcSubspeciesAbund,
+                           speciesAbundanceProfileFilePath=SPECIES.ABUNDANCE.PROFILE,
+                           outDir=OUT.DIR,
+                           speciesProfileIsMotus = SPECIES.ABUND.PROFILE.IS.MOTUS))
 
   printBpError(tmp)
   abunds <- collectSubpopAbunds(OUT.DIR)
 
-}else{
-  warning(paste0("Not running species abundance analysis. Required file does not exist: ",SPECIES.ABUNDANCE.PROFILE))
+}else if(SPECIES.ABUNDANCE.PROFILE != "doNotRun"){
+  print(paste0("Not running species abundance analysis.",
+               " Required file not specified or does not exist: ",
+               SPECIES.ABUNDANCE.PROFILE))
 }
 
 
@@ -419,8 +447,10 @@ if(!is.null(METADATA.PATH) && file.exists(METADATA.PATH)){
     printBpError(tmp)
   }
   summariseMetadataAssocResultsForAll(OUT.DIR)
-}else{
-  warning(paste0("Not running phenotype/metadata association analysis. Required file does not exist: ",METADATA.PATH))
+}else if(METADATA.PATH != "doNotRun"){
+  print(paste0("Not running phenotype/metadata association analysis.",
+               " Required file not specified or does not exist: ",
+               METADATA.PATH))
 }
 
 # Test for gene correlations ##########
@@ -456,14 +486,22 @@ if(!is.null(KEGG.PATH) && file.exists(KEGG.PATH)){
     printBpError(tmp)
   }
   summariseGeneFamilyCorrelationResultsForAll(OUT.DIR)
-}else{
-  warning(paste0("Not running gene content analysis. Required file does not exist: ",KEGG.PATH))
+}else if(KEGG.PATH != "doNotRun"){
+  print(paste0("Not running gene content analysis.",
+               " Required file not specified or does not exist: ",
+               KEGG.PATH))
 }
 
+
+print("Summarising results...")
 combineAllSummaries(OUT.DIR)
 if(makeReports){
   renderResultsSummaryReport(OUT.DIR,rmdDir = rmdDir)
+  print(paste0("Results summarised, see:",OUT.DIR,"/resultsSummary.html"))
+}else{
+  print(paste0("Results summarised, see:",OUT.DIR,"/summary_allResults.csv"))
 }
 
+print("Subpopr finished.")
 print(proc.time() - ptm)
 
