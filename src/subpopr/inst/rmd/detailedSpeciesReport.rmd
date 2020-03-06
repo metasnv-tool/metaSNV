@@ -83,11 +83,14 @@ theme_set(theme_bw())
 
 hclustMethodForHeatmaps <- "average" # = UPGMA; "mcquitty" (= WPGMA)
 
-```
-
-```{r}
+subpopOutDir <- normalizePath(subpopOutDir)
+if(!dir.exists(subpopOutDir)){
+  print(paste("Output directory does not exist:",subpopOutDir))
+  knit_exit()
+}
 speciesFiles <- list.files(path = subpopOutDir,pattern = paste0(speciesID,"_*"))
 ```
+
 
 ```{r, results='asis'}
 if(length(speciesFiles)==0){
@@ -221,22 +224,6 @@ if(file.exists(f1)){
 }else{
   print(paste0("Can't find file: ",f1," or ",f2))
 }
-
-
-# for(fileSuffix in c("_snvFreq_HighOrLow.png","_snvFreq_High.png","_snvFreq_Low.png")){
-#   f1 <- paste0(getSnvFreqPlotDir(subpopOutDir),"/",speciesID,fileSuffix)
-#   # HACK FIX : when kniting for files in ../noClustering the snvFreqPlots folder is one level up
-#   f2 <- paste0(getSnvFreqPlotDir(paste0(subpopOutDir,"/../")),"/",speciesID,fileSuffix)
-#   if(file.exists(f1)){ 
-#     print(f1)
-#     knitr::include_graphics(f1)
-#   } else if(file.exists(f2)){ 
-#     print(f2)
-#     knitr::include_graphics(f2) 
-#   }else{
-#     print(paste0("Can't find file: ",f1," or ",f2))
-#   }
-# }
 
 ```
 
