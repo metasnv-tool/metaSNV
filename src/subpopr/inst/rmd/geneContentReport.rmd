@@ -25,7 +25,7 @@ params:
   subpopOutDir:
     value: ''
   familyType:
-    value: 'Kegg'
+    value: 'family'
   geneFamilyAbundancesFile:
     value: ''
 ---
@@ -61,32 +61,16 @@ geneFamilyAbundancesFile <- params$geneFamilyAbundancesFile
 minObs <- params$minObs
 ```
 
-to do:
-- consider pearson correlation confidence intervals
-- prettify settings print out
-
-- get geneFamily names in a way that works for COG too
-- add geneFamily pathway analysis
-
-- how is it that both clusters could be correlated with the same gene family???
-
 # Settings
 
 ```{r}
-# speciesID = "357276"
-# subpopOutDir = "/Users/rossum/Dropbox/PostDocBork/subspecies/pancreaticCancer/2018-06_data/v2UL/stool/minFilter"
-# geneFamilyAbundancesFile = "/Users/rossum/Dropbox/PostDocBork/subspecies/pancreaticCancer/2018-06_data/mapped/igc/kegg.counts.all1.scaled.rmHeaderRenamed2UL.txt"
-
-#geneFamilyAbundancesFile <- "../../../../pancreaticCancer/2018-06_data/mapped/igc/kegg.counts.all1.scaled.rmHeaderRenamed.txt"
-#subpopOutDir <- "../../../../pancreaticCancer/2018-06_data/subpopr/stoolSubspecMod/"
-#speciesID <- "515620"
-
-#speciesID <- "1211813"
-#subpopOutDir <- panCanCommResults_subpopr
-
 # geneFamilyAbundancesFile <- "/Volumes/KESU/scb2/bork/rossum/subspecies/testingSubpopr/inSilicoMock/mine/smallerTestSet/smallGenomes/01_createData/outputs/geneAbundances.tsv"
 # subpopOutDir <- "/Volumes/KESU/scb2/bork/rossum/subspecies/testingSubpopr/inSilicoMock/mine/smallerTestSet/smallGenomes/04_subpopr_nonPack/params.hr5.hs80.ps80/defaults/"
 # speciesID <- "refGenome2clus"
+
+# geneFamilyAbundancesFile <- "~/tmp/subpopTest/testingSubpopr/inSilicoMock/mine/smallerTestSet/smallGenomes/01_createData/outputs/geneAbundances.tsv"
+# subpopOutDir <- "~/tmp/subpopTest/testingSubpopr/inSilicoMock/mine/smallerTestSet/smallGenomes/04_subpopr/tmp5/params.hr10.hs80.ps80/insilico/"
+# speciesID <- "refGenome3clus"
 
 
 do.call(rbind,params) %>% data.frame(stringsAsFactors = F) %>% DT::datatable()
@@ -126,8 +110,18 @@ if(speciesID %in% taxaMap$ncbiTaxID){
 Based on correlations between the abundances of the within-species clusters and the abundances of gene families
 
 ```{r}
+pathCorrP <- paste0(subpopOutDir,"/",speciesID,"_corrKegg-pearson.tsv")
+pathCorrS <- paste0(subpopOutDir,"/",speciesID,"_corrKegg-spearman.tsv")
+if(!file.exists(pathCorrP)){
+  print(paste0("Aborting due to missing file: ",corrP))
+  knitr::knit_exit()
+}
+if(!file.exists(pathCorrS)){
+  print(paste0("Aborting due to missing file: ",corrS))
+  knitr::knit_exit()
+}
 
-corrP <- read_tsv(paste0(subpopOutDir,"/",speciesID,"_corrKegg-pearson.tsv"),col_names = T, col_types = cols(
+corrP <- read_tsv(pathCorrP,col_names = T, col_types = cols(
   geneFamily = col_character(),
   cluster = col_integer(),
   statistic = col_double(),
@@ -353,7 +347,7 @@ sigGeneFams <- corr %>%
   arrange(-correlationR) %>% 
   pull(geneFamily) %>% unique()
 
-maxToPlot <- 20
+maxToPlot <- 10
 tooManyToPlot <- length(sigGeneFams) > maxToPlot
 
 corr %>% filter(geneFamily %in% sigGeneFams) %>%  
