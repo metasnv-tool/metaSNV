@@ -30,33 +30,24 @@ jobs:
         sudo apt-get install -y build-essential libhts-dev libboost-dev python-numpy python-pandas r-base pandoc
 
     - name: Install R dependencies
-      run: sudo Rscript <(echo 'if(!require(fpc)){install.packages("fpc", repos="https://cloud.r-project.org/")}')
-    - name: Install R dependencies
-      run: sudo Rscript <(echo 'if(!require(ape)){install.packages("ape", repos="https://cloud.r-project.org/")}')
-
-    - name: Install R dependencies
-      run: sudo Rscript <(echo 'if(!require(tidyverse)){install.packages("tidyverse", repos="https://cloud.r-project.org/")}')
-    - name: Install R dependencies
-      run: sudo Rscript <(echo 'if(!require(gridExtra)){install.packages("gridExtra", repos="https://cloud.r-project.org/")}')
-    - name: Install R dependencies
-      run: sudo Rscript <(echo 'if(!require(cluster)){install.packages("cluster", repos="https://cloud.r-project.org/")}')
-    - name: Install R dependencies
-      run: sudo Rscript <(echo 'if(!require(ggrepel)){install.packages("ggrepel", repos="https://cloud.r-project.org/")}')
-    - name: Install R dependencies
-      run: sudo Rscript <(echo 'if(!require(data.table)){install.packages("data.table", repos="https://cloud.r-project.org/")}')
-    - name: Install R dependencies
-      run: sudo Rscript <(echo 'if(!require(kableExtra)){install.packages("kableExtra", repos="https://cloud.r-project.org/")}')
-    - name: Install R dependencies
-      run: sudo Rscript <(echo 'if(!require(rmarkdown)){install.packages("rmarkdown", repos="https://cloud.r-project.org/")}')
-    - name: Install R dependencies
-      run: sudo Rscript <(echo 'if(!require(BiocParallel)){install.packages("BiocParallel", repos="https://cloud.r-project.org/")}')
-    - name: Install R dependencies
-      run: sudo Rscript <(echo 'if(!require(batchtools)){install.packages("batchtools", repos="https://cloud.r-project.org/")}')
-    - name: Install R dependencies
-      run: sudo Rscript <(echo 'if(!require(coin)){install.packages("coin", repos="https://cloud.r-project.org/")}')
-    - name: Install R dependencies
-      run: sudo Rscript <(echo 'if(!require(questionr)){install.packages("questionr", repos="https://cloud.r-project.org/")}')
-
+      run: |
+        sudo R --vanilla <<EOF
+        if(!require(fpc)){install.packages("fpc", repos="https://cloud.r-project.org/")}
+        if(!require(ape)){install.packages("ape", repos="https://cloud.r-project.org/")}
+        if(!require(tidyverse)){install.packages("tidyverse", repos="https://cloud.r-project.org/")}
+        if(!require(gridExtra)){install.packages("gridExtra", repos="https://cloud.r-project.org/")}
+        if(!require(cluster)){install.packages("cluster", repos="https://cloud.r-project.org/")}
+        if(!require(ggrepel)){install.packages("ggrepel", repos="https://cloud.r-project.org/")}
+        if(!require(data.table)){install.packages("data.table", repos="https://cloud.r-project.org/")}
+        if(!require(kableExtra)){install.packages("kableExtra", repos="https://cloud.r-project.org/")}
+        if(!require(rmarkdown)){install.packages("rmarkdown", repos="https://cloud.r-project.org/")}
+        if(!require(BiocParallel)){install.packages("BiocParallel", repos="https://cloud.r-project.org/")}
+        if(!require(batchtools)){install.packages("batchtools", repos="https://cloud.r-project.org/")}
+        if(!require(coin)){install.packages("coin", repos="https://cloud.r-project.org/")}
+        if(!require(questionr)){install.packages("questionr", repos="https://cloud.r-project.org/")}
+        q()
+        EOF
+        
     - name: Compile
       run: make 
 
