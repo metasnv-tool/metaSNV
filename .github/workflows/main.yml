@@ -1,0 +1,57 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI
+
+# Controls when the action will run. Triggers the workflow on push or pull request 
+# events but only for the master branch
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+    - uses: actions/checkout@v2
+
+    # Runs a single command using the runners shell
+    - name: Install dependencies
+      run: |
+        add-apt-repository "deb http://archive.ubuntu.com/ubuntu $(lsb_release -sc) universe"
+        apt-get update
+        apt-get install -y build-essential libhts-dev libboost-dev python-numpy python-pandas r-base pandoc
+
+    - name: Install R dependencies
+      run: |
+        Rscript <(echo 'if(!require(fpc)){install.packages("fpc", repos="https://cloud.r-project.org/")}')
+        Rscript <(echo 'if(!require(ape)){install.packages("ape", repos="https://cloud.r-project.org/")}')
+        Rscript <(echo 'if(!require(tidyverse)){install.packages("tidyverse", repos="https://cloud.r-project.org/")}')
+        Rscript <(echo 'if(!require(gridExtra)){install.packages("gridExtra", repos="https://cloud.r-project.org/")}')
+        Rscript <(echo 'if(!require(cluster)){install.packages("cluster", repos="https://cloud.r-project.org/")}')
+        Rscript <(echo 'if(!require(ggrepel)){install.packages("ggrepel", repos="https://cloud.r-project.org/")}')
+        Rscript <(echo 'if(!require(data.table)){install.packages("data.table", repos="https://cloud.r-project.org/")}')
+        Rscript <(echo 'if(!require(kableExtra)){install.packages("kableExtra", repos="https://cloud.r-project.org/")}')
+        Rscript <(echo 'if(!require(rmarkdown)){install.packages("rmarkdown", repos="https://cloud.r-project.org/")}')
+        Rscript <(echo 'if(!require(BiocParallel)){install.packages("BiocParallel", repos="https://cloud.r-project.org/")}')
+        Rscript <(echo 'if(!require(batchtools)){install.packages("batchtools", repos="https://cloud.r-project.org/")}')
+        Rscript <(echo 'if(!require(coin)){install.packages("coin", repos="https://cloud.r-project.org/")}')
+        Rscript <(echo 'if(!require(questionr)){install.packages("questionr", repos="https://cloud.r-project.org/")}')
+
+    - name: Compile
+      run: make 
+
+    # Runs a set of commands using the runners shell
+    - name: Check help outputs
+      run: |
+        python metaSNV.py --help
+        python metaSNV_post.py --help
+        Rscript metaSNV_subpopr.R --help
+        
