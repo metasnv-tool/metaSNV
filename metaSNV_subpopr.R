@@ -12,7 +12,7 @@
 # clear the environment
 rm(list=ls())
 
-normalRun<-FALSE
+normalRun<-TRUE
 suppressPackageStartupMessages(library(futile.logger))
 flog.threshold(INFO)
 
