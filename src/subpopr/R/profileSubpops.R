@@ -1,9 +1,4 @@
 
-# TO DO
-#' 1. where did All_SpecI_clusters come from?
-#' 2. where did RefMGv9.taxid.annot.curated come from?
-
-
 #' input files required:
 #'   distanceMatrixFileMann = paste0("./data/",species,"_mann_distance_matrix.tab") #.filtered.mann.dist"
 #'   distanceMatrixFileAllele = paste0("./data/",species,"_allele_distance_matrix.tab") #.filtered.allele.dist"
@@ -14,238 +9,6 @@
 #' use paul_getPlacingRelevantSubset.py to create 537011_2.pos file from
 # 1. [species]_[cluster]_hap_positions.tab (from writeGenotypeFreqs(...) )
 # 2. SNPs_best_split_[X] from metaSNV output (snpCaller/called_SNPs.best_split_[X])
-#
-# then use paul_convertSNPtoAllelTable.py with 537011_2.pos to create 537011_2.pos.freq file
-
-
-#testing
-#defineSubpopulations(species = "357276",metaSNVdir = "/Users/rossum/Dropbox/PostDocBork/subspecies/toolDevelopment/subpopr/ES_PC/metaSNV/fr11_v1/minFilter/outputs_minFilter/",
-#                      outDir = "/Users/rossum/Dropbox/PostDocBork/subspecies/toolDevelopment/subpopr/ES_PC/subpop/minFilter/fr11_v1/")
-
-# defineSubpopulations(species = "657317",metaSNVdir = "/Users/rossum/Dropbox/PostDocBork/subspecies/toolDevelopment/testingSubpopr/test2_input/metaSNV/",
-#                       outDir = "/Users/rossum/Dropbox/PostDocBork/subspecies/toolDevelopment/testingSubpopr/test2c_output/")
-#
-# defineSubpopulations(species = "101585",
-# metaSNVdir = "~/Dropbox/PostDocBork/subspecies/toolDevelopment/testingSubpopr/inSilicoMock/desman/subpopr_results/metaSNV_results/outputs_minFilter/",
-# outDir = "/Users/rossum/Dropbox/PostDocBork/subspecies/toolDevelopment/testingSubpopr/inSilicoMock/desman/subpopr_results/test")
-
-# defineSubpopulations(species="1232452",
-#                      metaSNVdir = "~/Dropbox/PostDocBork/subspecies/pancreaticCancer/2018-06_data/metaSNV/stool/outputs_default/",
-#                      outDir = "~/Dropbox/PostDocBork/subspecies/pancreaticCancer/2018-06_data/subpopr/stoolDefaults/")
-
- # defineSubpopulations(species = "referenceGenome",
- #                       metaSNVdir = "~/Dropbox/PostDocBork/subspecies/toolDevelopment/testingSubpopr/inSilicoMock/mine/metaSNV/outputs_defaults/",
- #                       outDir = "/Users/rossum/Dropbox/PostDocBork/subspecies/toolDevelopment/testingSubpopr/inSilicoMock/mine/subpopr/resultsLocal/",
- #                      propHomogAllelesPerSampleCutoff = 0)
-
-
-#' @return int the number of clusters or -1 if there is an insufficient number of samples in the metaSNV results used as input
-#' @export
-#' @param species int the speciesID
-#' @param metaSNVdir location of the metaSNV output files
-#' @param outDir location for the output files
-#' @param randomSeed int used for cluster generation, default is random number
-#' @param doFilterSamplesByAlleleDist when picking number of clusters and cluster medoids, should samples be
-#' pre-filtered to only keep ones where most
-#' (see minPropHomogSnvAllelesPerSample) SNV positions are dominated by 1 allele
-#' @param maxPropReadsNonHomog within a sample, what proportion of reads must have the same SNV allele
-#' for that position to considered as "homogeneous". Range 0-1. Default = 0.1.  E.g. 0.1 => for a SNV position to be considered
-#' "nearly homogeneous" for further calculations, > 90% or < 10% of the reads in a sample must have the non-reference allele
-#' @param minPropHomogSnvAllelesPerSample proportion of SNV positions that need to be dominated by one
-#' allele for pre-filtering (see doFilterSamplesByAlleleDist)
-#' @param psCut PS threshold value between 0-1 used to determined the number of clusters
-#' @param uniqSubpopSnvFreqThreshold value between 0-1 that specifies how much more abundant a SNV must be
-#' in samples representing a subspecies vs in other samples
-#' @param bamFileNamesToUsePath path to a file with one bam file name per line. Only samples listed in this file will
-#' be used for analysis. Note that SNV filtering is not re-done. To use all samples, leave as default value: NULL
-defineSubpopulationsMannAndAllele <- function(species, metaSNVdir, outDir, randomSeed=NULL, minNumberOfSamplesToStart = 4,
-                                 doFilterSamplesByAlleleDist = T,
-                                 maxPropReadsNonHomog = 0.1,
-                                 minPropHomogSnvAllelesPerSample = 0.8,
-                                 psCut = 0.8,
-                                 uniqSubpopSnvFreqThreshold=0.8,
-                                 useAlleleDistances=T,
-                                 bamFileNamesToUsePath=NULL,
-                                 loggingOn=FALSE){
-
-  randomSeed <- if_else(is.null(randomSeed),false = randomSeed,true = sample(x = 4124:4613646,size = 1))
-  # import data
-  # old verison
-  # distanceMatrixFileMann <- paste0(metaSNVdir,"/distances/",species,"_mann_distance_matrix.tab") #.filtered.mann.dist"
-  # distanceMatrixFileAllele <- paste0(metaSNVdir,"/distances/",species,"_allele_distance_matrix.tab") #.filtered.allele.dist"
-  # freqCompFile <- paste0(metaSNVdir,"/filtered/pop/",species,".snp.sample_filtered.freq") #.filtered.snvFreqs"
-
-
-  # new metasnv_post version
-  distanceMatrixFileMann <- paste0(metaSNVdir,"/distances/",species,".filtered.mann.dist")
-  freqCompFile <- paste0(metaSNVdir,"/filtered/pop/",species,".filtered.freq") #.filtered.snvFreqs"
-
-  if(!dir.exists(outDir)){
-    dir.create(outDir)
-  }
-
-  # check for required files
-  if(!dir.exists(metaSNVdir)){
-    stop("Missing directory: ", metaSNVdir)
-  }
-  if( ! file.exists(distanceMatrixFileMann) ){
-    stop("Missing file: ", distanceMatrixFileMann)
-  }
-
-  if( ! file.exists(freqCompFile) ){
-    stop("Missing file: ", freqCompFile)
-  }
-
-
-  if(loggingOn){print(paste0("Loading distance matrix for species: ",species))}
-  distMann <- read.table(distanceMatrixFileMann,header=T,row.names=1,check.names=F,strip.white = F,sep="\t")
-
-  if(loggingOn){print(paste0("Loading SNV frequencies for species: ",species))}
-  snvFreqs.filtered <- read.table(freqCompFile,header=T,row.names=1,check.names=F,strip.white = F,sep="\t")
-
-  # sometimes there are blanks in the metaSNV distance output due to too many -1s
-  # remove those here
-  distMann <- rmNAfromDistMatrix(distMann)
-
-  # verify that snvFreq sample names and distance matrix samples names match
-  if(length(colnames(snvFreqs.filtered)) != length(colnames(distMann)) ||
-     all(colnames(snvFreqs.filtered) != colnames(distMann))){
-    samps <- intersect(colnames(distMann),colnames(snvFreqs.filtered))
-    snvFreqs.filtered <- snvFreqs.filtered[samps]
-    distMann <- distMann[samps,samps]
-    warning(paste("Samples names do not match in the distance matrix and the filtered SNV file for species",species,".",
-                  "Using the intersection, which is ",length(samps)," samples."))
-    if(length(samps) < minNumberOfSamplesToStart){
-      stop(paste0("Too few samples remain after selecting only those in the distance and SNP files. At least ",
-                  minNumberOfSamplesToStart," are required for analysis. Aborting."))
-    }
-  }
-
-
-  if(useAlleleDistances){
-    distanceMatrixFileAllele <- paste0(metaSNVdir,"/distances/",species,".filtered.allele.dist")
-    if( ! file.exists(distanceMatrixFileAllele) ){
-      stop("Missing file: ", distanceMatrixFileAllele)
-    }
-    distAllele <- read.table(distanceMatrixFileAllele,header=T,row.names=1,check.names=F,strip.white = F,sep="\t")
-    distAllele <- rmNAfromDistMatrix(distAllele)
-    # verify that snvFreq sample names and distance matrix samples names match
-    if(length(colnames(snvFreqs.filtered)) != length(colnames(distAllele)) ||
-       all(colnames(snvFreqs.filtered) != colnames(distAllele))){
-      samps <- intersect(colnames(distAllele),colnames(snvFreqs.filtered))
-      snvFreqs.filtered <- snvFreqs.filtered[samps]
-      distAllele <- distAllele[samps,samps]
-      warning(paste("Samples names do not match in the distance matrix and the filtered SNV file for species",species,".",
-                    "Using the intersection, which is ",length(samps)," samples."))
-    }
-  }
-
-  if(!is.null(bamFileNamesToUsePath)){
-    if( ! file.exists(bamFileNamesToUsePath) ){
-      warning(paste0("Samples not subselected according to specified file as file does not exist: ", bamFileNamesToUsePath))
-    }else{
-      bamFileNamesToUse <- read.delim(file = bamFileNamesToUsePath,
-                                      sep = "\n",header = F,as.is = T,
-                                      col.names = c("bamNames"))[,"bamNames",T]
-      if(length(bamFileNamesToUse) < minNumberOfSamplesToStart){
-        stop(paste0("Insufficient samples would remain after selecting samples based on file :",bamFileNamesToUsePath," .",
-                    "At least ", minNumberOfSamplesToStart, " samples are required. ",
-                    "Only ",length(bamFileNamesToUse)," samples would be selected. Aborting."))
-      }
-      allSamps <- intersect(colnames(distMann),colnames(snvFreqs.filtered))
-      sampsToKeep <- intersect(allSamps,bamFileNamesToUse)
-      if(length(sampsToKeep) < minNumberOfSamplesToStart){
-        stop(paste0("Insufficient samples remain after selecting samples based on file :",bamFileNamesToUsePath," .",
-                    "Only ",length(sampsToKeep)," samples remain. Aborting. \n Maybe format is wrong? Example sample name: ",allSamps[1]))
-      }
-      warning(paste0("Samples subselected according to specified file: ", bamFileNamesToUsePath,". Samples remaining: ", length(sampsToKeep)))
-      snvFreqs.filtered <- snvFreqs.filtered[sampsToKeep]
-      distMann <- distMann[sampsToKeep,sampsToKeep]
-    }
-  }
-
-
-  # need at least 4 samples for method to work (more required for it to be reasonable)
-  if( ncol(snvFreqs.filtered) < minNumberOfSamplesToStart ){
-    warning(paste0("Insufficient number of samples in metaSNV filtered SNV results for species: ",species, " (",ncol(distMann)," samples)"))
-    return(paste0("Insufficient number of samples in metaSNV filtered SNV results (",ncol(distMann)," samples)"))
-  }
-  # need at least 4 samples for method to work (more required for it to be reasonable)
-  if( is.null(distMann) || length(distMann) < 2 ||  ncol(distMann) < minNumberOfSamplesToStart ){
-    warning(paste0("Insufficient number of samples in metaSNV dist matrix results for species: ",species, " (",ncol(distMann)," samples)"))
-    return(paste0("Insufficient number of samples in metaSNV dist matrix results (",ncol(distMann)," samples)"))
-  }
-
-  # new version of metaSNV has SNV frequencies as [0,1]; old version (which code was initially written with) had them as [0,100]
-  # if not -1, multiply by 100 (to do eventually is replace -1 with NA, but may have implications throughout code)
-  if(max(snvFreqs.filtered,na.rm = T)>1){
-    error("The max value in your SNV frequency file is > 1. Values are expected to be -1 or within [0 to 1]. Are you using an old version of metaSNV? ")
-  }
-  # change range to 0-100 to avoid changing code everywhere else
-  snvFreqs.filtered[snvFreqs.filtered!=-1] <- snvFreqs.filtered[snvFreqs.filtered!=-1]*100
-
-  if(loggingOn){print(paste0("Plotting SNV frequencies for species: ",species))}
-  snvFreqPlot(species,snvFreqs.filtered,
-               outDir = getSnvFreqPlotDir(outDir),
-               minPropHomogSnvAllelesPerSample,
-              maxPropReadsNonHomog = maxPropReadsNonHomog)
-
-  filePrefixMann=paste0(species,"_mann")
-  filePrefixAllele=paste0(species,"_allele")
-
-  if(loggingOn){print(paste0("Computing clustering for species: ",species))}
-  # identify clusters from subset of data
-  clustDf_m <- computeClusters(dist=distMann,
-                               species = species,
-                               doFilterSamplesByAlleleDist =  doFilterSamplesByAlleleDist,
-                               minPropHomogSnvAllelesPerSample = minPropHomogSnvAllelesPerSample,
-                               snvFreqs.filtered = snvFreqs.filtered,
-                               filePrefix = filePrefixMann,
-                               outDir = outDir,
-                               #randomSeed = randomSeed,
-                               maxPropReadsNonHomog = maxPropReadsNonHomog,
-                               psCut = psCut)
-
-  if(useAlleleDistances){
-  clustDf_a <- computeClusters(dist=distAllele,
-                               species = species,
-                               doFilterSamplesByAlleleDist = doFilterSamplesByAlleleDist,
-                               minPropHomogSnvAllelesPerSample = minPropHomogSnvAllelesPerSample,
-                               snvFreqs.filtered = snvFreqs.filtered,
-                               filePrefix = filePrefixAllele,
-                               outDir = outDir,
-                               #randomSeed = randomSeed,
-                               maxPropReadsNonHomog = maxPropReadsNonHomog,
-                               psCut = psCut)
-  }
-  if(is.null(clustDf_m) || is.character(clustDf_m) ){
-    return(clustDf_m)
-  }
-
-  #if no mann sub populations, then we're done
-  if(max(clustDf_m$clust) < 2){
-    if(loggingOn){print(paste0("No significant clustering detected for species: ",species))}
-    return("nClusters = 1")
-  }
-
-  # Compute variances and percentage explained by the clustering
-  var_m <- variationExplainedByClusters(clustDf_m, snvFreqs.filtered, species, majorAllele = F,outDir)
-  if(useAlleleDistances){
-    var_a <- variationExplainedByClusters(clustDf_a, snvFreqs.filtered, species, majorAllele = T,outDir)
-  }
-
-  if(loggingOn){print(paste0("Identifying distinctive SNVs for clusters in species: ",species))}
-  # compute subspecies' distinctive SNVs
-  writeGenotypeFreqs(clustDf_m, snvFreqs.filtered, species, outDir,uniqSubpopSnvFreqThreshold)
-
-  return(paste0("nClusters = ",max(clustDf_m$clust)))
-}
-
-
-
-
-
-
 
 
 
@@ -283,7 +46,8 @@ defineSubpopulations <- function(species, distName = "mann",
                                  psCut = 0.8,
                                  uniqSubpopSnvFreqThreshold=0.8,
                                  bamFileNamesToUsePath = NULL,
-                                 usePackagePredStrength = FALSE){
+                                 usePackagePredStrength = FALSE,
+                                 loggingOn=FALSE){
 
   #randomSeed <- ifelse(!is.null(randomSeed),yes = randomSeed,no = sample(x = 4124:4613646,size = 1))
 
@@ -307,7 +71,11 @@ defineSubpopulations <- function(species, distName = "mann",
     stop("Missing file: ", freqCompFile)
   }
 
+
+  if(loggingOn){print(paste0("Loading distance matrix for species: ",species))}
   distMa <- read.table(distanceMatrixFile,header=T,row.names=1,check.names=F,strip.white = F,sep="\t")
+
+  if(loggingOn){print(paste0("Loading SNV frequencies for species: ",species))}
   snvFreqs.filtered <- read.table(freqCompFile,header=T,row.names=1,check.names=F,strip.white = F,sep="\t")
 
   # sometimes there are blanks in the metaSNV distance output due to too many -1s
@@ -372,6 +140,7 @@ defineSubpopulations <- function(species, distName = "mann",
   # change range to 0-100 to avoid changing code everywhere else
   snvFreqs.filtered[snvFreqs.filtered!=-1] <- snvFreqs.filtered[snvFreqs.filtered!=-1]*100
 
+  if(loggingOn){print(paste0("Plotting SNV frequencies for species: ",species))}
   snvFreqPlot(species,snvFreqs.filtered,
               outDir = getSnvFreqPlotDir(outDir),
               minPropHomogSnvAllelesPerSample,
@@ -379,6 +148,7 @@ defineSubpopulations <- function(species, distName = "mann",
 
   filePrefix=paste0(species,"_",distName)
 
+  if(loggingOn){print(paste0("Computing clustering for species: ",species))}
   # identify clusters from subset of data
   clustDf <- computeClusters(dist=distMa,
                                species = species,
@@ -398,6 +168,7 @@ defineSubpopulations <- function(species, distName = "mann",
 
   #if no sub populations, then we're done
   if(length(unique(clustDf$clust)) <= 1){
+    if(loggingOn){print(paste0("No significant clustering detected for species: ",species))}
     return("nClusters = 1")
   }
 
@@ -405,6 +176,7 @@ defineSubpopulations <- function(species, distName = "mann",
   varExp <- variationExplainedByClusters(clustDf, snvFreqs.filtered, species, filePrefix, majorAllele = F,outDir)
 
   # compute subspecies' distinctive SNVs
+  if(loggingOn){print(paste0("Identifying distinctive SNVs for clusters in species: ",species))}
   writeGenotypeFreqs(clustDf, snvFreqs.filtered, species, outDir,uniqSubpopSnvFreqThreshold)
 
   return(paste0("nClusters = ",length(unique(clustDf$clust)) ))
