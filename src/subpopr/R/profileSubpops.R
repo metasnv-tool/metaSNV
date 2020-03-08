@@ -65,7 +65,8 @@ defineSubpopulationsMannAndAllele <- function(species, metaSNVdir, outDir, rando
                                  psCut = 0.8,
                                  uniqSubpopSnvFreqThreshold=0.8,
                                  useAlleleDistances=T,
-                                 bamFileNamesToUsePath=NULL){
+                                 bamFileNamesToUsePath=NULL,
+                                 loggingOn=FALSE){
 
   randomSeed <- if_else(is.null(randomSeed),false = randomSeed,true = sample(x = 4124:4613646,size = 1))
   # import data
@@ -95,7 +96,11 @@ defineSubpopulationsMannAndAllele <- function(species, metaSNVdir, outDir, rando
     stop("Missing file: ", freqCompFile)
   }
 
+
+  if(loggingOn){print(paste0("Loading distance matrix for species: ",species))}
   distMann <- read.table(distanceMatrixFileMann,header=T,row.names=1,check.names=F,strip.white = F,sep="\t")
+
+  if(loggingOn){print(paste0("Loading SNV frequencies for species: ",species))}
   snvFreqs.filtered <- read.table(freqCompFile,header=T,row.names=1,check.names=F,strip.white = F,sep="\t")
 
   # sometimes there are blanks in the metaSNV distance output due to too many -1s
@@ -179,6 +184,7 @@ defineSubpopulationsMannAndAllele <- function(species, metaSNVdir, outDir, rando
   # change range to 0-100 to avoid changing code everywhere else
   snvFreqs.filtered[snvFreqs.filtered!=-1] <- snvFreqs.filtered[snvFreqs.filtered!=-1]*100
 
+  if(loggingOn){print(paste0("Plotting SNV frequencies for species: ",species))}
   snvFreqPlot(species,snvFreqs.filtered,
                outDir = getSnvFreqPlotDir(outDir),
                minPropHomogSnvAllelesPerSample,
@@ -187,6 +193,7 @@ defineSubpopulationsMannAndAllele <- function(species, metaSNVdir, outDir, rando
   filePrefixMann=paste0(species,"_mann")
   filePrefixAllele=paste0(species,"_allele")
 
+  if(loggingOn){print(paste0("Computing clustering for species: ",species))}
   # identify clusters from subset of data
   clustDf_m <- computeClusters(dist=distMann,
                                species = species,
@@ -217,7 +224,7 @@ defineSubpopulationsMannAndAllele <- function(species, metaSNVdir, outDir, rando
 
   #if no mann sub populations, then we're done
   if(max(clustDf_m$clust) < 2){
-    #print(paste("Species ",species," does not have any subpopulation structure with mann clust."))
+    if(loggingOn){print(paste0("No significant clustering detected for species: ",species))}
     return("nClusters = 1")
   }
 
@@ -227,6 +234,7 @@ defineSubpopulationsMannAndAllele <- function(species, metaSNVdir, outDir, rando
     var_a <- variationExplainedByClusters(clustDf_a, snvFreqs.filtered, species, majorAllele = T,outDir)
   }
 
+  if(loggingOn){print(paste0("Identifying distinctive SNVs for clusters in species: ",species))}
   # compute subspecies' distinctive SNVs
   writeGenotypeFreqs(clustDf_m, snvFreqs.filtered, species, outDir,uniqSubpopSnvFreqThreshold)
 
