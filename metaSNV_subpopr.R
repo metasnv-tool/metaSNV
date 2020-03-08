@@ -12,7 +12,7 @@
 # clear the environment
 rm(list=ls())
 
-normalRun<-TRUE
+normalRun<-FALSE
 suppressPackageStartupMessages(library(futile.logger))
 flog.threshold(INFO)
 
@@ -294,7 +294,7 @@ printBpError <- function(result){
 # (substructure/clustering) within species
 
 runDefine <- function(spec){
-  print(spec)
+  flog.info("Assessing presence of subspecies in species %s", spec)
   #cat(dput(spec), file = paste0("logFile_", spec, ".txt"))
   defineSubpopulations(spec, metaSNVdir = METASNV.DIR, outDir = OUT.DIR,
                        maxPropReadsNonHomog = MAX.PROP.READS.NON.HOMOG,
@@ -307,6 +307,7 @@ runDefine <- function(spec){
 
 resultsPerSpecies <- BiocParallel::bptry(
   BiocParallel::bplapply(species, runDefine, BPPARAM = bpParam))
+printBpError(resultsPerSpecies)
 resultsPerSpeciesDF <- cbind.data.frame(SpeciesID=species,
                                        ClusteringResult=unlist(resultsPerSpecies))
 write.csv(x = resultsPerSpeciesDF,file = paste0(OUT.DIR,"/log_clusteringSummaryPerSpecies.csv"))
