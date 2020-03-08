@@ -12,6 +12,10 @@
 # clear the environment
 rm(list=ls())
 
+normalRun<-TRUE
+if(normalRun){ # HACK TO RUN FROM WITHIN R WITHOUT OPTS ----------
+
+
 # Expectation is that this script will sit in the metaSNV directory,
 # which will include a directory ./src/subpopr
 
@@ -87,6 +91,21 @@ opt_parser = OptionParser(option_list=option_list);
 opt = parse_args(opt_parser);
 
 
+}else{
+  scriptDir <- "~/Dropbox/PostDocBork/subspecies/toolDevelopment/metaSNV/"
+  setwd("~/tmp/subpopTest/testingSubpopr/inSilicoMock/mine/smallerTestSet/smallGenomes/04_subpopr")
+  opt <- list()
+  opt$procs <- 1
+  opt$speciesAbundance <- "../01_createData/outputs/speciesAbundances.tsv"
+  opt$isMotus <- F
+  opt$geneAbundance <- "../01_createData/outputs/geneAbundances.tsv"
+  opt$metadata <- "doNotRun"
+  opt$metadataSampleIDCol <- "sampleNames"
+  opt$metaSnvResultsDir <- "../03_metaSNV/insilico"
+  opt$outputDir <- "tmp6"
+
+}
+
 N.CORES <- opt$procs
 SPECIES.ABUNDANCE.PROFILE<-opt$speciesAbundance
 SPECIES.ABUND.PROFILE.IS.MOTUS<-opt$isMotus
@@ -133,6 +152,7 @@ checkFile <- function(path, fileTypeName){
 checkFile(SPECIES.ABUNDANCE.PROFILE,"Species abundance")
 checkFile(METADATA.PATH,"Metadata")
 checkFile(KEGG.PATH, "Gene family abundance")
+checkFile(METASNV.DIR, "MetaSNV output directory")
 
 
 # Logging set up -----------------------------------------------------
@@ -168,6 +188,7 @@ if(!is.null(LIB.DIR) && dir.exists(LIB.DIR)){
 
 # REQUIRES CAIRO TO BE INSTALLED, EITHER THROUGH 'install.packages()' OR THROUGH 'conda install -c anaconda cairo'
 # requires pandoc
+suppressPackageStartupMessages(library(Cairo))
 suppressPackageStartupMessages(library(fpc))
 suppressPackageStartupMessages(library(ape))
 suppressPackageStartupMessages(library(ggplot2))
@@ -181,6 +202,11 @@ suppressPackageStartupMessages(library(data.table))
 suppressPackageStartupMessages(library(kableExtra)) # to do: remove this from package
 suppressPackageStartupMessages(library(rmarkdown)) # for report rendering
 
+suppressPackageStartupMessages(library(coin)) # only used in phenotype assoc test part -- remove?
+suppressPackageStartupMessages(library(questionr)) # only used in phenotype assoc test part -- remove?
+suppressPackageStartupMessages(library(BiocParallel))
+suppressPackageStartupMessages(library(batchtools))
+
 #Error: pandoc version 1.12.3 or higher is required and was not found (see the help page ?rmarkdown::pandoc_available).
 # throw and error if the required version of pandoc is not found
 if(makeReports & !rmarkdown::pandoc_available(version = "1.12.3",error = F)){
@@ -191,11 +217,6 @@ if(makeReports & !rmarkdown::pandoc_available(version = "1.12.3",error = F)){
   makeReports <- FALSE
 }
 
-suppressPackageStartupMessages(library(BiocParallel))
-suppressPackageStartupMessages(library(batchtools))
-
-suppressPackageStartupMessages(library(coin)) # only used in phenotype assoc test part -- remove?
-suppressPackageStartupMessages(library(questionr)) # only used in phenotype assoc test part -- remove?
 
 # Load subpopr files --------------------------------------------------------------
 
@@ -262,7 +283,7 @@ printBpError <- function(result){
     return("") # blank prints "NULL"
   }else{
     print( paste("Error in one thread, see ",paste0(OUT.DIR,"/threadLogs") ))
-    print(tail(attr(result[[which(!bpok(result))]], "traceback")))
+    print(result[[which(!bpok(result))]])
   }
 }
 
@@ -325,14 +346,14 @@ noSubstrucSpecies <- unique(sub(basename(noSubstruc2) ,
                                 pattern = paste0("_",DIST.METH.REPORTS ,"_distMatrixUsedForClustMedoidDefns\\.txt"),
                                 replacement = ""))
 if(makeReports){
-  tmp <- BiocParallel::bptry(BiocParallel::bplapply(noSubstrucSpecies,
-                                                    renderDetailedSpeciesReport,
-                                                    metasnvOutDir = METASNV.DIR,
-                                                    distMethod = DIST.METH.REPORTS ,
-                                                    subpopOutDir = noSubstruc2dir,
-                                                    bamSuffix = SAMPLE.ID.SUFFIX,
-                                                    rmdDir = rmdDir ),
-                             rmdDir = rmdDir)
+  tmp <- BiocParallel::bptry(
+    BiocParallel::bplapply(noSubstrucSpecies,
+                           renderDetailedSpeciesReport,
+                           metasnvOutDir = METASNV.DIR,
+                           distMethod = DIST.METH.REPORTS ,
+                           subpopOutDir = noSubstruc2dir,
+                           bamSuffix = SAMPLE.ID.SUFFIX,
+                           rmdDir = rmdDir ))
 
   printBpError(tmp)
 }
