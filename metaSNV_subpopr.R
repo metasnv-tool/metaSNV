@@ -13,6 +13,9 @@
 rm(list=ls())
 
 normalRun<-TRUE
+suppressPackageStartupMessages(library(futile.logger))
+flog.threshold(INFO)
+
 if(normalRun){ # HACK TO RUN FROM WITHIN R WITHOUT OPTS ----------
 
 
@@ -92,18 +95,17 @@ opt = parse_args(opt_parser);
 
 
 }else{
-  scriptDir <- "~/Dropbox/PostDocBork/subspecies/toolDevelopment/metaSNV/"
-  setwd("~/tmp/subpopTest/testingSubpopr/inSilicoMock/mine/smallerTestSet/smallGenomes/04_subpopr")
+  scriptDir <- "/g/bork3/home/rossum/software/metaSNV2/metaSNV/"
+  setwd("/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v2/subpopr_v2")
   opt <- list()
-  opt$procs <- 1
-  opt$speciesAbundance <- "../01_createData/outputs/speciesAbundances.tsv"
-  opt$isMotus <- F
-  opt$geneAbundance <- "../01_createData/outputs/geneAbundances.tsv"
-  opt$metadata <- "doNotRun"
+  opt$procs <- 2
+  opt$speciesAbundance <- "doNotRun"
+  opt$isMotus <- T
+  opt$geneAbundance <- "doNotRun"
+  opt$metadata <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v2/metadata_allv2.csv"
   opt$metadataSampleIDCol <- "sampleNames"
-  opt$metaSnvResultsDir <- "../03_metaSNV/insilico"
-  opt$outputDir <- "tmp6"
-
+  opt$metaSnvResultsDir <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v2/metaSNV/outputs_subspec/"
+  opt$outputDir <- "lcl2"
 }
 
 N.CORES <- opt$procs
@@ -156,6 +158,7 @@ checkFile(METASNV.DIR, "MetaSNV output directory")
 
 
 # Logging set up -----------------------------------------------------
+
 logFile <- paste0(OUT.DIR,"/log.txt")
 print(paste("Logging to:",logFile))
 
