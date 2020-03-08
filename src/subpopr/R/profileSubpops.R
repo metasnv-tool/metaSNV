@@ -46,8 +46,7 @@ defineSubpopulations <- function(species, distName = "mann",
                                  psCut = 0.8,
                                  uniqSubpopSnvFreqThreshold=0.8,
                                  bamFileNamesToUsePath = NULL,
-                                 usePackagePredStrength = FALSE,
-                                 loggingOn=FALSE){
+                                 usePackagePredStrength = FALSE){
 
   #randomSeed <- ifelse(!is.null(randomSeed),yes = randomSeed,no = sample(x = 4124:4613646,size = 1))
 
@@ -71,11 +70,10 @@ defineSubpopulations <- function(species, distName = "mann",
     stop("Missing file: ", freqCompFile)
   }
 
-
-  if(loggingOn){print(paste0("Loading distance matrix for species: ",species))}
+  flog.info("Loading distance matrix for species: %s",species)
   distMa <- read.table(distanceMatrixFile,header=T,row.names=1,check.names=F,strip.white = F,sep="\t")
 
-  if(loggingOn){print(paste0("Loading SNV frequencies for species: ",species))}
+  flog.info("Loading SNV frequencies for species: %s",species)
   snvFreqs.filtered <- read.table(freqCompFile,header=T,row.names=1,check.names=F,strip.white = F,sep="\t")
 
   # sometimes there are blanks in the metaSNV distance output due to too many -1s
@@ -140,7 +138,8 @@ defineSubpopulations <- function(species, distName = "mann",
   # change range to 0-100 to avoid changing code everywhere else
   snvFreqs.filtered[snvFreqs.filtered!=-1] <- snvFreqs.filtered[snvFreqs.filtered!=-1]*100
 
-  if(loggingOn){print(paste0("Plotting SNV frequencies for species: ",species))}
+
+  flog.info("Plotting SNV frequencies for species: %s",species)
   snvFreqPlot(species,snvFreqs.filtered,
               outDir = getSnvFreqPlotDir(outDir),
               minPropHomogSnvAllelesPerSample,
@@ -148,7 +147,7 @@ defineSubpopulations <- function(species, distName = "mann",
 
   filePrefix=paste0(species,"_",distName)
 
-  if(loggingOn){print(paste0("Computing clustering for species: ",species))}
+  flog.info("Computing clustering for species: %s",species)
   # identify clusters from subset of data
   clustDf <- computeClusters(dist=distMa,
                                species = species,
@@ -168,7 +167,7 @@ defineSubpopulations <- function(species, distName = "mann",
 
   #if no sub populations, then we're done
   if(length(unique(clustDf$clust)) <= 1){
-    if(loggingOn){print(paste0("No significant clustering detected for species: ",species))}
+    flog.info("No significant clustering detected for species: %s",species)
     return("nClusters = 1")
   }
 
@@ -176,7 +175,7 @@ defineSubpopulations <- function(species, distName = "mann",
   varExp <- variationExplainedByClusters(clustDf, snvFreqs.filtered, species, filePrefix, majorAllele = F,outDir)
 
   # compute subspecies' distinctive SNVs
-  if(loggingOn){print(paste0("Identifying distinctive SNVs for clusters in species: ",species))}
+  flog.info("Identifying distinctive SNVs for clusters in species: %s",species)
   writeGenotypeFreqs(clustDf, snvFreqs.filtered, species, outDir,uniqSubpopSnvFreqThreshold)
 
   return(paste0("nClusters = ",length(unique(clustDf$clust)) ))
