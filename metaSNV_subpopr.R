@@ -162,7 +162,7 @@ checkFile(METASNV.DIR, "MetaSNV output directory")
 logFile <- paste0(OUT.DIR,"/log.txt")
 print(paste("Logging to:",logFile))
 
-capture.output(cat("Command was --------------------------------------------------"),
+capture.output(print("Command was --------------------------------------------------"),
                file = logFile,append = FALSE)
 capture.output(paste(commandArgs(trailingOnly = FALSE),collapse = " "),
                file = logFile,append = TRUE)
@@ -273,6 +273,7 @@ ptm <- proc.time()
 ncoresUsing <- min(N.CORES,length(species))
 
 bpParam <- MulticoreParam(workers = min(N.CORES,length(species)),
+                          jobname = "subpopr",
                           stop.on.error = FALSE,
                           threshold = "DEBUG",
                           log = TRUE,
@@ -285,7 +286,9 @@ printBpError <- function(result){
   if(all(bpok(result))){
     return("") # blank prints "NULL"
   }else{
-    print( paste("Error in one thread, see ",paste0(OUT.DIR,"/threadLogs") ))
+    print( paste("Error in thread(s):",
+                 paste0(which(!bpok(result)),collapse = ","),
+                 ", see ",paste0(OUT.DIR,"/threadLogs") ))
     print(result[[which(!bpok(result))]])
   }
 }
@@ -294,7 +297,7 @@ printBpError <- function(result){
 # (substructure/clustering) within species
 
 runDefine <- function(spec){
-  flog.info("Assessing presence of subspecies in species %s", spec)
+  flog.info("=== Assessing presence of subspecies in species %s ===", spec)
   #cat(dput(spec), file = paste0("logFile_", spec, ".txt"))
   defineSubpopulations(spec, metaSNVdir = METASNV.DIR, outDir = OUT.DIR,
                        maxPropReadsNonHomog = MAX.PROP.READS.NON.HOMOG,
