@@ -53,6 +53,7 @@ jobs:
         if(!require(coin)){install.packages("coin", repos="https://cloud.r-project.org/")}
         if(!require(questionr)){install.packages("questionr", repos="https://cloud.r-project.org/")}
         if(!require(futile.logger)){install.packages("futile.logger", repos="https://cloud.r-project.org/")}
+        sessionInfo()
         q()
         EOF
         
