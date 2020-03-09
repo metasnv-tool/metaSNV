@@ -277,6 +277,7 @@ bpParam <- MulticoreParam(workers = min(N.CORES,length(species)),
                           stop.on.error = FALSE,
                           threshold = "DEBUG",
                           log = TRUE,
+			  progressbar = TRUE,
                           logdir = paste0(OUT.DIR,"/threadLogs"))
 dir.create(paste0(OUT.DIR,"/threadLogs"), recursive = T, showWarnings = FALSE)
 
