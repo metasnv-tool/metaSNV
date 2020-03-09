@@ -89,9 +89,10 @@ defineSubpopulations <- function(species, distName = "mann",
     warning(paste("Samples names do not match in the distance matrix and the filtered SNV file for species",species,".",
                   "Using the intersection, which is ",length(samps)," samples."))
     if(length(samps) < minNumberOfSamplesToStart){
-      stop(paste0("Too few samples remain after selecting only those in the distance and SNP files. At least ",
-                  minNumberOfSamplesToStart," are required for analysis. Aborting."))
-    }
+      warning(paste0("Too few samples remain after selecting only those in the distance and SNP files. At least ",
+                  minNumberOfSamplesToStart," are required for analysis. Aborting for species: ",species))
+      return(NULL)
+      }
   }
 
   if(!is.null(bamFileNamesToUsePath)){
@@ -102,15 +103,18 @@ defineSubpopulations <- function(species, distName = "mann",
                                       sep = "\n",header = F,as.is = T,
                                       col.names = c("bamNames"))[,"bamNames",T]
       if(length(bamFileNamesToUse) < minNumberOfSamplesToStart){
-        stop(paste0("Insufficient samples would remain after selecting samples based on file :",bamFileNamesToUsePath," .",
+        warning(paste0("Insufficient samples would remain after selecting samples based on file :",bamFileNamesToUsePath," .",
                     "At least ", minNumberOfSamplesToStart, " samples are required. ",
-                    "Only ",length(bamFileNamesToUse)," samples would be selected. Aborting."))
+                    "Only ",length(bamFileNamesToUse)," samples would be selected. Aborting for species: ",species))
+        return(NULL)
       }
       allSamps <- intersect(colnames(distMa),colnames(snvFreqs.filtered))
       sampsToKeep <- intersect(allSamps,bamFileNamesToUse)
       if(length(sampsToKeep) < minNumberOfSamplesToStart){
-        stop(paste0("Insufficient samples remain after selecting samples based on file :",bamFileNamesToUsePath," .",
-                    "Only ",length(sampsToKeep)," samples remain. Aborting. \n Maybe format is wrong? Example sample name: ",allSamps[1]))
+        warning(paste0("Insufficient samples remain after selecting samples based on file :",bamFileNamesToUsePath," .",
+                    "Only ",length(sampsToKeep)," samples remain. Aborting for species: ",species,
+                    ". \n Maybe format is wrong? Example sample name: ",allSamps[1]))
+        return(NULL)
       }
       warning(paste0("Samples subselected according to specified file: ", bamFileNamesToUsePath,". Number of samples remaining: ", length(sampsToKeep)))
       snvFreqs.filtered <- snvFreqs.filtered[,sampsToKeep]
