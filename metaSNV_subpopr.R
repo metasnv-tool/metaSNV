@@ -19,79 +19,79 @@ flog.threshold(INFO)
 if(normalRun){ # HACK TO RUN FROM WITHIN R WITHOUT OPTS ----------
 
 
-# Expectation is that this script will sit in the metaSNV directory,
-# which will include a directory ./src/subpopr
+  # Expectation is that this script will sit in the metaSNV directory,
+  # which will include a directory ./src/subpopr
 
-# try to set the current working directory to the location of this file
-# works if this file is sourced() or has been called from cmd line (e.g. Rscript metaSNV_subpop.R [...])
-thisFile <- function() {
-  cmdArgs <- commandArgs(trailingOnly = FALSE)
-  needle <- "--file="
-  match <- grep(needle, cmdArgs)
-  if (length(match) > 0) {
-    # Rscript
-    return(normalizePath(sub(needle, "", cmdArgs[match])))
-  } else {
-    # 'source'd via R console
-    return(normalizePath(sys.frames()[[1]]$ofile))
+  # try to set the current working directory to the location of this file
+  # works if this file is sourced() or has been called from cmd line (e.g. Rscript metaSNV_subpop.R [...])
+  thisFile <- function() {
+    cmdArgs <- commandArgs(trailingOnly = FALSE)
+    needle <- "--file="
+    match <- grep(needle, cmdArgs)
+    if (length(match) > 0) {
+      # Rscript
+      return(normalizePath(sub(needle, "", cmdArgs[match])))
+    } else {
+      # 'source'd via R console
+      return(normalizePath(sys.frames()[[1]]$ofile))
+    }
   }
-}
 
-scriptDir <- dirname(thisFile())
+  scriptDir <- dirname(thisFile())
 
 
-# Parse params -------------------------------------------------------------
+  # Parse params -------------------------------------------------------------
 
-suppressPackageStartupMessages(library(getopt))
-suppressPackageStartupMessages(library(optparse))
+  suppressPackageStartupMessages(library(getopt))
+  suppressPackageStartupMessages(library(optparse))
 
-option_list = list(
-  #make_option(c("-s", "--settings"), type="character", default="SETTINGS.R",  # default=NULL,
-  #            help="Settings file, default is %default in current directory", metavar="character")
-  make_option(c("-i", "--metaSnvResultsDir"), type="character",
-              default=NULL,
-              help="Path to directory that has the metaSNV results, used as input (required)",
-              metavar="file path"),
-  make_option(c("-o", "--outputDir"), type="character",
-              default="results",
-              help="Path to directory where subpopr results will be stored. Default is \"./results/\"",
-              metavar="file path"),
-  make_option(c("-p", "--procs"), type="integer",
-              default=1,
-              help="Number of cores to use for parallel processing. Default is 1.", metavar="integer"),
-  make_option(c("-a", "--speciesAbundance"), type="character",
-              default="doNotRun",
-              help="Path to file with species abundances (tsv, optional)",
-              metavar="file path"),
-  make_option(c("-m", "--isMotus"), type="logical",
-              default=TRUE,
-              help="Is the species abundance profile produced by mOTUs2? (TRUE or FALSE)",
-              metavar="logical"),
-  make_option(c("-g", "--geneAbundance"), type="character",
-              default="doNotRun",
-              help="Path to file with gene family abundances (tsv, optional)",
-              metavar="file path"),
-  make_option(c("-d", "--metadata"), type="character",
-              default="doNotRun",
-              help="Path to file with metadata csv for odds ratio testing (optional)",
-              metavar="file path"),
-  make_option(c("-n", "--metadataSampleIDCol"), type="character",
-              default="sampleID",
-              help="Name of column with sample IDs in metadata csv for odds ratio testing (optional)",
-              metavar="character"),
-  make_option(c("-r", "--createReports"), type="logical",
-              default=TRUE,
-              help="Whether or not to compile html summary reports (uses Rmarkdown)  (TRUE or FALSE). Default is TRUE.",
-              metavar="logical"),
-  make_option(c("-s", "--settings"), type="character",
-              #default="./src/subpopr/inst/SETTINGS.R",
-              default=NULL,
-              help="Use this settings file instead of the command line arguments",
-              metavar="file path")
-);
+  option_list = list(
+    #make_option(c("-s", "--settings"), type="character", default="SETTINGS.R",  # default=NULL,
+    #            help="Settings file, default is %default in current directory", metavar="character")
+    make_option(c("-i", "--metaSnvResultsDir"), type="character",
+                default=NULL,
+                help="Path to directory that has the metaSNV results, used as input (required)",
+                metavar="file path"),
+    make_option(c("-o", "--outputDir"), type="character",
+                default="results",
+                help="Path to directory where subpopr results will be stored. Default is \"./results/\"",
+                metavar="file path"),
+    make_option(c("-p", "--procs"), type="integer",
+                default=1,
+                help="Number of cores to use for parallel processing. Default is 1.", metavar="integer"),
+    make_option(c("-a", "--speciesAbundance"), type="character",
+                default="doNotRun",
+                help="Path to file with species abundances (tsv, optional)",
+                metavar="file path"),
+    make_option(c("-m", "--isMotus"), type="logical",
+                default=TRUE,
+                help="Is the species abundance profile produced by mOTUs2? (TRUE or FALSE)",
+                metavar="logical"),
+    make_option(c("-g", "--geneAbundance"), type="character",
+                default="doNotRun",
+                help="Path to file with gene family abundances (tsv, optional)",
+                metavar="file path"),
+    make_option(c("-d", "--metadata"), type="character",
+                default="doNotRun",
+                help="Path to file with metadata csv for odds ratio testing (optional)",
+                metavar="file path"),
+    make_option(c("-n", "--metadataSampleIDCol"), type="character",
+                default="sampleID",
+                help="Name of column with sample IDs in metadata csv for odds ratio testing (optional)",
+                metavar="character"),
+    make_option(c("-r", "--createReports"), type="logical",
+                default=TRUE,
+                help="Whether or not to compile html summary reports (uses Rmarkdown)  (TRUE or FALSE). Default is TRUE.",
+                metavar="logical"),
+    make_option(c("-s", "--settings"), type="character",
+                #default="./src/subpopr/inst/SETTINGS.R",
+                default=NULL,
+                help="Use this settings file instead of the command line arguments",
+                metavar="file path")
+  );
 
-opt_parser = OptionParser(option_list=option_list);
-opt = parse_args(opt_parser);
+  opt_parser = OptionParser(option_list=option_list);
+  opt = parse_args(opt_parser);
 
 
 }else{
@@ -277,11 +277,12 @@ bpParam <- MulticoreParam(workers = min(N.CORES,length(species)),
                           stop.on.error = FALSE,
                           threshold = "DEBUG",
                           log = TRUE,
-			  progressbar = TRUE,
+                          progressbar = TRUE,
                           logdir = paste0(OUT.DIR,"/threadLogs"))
 dir.create(paste0(OUT.DIR,"/threadLogs"), recursive = T, showWarnings = FALSE)
 
-print(paste("Running subpopr on",length(species),"species using",ncoresUsing,"cores"))
+print(paste("Running subpopr on",length(species),"species using",ncoresUsing,"cores."))
+print("Progress bar reflects the number of species analysed. Progression in time will not be linear.")
 
 printBpError <- function(result){
   if(all(bpok(result))){
@@ -313,7 +314,7 @@ resultsPerSpecies <- BiocParallel::bptry(
   BiocParallel::bplapply(species, runDefine, BPPARAM = bpParam))
 printBpError(resultsPerSpecies)
 resultsPerSpeciesDF <- cbind.data.frame(SpeciesID=species,
-                                       ClusteringResult=unlist(resultsPerSpecies))
+                                        ClusteringResult=unlist(resultsPerSpecies))
 write.csv(x = resultsPerSpeciesDF,file = paste0(OUT.DIR,"/log_clusteringSummaryPerSpecies.csv"))
 
 # summarise the results from clustering
