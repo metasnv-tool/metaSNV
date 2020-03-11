@@ -9,9 +9,9 @@ Download
 
 Via Git:
 
-    git clone https://git.embl.de/costea/metaSNV.git
+    git clone https://github.com/metasnv-tool/metaSNV.git
     
-or [download](https://git.embl.de/costea/metaSNV/repository/archive.zip?ref=master) a zip file of the repository.
+or [download](https://git.embl.de/metasnv-tool/metaSNV/repository/archive.zip?ref=master) a zip file of the repository.
 
 Dependencies
 ============
@@ -47,7 +47,7 @@ environment with all necessary dependencies using the following commands:
 
 If you do not have a C++ compiler, anaconda can also install G++:
 
-    conda create --name metaSNV boost htslib pkg-config numpy pandas
+    conda create --name metaSNV -c bioconda boost htslib pkg-config numpy pandas
     source activate metaSNV
     # Add this command:
     conda install gcc
