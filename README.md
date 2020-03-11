@@ -42,6 +42,7 @@ environment with all necessary dependencies using the following commands:
 
     conda create --name metaSNV -c bioconda boost htslib pkg-config numpy pandas
     source activate metaSNV
+    export CONDA_ENV_PATH=$CONDA_PREFIX
     export CFLAGS=-I$CONDA_ENV_PATH/include
     export LD_LIBRARY_PATH=$CONDA_ENV_PATH/lib:$LD_LIBRARY_PATH
 
@@ -51,6 +52,7 @@ If you do not have a C++ compiler, anaconda can also install G++:
     source activate metaSNV
     # Add this command:
     conda install gcc
+    export CONDA_ENV_PATH=$CONDA_PREFIX
     export CFLAGS=-I$CONDA_ENV_PATH/include
     export LD_LIBRARY_PATH=$CONDA_ENV_PATH/lib:$LD_LIBRARY_PATH
 
