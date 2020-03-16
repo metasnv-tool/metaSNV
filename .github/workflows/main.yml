@@ -32,27 +32,27 @@ jobs:
     - name: Install R dependencies
       run: |
         sudo R --vanilla <<EOF
-        if(!require(fpc)){install.packages("fpc", repos="https://cloud.r-project.org/")}
-        if(!require(ape)){install.packages("ape", repos="https://cloud.r-project.org/")}
-        if(!require(getopt)){install.packages("getopt", repos="https://cloud.r-project.org/")}
-        if(!require(optparse)){install.packages("optparse", repos="https://cloud.r-project.org/")}
-        if(!require(readr)){install.packages("readr", repos="https://cloud.r-project.org/")}
-        if(!require(dplyr)){install.packages("dplyr", repos="https://cloud.r-project.org/")}
-        if(!require(ggplot2)){install.packages("ggplot2", repos="https://cloud.r-project.org/")}
-        if(!require(tidyr)){install.packages("tidyr", repos="https://cloud.r-project.org/")}
-        if(!require(gridExtra)){install.packages("gridExtra", repos="https://cloud.r-project.org/")}
-        if(!require(lemon)){install.packages("lemon", repos="https://cloud.r-project.org/")}
-        if(!require(DT)){install.packages("DT", repos="https://cloud.r-project.org/")}
-        if(!require(cluster)){install.packages("cluster", repos="https://cloud.r-project.org/")}
-        if(!require(ggrepel)){install.packages("ggrepel", repos="https://cloud.r-project.org/")}
-        if(!require(data.table)){install.packages("data.table", repos="https://cloud.r-project.org/")}
-        if(!require(kableExtra)){install.packages("kableExtra", repos="https://cloud.r-project.org/")}
-        if(!require(rmarkdown)){install.packages("rmarkdown", repos="https://cloud.r-project.org/")}
-        if(!require(BiocParallel)){install.packages("BiocParallel", repos="https://cloud.r-project.org/")}
-        if(!require(batchtools)){install.packages("batchtools", repos="https://cloud.r-project.org/")}
-        if(!require(coin)){install.packages("coin", repos="https://cloud.r-project.org/")}
-        if(!require(questionr)){install.packages("questionr", repos="https://cloud.r-project.org/")}
-        if(!require(futile.logger)){install.packages("futile.logger", repos="https://cloud.r-project.org/")}
+        if(!require(fpc)){install.packages("fpc", repos="https://cloud.r-project.org/"); library(fpc)}
+        if(!require(ape)){install.packages("ape", repos="https://cloud.r-project.org/"); library(ape)}
+        if(!require(getopt)){install.packages("getopt", repos="https://cloud.r-project.org/"); library(getopt)}
+        if(!require(optparse)){install.packages("optparse", repos="https://cloud.r-project.org/"); library(optparse)}
+        if(!require(readr)){install.packages("readr", repos="https://cloud.r-project.org/"); library(readr)}
+        if(!require(dplyr)){install.packages("dplyr", repos="https://cloud.r-project.org/"); library(dplyr)}
+        if(!require(ggplot2)){install.packages("ggplot2", repos="https://cloud.r-project.org/"); library(ggplot2)}
+        if(!require(tidyr)){install.packages("tidyr", repos="https://cloud.r-project.org/"); library(tidyr)}
+        if(!require(gridExtra)){install.packages("gridExtra", repos="https://cloud.r-project.org/"); library(gridExtra)}
+        if(!require(lemon)){install.packages("lemon", repos="https://cloud.r-project.org/"); library(lemon)}
+        if(!require(DT)){install.packages("DT", repos="https://cloud.r-project.org/"); library(DT)}
+        if(!require(cluster)){install.packages("cluster", repos="https://cloud.r-project.org/"); library(cluster)}
+        if(!require(ggrepel)){install.packages("ggrepel", repos="https://cloud.r-project.org/"); library(ggrepel)}
+        if(!require(data.table)){install.packages("data.table", repos="https://cloud.r-project.org/"); library(data.table)}
+        if(!require(kableExtra)){install.packages("kableExtra", repos="https://cloud.r-project.org/"); library(kableExtra)}
+        if(!require(rmarkdown)){install.packages("rmarkdown", repos="https://cloud.r-project.org/"); library(rmarkdown)}
+        if(!require(BiocParallel)){install.packages("BiocParallel", repos="https://cloud.r-project.org/"); library(BiocParallel)}
+        if(!require(batchtools)){install.packages("batchtools", repos="https://cloud.r-project.org/"); library(batchtools)}
+        if(!require(coin)){install.packages("coin", repos="https://cloud.r-project.org/"); library(coin)}
+        if(!require(questionr)){install.packages("questionr", repos="https://cloud.r-project.org/"); library(questionr)}
+        if(!require(futile.logger)){install.packages("futile.logger", repos="https://cloud.r-project.org/"); library(futile.logger)}
         sessionInfo()
         q()
         EOF
