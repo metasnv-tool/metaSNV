@@ -155,14 +155,14 @@ phenoDf <- read_csv(file = metadataFile,col_names = T,guess_max = 10000)
 
 ```{r}
 if( ! sampleIDColumnName %in% colnames(phenoDf)){
-  stop("Missing expected column named :",sampleIDColumnName)
+  stop("Missing expected ID column named:",sampleIDColumnName)
 }
-if(is.null(categoriesToShow) | length(categoriesToShow) == 0){
-  categoriesToShow <- phenoDf  %>% select_if(is.character) %>% colnames()
+if(is.null(categoriesToShow) || length(categoriesToShow) == 0 || 
+   length(intersect(categoriesToShow, colnames(phenoDf))) == 0 ){
+  categoriesToShow <- phenoDf  %>% 
+    select_if(is.character) %>%
+    colnames()
   categoriesToShow <- categoriesToShow[categoriesToShow!=sampleIDColumnName] 
-  if(is.null(categoriesToShow) | length(categoriesToShow) == 0){
-    stop("No categorical metadata to analyse.")
-  }
 }else{
   categoriesToShow <- intersect(categoriesToShow, colnames(phenoDf))
   if(length(categoriesToShow) == 0){
@@ -170,7 +170,7 @@ if(is.null(categoriesToShow) | length(categoriesToShow) == 0){
          "Column names specified do not match metadata file.")
   }
 }
-if(is.null(categoriesToShow) | length(categoriesToShow) == 0){
+if(is.null(categoriesToShow) || length(categoriesToShow) == 0){
   stop("No categorical metadata to analyse.")
 }
 ```
