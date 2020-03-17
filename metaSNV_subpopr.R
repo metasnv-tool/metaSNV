@@ -1,8 +1,8 @@
 #!/usr/bin/env Rscript
 
 # qlogin -pe smp 12 -l h_vmem=10G # 10G memory per core is plenty
-# REQUIRES PYTHON (2 or 3)
-# nohup Rscript metaSNV_supopr.R
+# REQUIRES PYTHON 3
+# Rscript metaSNV_supopr.R -h
 
 # mkdir subpoprLocalTest
 # cp -r ~/Dropbox/PostDocBork/subspecies/toolDevelopment/subpopr/R ./subpoprLocalTest/
@@ -12,9 +12,11 @@
 # clear the environment
 rm(list=ls())
 
+
+ptm <- proc.time()
 normalRun<-TRUE
 suppressPackageStartupMessages(library(futile.logger))
-flog.threshold(INFO)
+tmp <- flog.threshold(INFO) # assign to tmp to avoid NULL being returned and printed
 
 if(normalRun){ # HACK TO RUN FROM WITHIN R WITHOUT OPTS ----------
 
@@ -105,7 +107,7 @@ if(normalRun){ # HACK TO RUN FROM WITHIN R WITHOUT OPTS ----------
   opt$metadata <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v2/metadata_allv2.csv"
   opt$metadataSampleIDCol <- "sampleNames"
   opt$metaSnvResultsDir <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v2/metaSNV/outputs_subspec/"
-  opt$outputDir <- "lcl2"
+  opt$outputDir <- "results_q3"
 }
 
 N.CORES <- opt$procs
@@ -117,6 +119,7 @@ METADATA.COL.ID <- opt$metadataSampleIDCol
 
 makeReports <- TRUE
 toScreen <- TRUE # if TRUE, lots gets printed to screen, if FALSE, only goes to log file
+printProgressBar <- TRUE
 
 if (is.null(opt$metaSnvResultsDir)){
   print_help(opt_parser)
@@ -132,10 +135,11 @@ OUT.DIR.BASE <- opt$outputDir
 source(paste0(scriptDir,"/src/subpopr/inst/metaSNV_subpopr_SETTINGS.R"))
 SUBPOPR.DIR<-paste0(scriptDir,"/src/subpopr/")
 
-SUBPOPR_RESULTS_DIR=paste0(OUT.DIR.BASE,"/params.",
-                           "hr",MAX.PROP.READS.NON.HOMOG*100,
+SUBPOPR_RESULTS_DIR=paste0(OUT.DIR.BASE,"/params",
+                           ".hr",MAX.PROP.READS.NON.HOMOG*100,
                            ".hs",MIN.PROP.SNV.HOMOG*100,
-                           ".ps",CLUSTERING.PS.CUTOFF*100,"/")
+                           ".ps",CLUSTERING.PS.CUTOFF*100,
+                           ".gs",SNV.SUBSPEC.UNIQ.CUTOFF*100,"/")
 OUT.DIR=paste0(SUBPOPR_RESULTS_DIR,"/",basename(METASNV.DIR),"/")
 dir.create(OUT.DIR, recursive = T, showWarnings = FALSE)
 
@@ -223,6 +227,8 @@ if(makeReports & !rmarkdown::pandoc_available(version = "1.12.3",error = F)){
 
 # Load subpopr files --------------------------------------------------------------
 
+print(paste0("Loading subpopr source files from ",SUBPOPR.DIR))
+
 srcFiles <- list.files(path = paste0(SUBPOPR.DIR,"/R"),pattern = "*.R$",
                        full.names = TRUE,recursive = TRUE,ignore.case = TRUE)
 if(length(srcFiles) < 1){
@@ -266,7 +272,6 @@ if(length(specDist) == 0){
 
 #species <- 657318 #537011 #"657317"
 
-ptm <- proc.time()
 
 # Set up parallel processing ----------------------------------------
 
@@ -277,19 +282,19 @@ bpParam <- MulticoreParam(workers = min(N.CORES,length(species)),
                           stop.on.error = FALSE,
                           threshold = "DEBUG",
                           log = TRUE,
-                          progressbar = TRUE,
+                          progressbar = printProgressBar,
                           logdir = paste0(OUT.DIR,"/threadLogs"))
 dir.create(paste0(OUT.DIR,"/threadLogs"), recursive = T, showWarnings = FALSE)
 
 print(paste("Running subpopr on",length(species),"species using",ncoresUsing,"cores."))
-print("Progress bar reflects the number of species analysed. Progression in time will not be linear.")
+print("Progress bar reflects the percentage of species analysed. Progression in time will not be linear.")
 
 printBpError <- function(result){
   if(all(bpok(result))){
     return("") # blank prints "NULL"
   }else{
-    print( paste("Error in thread(s):",
-                 paste0(which(!bpok(result)),collapse = ","),
+    print( paste("Error in ",length(which(!bpok(result)))," task(s)",
+                 #paste0(which(!bpok(result)),collapse = ","),
                  ", see ",paste0(OUT.DIR,"/threadLogs") ))
     print(result[[which(!bpok(result))]])
   }
@@ -313,12 +318,23 @@ runDefine <- function(spec){
 resultsPerSpecies <- BiocParallel::bptry(
   BiocParallel::bplapply(species, runDefine, BPPARAM = bpParam))
 printBpError(resultsPerSpecies)
+
+resultsPerSpeciesFixed <- resultsPerSpecies
+resultsPerSpeciesFixed[[which(!bpok(resultsPerSpeciesFixed))]] <- "Error"
 resultsPerSpeciesDF <- cbind.data.frame(SpeciesID=species,
-                                        ClusteringResult=unlist(resultsPerSpecies))
+                                        ClusteringResult=unlist(resultsPerSpeciesFixed))
 write.csv(x = resultsPerSpeciesDF,file = paste0(OUT.DIR,"/log_clusteringSummaryPerSpecies.csv"))
 
 # summarise the results from clustering
 summariseClusteringResultsForAll(OUT.DIR,distMeth="mann")
+
+allSubstruc <- list.files(path=OUT.DIR,
+                          pattern = '_hap_out\\.txt$',full.names = T)
+allSubstrucSpecies <- unique(sub(basename(allSubstruc) ,
+                                 pattern = "_hap_out\\.txt$",replacement = ""))
+
+print(paste0("Species with substructure: ",
+             length(allSubstrucSpecies),"/",length(species)))
 
 # Handle species with no subspecies #####################################################################
 # for those species that did not cluster, generate a report so we can look into why
@@ -335,6 +351,7 @@ noSubstrucSpecies <- unique(sub(basename(noSubstruc1) ,
                                 replacement = ""))
 
 if(makeReports){
+  print("Compiling reports for species without clusters due to centroid failure")
   tmp <- BiocParallel::bptry(
     BiocParallel::bplapply(noSubstrucSpecies, BPPARAM = bpParam,
                            renderDetailedSpeciesReport,
@@ -355,6 +372,7 @@ noSubstrucSpecies <- unique(sub(basename(noSubstruc2) ,
                                 pattern = paste0("_",DIST.METH.REPORTS ,"_distMatrixUsedForClustMedoidDefns\\.txt"),
                                 replacement = ""))
 if(makeReports){
+  print("Compiling reports for species without clusters")
   tmp <- BiocParallel::bptry(
     BiocParallel::bplapply(noSubstrucSpecies,
                            renderDetailedSpeciesReport,
@@ -371,16 +389,8 @@ if(makeReports){
 # continue processing those species that could be used to define subspecies
 
 # get all species with clustering/substructure
-allSubstruc <- list.files(path=OUT.DIR,
-                          pattern = '_hap_out\\.txt$',full.names = T)
-allSubstrucSpecies <- unique(sub(basename(allSubstruc) ,
-                                 pattern = "_hap_out\\.txt$",replacement = ""))
-
-print(paste0("Species with substructure: ",
-             length(allSubstrucSpecies),"/",length(species)))
 
 if(length(allSubstrucSpecies) == 0){
-  stopCluster(cl)
   stop(paste0("Substructure not detected in any species (",
               length(species)," tested). Aborting."))
 }
@@ -392,13 +402,29 @@ if(length(allSubstrucSpecies) == 0){
 # 2) get abundances of these genotypes per sample (~subspecies abundace)
 
 print("Genotyping clusters")
-pyGetPlacingRelevantSubset(outDir=OUT.DIR,
-                           metaSnvDir=METASNV.DIR,
-                           scriptDir = pyScriptDir)
+print("Identifying genotyping SNVs")
+
+doExtension <- tryCatch(expr =
+  pyGetPlacingRelevantSubset(outDir=OUT.DIR,
+                             metaSnvDir=METASNV.DIR,
+                             scriptDir = pyScriptDir),
+  error = function(e){
+    print(paste("ERROR: ",e$message ))
+    print("Skipping subspecies genotyping.")
+  }
+)
+
 
 # get all posFiles
 allPos <- list.files(path=OUT.DIR,pattern = '.*_.\\.pos$',full.names = T)
+doExtension<-TRUE
+if(length(allPos) == 0){
+  warning("Genotyping failed. No *.pos files found. Not genotyping subspecies.")
+  doExtension <- FALSE
+}
 
+if(doExtension){
+print("Compiling genotyping SNVs")
 #tmp <- foreach(pos=allPos) %dopar% pyConvertSNPtoAllelTable(posFile = pos)
 tmp <- BiocParallel::bptry(
   BiocParallel::bplapply(allPos, BPPARAM = bpParam,
@@ -407,6 +433,7 @@ tmp <- BiocParallel::bptry(
 
 printBpError(tmp)
 
+print("Determining abundance of clusters using genotyping SNVs")
 #tmp <- foreach(spec=allSubstrucSpecies) %dopar% useGenotypesToProfileSubpops(spec, metaSNVdir=METASNV.DIR, outDir=OUT.DIR )
 tmp <- BiocParallel::bptry(
   BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
@@ -418,7 +445,9 @@ printBpError(tmp)
 
 summariseClusteringExtensionResultsForAll(resultsDir=OUT.DIR,distMeth="mann")
 
+}
 if(makeReports){
+  print("Compiling reports for species with clusters")
   tmp <- BiocParallel::bptry(
     BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
                            renderDetailedSpeciesReport,
@@ -430,6 +459,7 @@ if(makeReports){
 
   printBpError(tmp)
 }
+
 speciesToAssess <- list.files(path=OUT.DIR,pattern = '.*_extended_clustering_wFreq.tab$',full.names = F) %>%
   sub(pattern = "_extended_clustering_wFreq.tab",replacement = "")
 if(length(speciesToAssess)>0){
@@ -523,13 +553,14 @@ if(!is.null(KEGG.PATH) && file.exists(KEGG.PATH)){
 }
 
 
+# Summarise results ##########
 print("Summarising results...")
 combineAllSummaries(OUT.DIR)
 if(makeReports){
   renderResultsSummaryReport(OUT.DIR,rmdDir = rmdDir)
-  print(paste0("Results summarised, see:",OUT.DIR,"/resultsSummary.html"))
+  print(paste0("Results summarised, see: ",OUT.DIR,"/resultsSummary.html"))
 }else{
-  print(paste0("Results summarised, see:",OUT.DIR,"/summary_allResults.csv"))
+  print(paste0("Results summarised, see: ",OUT.DIR,"/summary_allResults.csv"))
 }
 
 print("Subpopr finished.")
