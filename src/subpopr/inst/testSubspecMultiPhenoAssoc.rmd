@@ -154,10 +154,11 @@ phenoDf <- read_csv(file = metadataFile,col_names = T,guess_max = 10000)
 ```
 
 ```{r}
-if( ! sampleIDColumnName %in% colnames(phenoDf)){
+if( ! sampleIDColumnName %in% colnames(phenoDf) ){
   stop("Missing expected ID column named:",sampleIDColumnName)
 }
-if(is.null(categoriesToShow) || length(categoriesToShow) == 0 || 
+if(is.null(categoriesToShow) || 
+   length(categoriesToShow) == 0 || 
    length(intersect(categoriesToShow, colnames(phenoDf))) == 0 ){
   categoriesToShow <- phenoDf  %>% 
     select_if(is.character) %>%
@@ -184,7 +185,7 @@ paste(categoriesToShow,collapse=",")
 
 ```{r}
 phenoDfToTest <- phenoDf %>% 
-  rename_("sampleName" = sampleIDColumnName) %>% 
+  rename(sampleName = !!sampleIDColumnName) %>% 
   select(!!!c("sampleName",categoriesToShow)) %>% 
   mutate(sampleName = as.character(sampleName))
   
