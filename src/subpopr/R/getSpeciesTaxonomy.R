@@ -2,10 +2,14 @@
 #'@return data frame with 2 columns: key & value
 #'
 getSpeciesTaxonomy <- function(speciesID){
-  #accomodate package and non-package
-  taxaMap <- ifelse("subpopr" %in% tolower(.packages()),
-                    subpopr::TAXA.NCBI.MOTU.MAP,
-                    TAXA.NCBI.MOTU.MAP)
+  # accomodate package and non-package
+  # ifelse() does not work here because returns same shape as test
+  if("subpopr" %in% tolower(.packages())){
+    taxaMap <- subpopr::TAXA.NCBI.MOTU.MAP
+  }else{
+    taxaMap <- TAXA.NCBI.MOTU.MAP
+  }
+
   #get taxa info
   if(speciesID %in% taxaMap$ncbiTaxID){
     taxonomyDf <- taxaMap %>% filter(ncbiTaxID == speciesID) %>%
