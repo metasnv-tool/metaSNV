@@ -149,13 +149,43 @@ print(params)
 # Load metadata data
 
 Using metadata file: `r metadataFile`
-
-Analysing category: `r paste(categoriesToShow,collapse=",")`
-
 ```{r}
 phenoDf <- read_csv(file = metadataFile,col_names = T,guess_max = 10000)
+```
+
+```{r}
+if( ! sampleIDColumnName %in% colnames(phenoDf) ){
+  stop("Missing expected ID column named:",sampleIDColumnName)
+}
+if(is.null(categoriesToShow) || 
+   length(categoriesToShow) == 0 || 
+   length(intersect(categoriesToShow, colnames(phenoDf))) == 0 ){
+  categoriesToShow <- phenoDf  %>% 
+    select_if(is.character) %>%
+    colnames()
+  categoriesToShow <- categoriesToShow[categoriesToShow!=sampleIDColumnName] 
+}else{
+  categoriesToShow <- intersect(categoriesToShow, colnames(phenoDf))
+  if(length(categoriesToShow) == 0){
+    stop("No categorical metadata to analyse. ",
+         "Column names specified do not match metadata file.")
+  }
+}
+if(is.null(categoriesToShow) || length(categoriesToShow) == 0){
+  stop("No categorical metadata to analyse.")
+}
+```
+
+Analysing categories: 
+
+```{r}
+paste(categoriesToShow,collapse=",")
+```
+
+
+```{r}
 phenoDfToTest <- phenoDf %>% 
-  rename_("sampleName" = sampleIDColumnName) %>% 
+  rename(sampleName = !!sampleIDColumnName) %>% 
   select(!!!c("sampleName",categoriesToShow)) %>% 
   mutate(sampleName = as.character(sampleName))
   
@@ -165,7 +195,11 @@ nSamples <- nrow(phenoDfToTest)
 
 ```
 
-Number of samples total in phenotype data file: `r nSamples`
+Number of samples total in phenotype data file: 
+
+```{r}
+nSamples
+```
 
 (not all samples will necessarily be tested, since they may not have subspecies assignment)
 
@@ -186,9 +220,19 @@ subSpecSamps <- subSpecSamps %>%
 nClus <- subSpecSamps$dominantSubspecies %>% unique() %>% length()
 ```
 
-Number of samples with subspecies assignments: `r subSpecSamps$sampleName %>% unique() %>% length()`
+Number of samples with subspecies assignments: 
 
-Number of subspecies: `r nClus`
+```{r}
+subSpecSamps$sampleName %>% unique() %>% length()
+```
+
+
+
+Number of subspecies: 
+
+```{r}
+nClus
+```
 
 
 ```{r}
@@ -224,7 +268,12 @@ allData <- phenoDfToTest %>%
 nSamples <- allData$sampleName %>% unique() %>% length()
 ```
 
-Number of samples with subspecies assignments and metadata: `r nSamples`
+Number of samples with subspecies assignments and metadata: 
+
+```{r}
+nSamples
+```
+
 
 ```{r}
 # df <- allData %>% 
