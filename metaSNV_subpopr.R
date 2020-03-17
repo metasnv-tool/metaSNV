@@ -320,7 +320,9 @@ resultsPerSpecies <- BiocParallel::bptry(
 printBpError(resultsPerSpecies)
 
 resultsPerSpeciesFixed <- resultsPerSpecies
-resultsPerSpeciesFixed[[which(!bpok(resultsPerSpeciesFixed))]] <- "Error"
+if(any(!bpok(resultsPerSpeciesFixed))){
+  resultsPerSpeciesFixed[[which(!bpok(resultsPerSpeciesFixed))]] <- "Error"
+}
 resultsPerSpeciesDF <- cbind.data.frame(SpeciesID=species,
                                         ClusteringResult=unlist(resultsPerSpeciesFixed))
 write.csv(x = resultsPerSpeciesDF,file = paste0(OUT.DIR,"/log_clusteringSummaryPerSpecies.csv"))
@@ -404,6 +406,7 @@ if(length(allSubstrucSpecies) == 0){
 print("Genotyping clusters")
 print("Identifying genotyping SNVs")
 
+# creates *.pos files
 doExtension <- tryCatch(expr =
   pyGetPlacingRelevantSubset(outDir=OUT.DIR,
                              metaSnvDir=METASNV.DIR,
