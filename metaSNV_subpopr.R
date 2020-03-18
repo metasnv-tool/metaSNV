@@ -15,6 +15,7 @@ rm(list=ls())
 
 ptm <- proc.time()
 normalRun<-TRUE
+useExistingClustering<-FALSE
 suppressPackageStartupMessages(library(futile.logger))
 tmp <- flog.threshold(INFO) # assign to tmp to avoid NULL being returned and printed
 
@@ -304,6 +305,7 @@ printBpError <- function(result){
 # (substructure/clustering) within species
 
 runDefine <- function(spec){
+  print("")
   flog.info("=== Assessing presence of subspecies in species %s ===", spec)
   #cat(dput(spec), file = paste0("logFile_", spec, ".txt"))
   defineSubpopulations(spec, metaSNVdir = METASNV.DIR, outDir = OUT.DIR,
@@ -315,18 +317,21 @@ runDefine <- function(spec){
                        usePackagePredStrength = USE.PACKAGE.PREDICTION.STRENGTH)
 }
 
+if(!useExistingClustering){
 resultsPerSpecies <- BiocParallel::bptry(
   BiocParallel::bplapply(species, runDefine, BPPARAM = bpParam))
 printBpError(resultsPerSpecies)
 
-resultsPerSpeciesFixed <- resultsPerSpecies
-if(any(!bpok(resultsPerSpeciesFixed))){
-  resultsPerSpeciesFixed[[which(!bpok(resultsPerSpeciesFixed))]] <- "Error"
+# this is error prone and output is not used anyway
+# resultsPerSpeciesFixed <- resultsPerSpecies
+# if(any(!bpok(resultsPerSpeciesFixed))){
+#   resultsPerSpeciesFixed[[which(!bpok(resultsPerSpeciesFixed))]] <- "Error"
+# }
+# resultsPerSpeciesDF <- cbind.data.frame(SpeciesID=species,
+#                                         ClusteringResult=unlist(resultsPerSpeciesFixed))
+# write.csv(x = resultsPerSpeciesDF,file = paste0(OUT.DIR,"/log_clusteringSummaryPerSpecies.csv"))
+saveRDS(resultsPerSpecies, file = paste0(OUT.DIR,"/log_clusteringSummaryPerSpecies.rds"))
 }
-resultsPerSpeciesDF <- cbind.data.frame(SpeciesID=species,
-                                        ClusteringResult=unlist(resultsPerSpeciesFixed))
-write.csv(x = resultsPerSpeciesDF,file = paste0(OUT.DIR,"/log_clusteringSummaryPerSpecies.csv"))
-
 # summarise the results from clustering
 summariseClusteringResultsForAll(OUT.DIR,distMeth="mann")
 
@@ -459,7 +464,19 @@ if(makeReports){
                            distMethod = DIST.METH.REPORTS ,
                            bamSuffix = SAMPLE.ID.SUFFIX,
                            rmdDir = rmdDir))
-
+  # if failed, try again...often it's just a timing conflict error from parallelising
+  if(!all(bpok(tmp))){
+  tmp <- BiocParallel::bptry(
+    BiocParallel::bplapply(X = allSubstrucSpecies,
+                           BPREDO=tmp,
+                           BPPARAM = bpParam,
+                           renderDetailedSpeciesReport,
+                           subpopOutDir = OUT.DIR,
+                           metasnvOutDir = METASNV.DIR,
+                           distMethod = DIST.METH.REPORTS ,
+                           bamSuffix = SAMPLE.ID.SUFFIX,
+                           rmdDir = rmdDir))
+  }
   printBpError(tmp)
 }
 
@@ -473,6 +490,7 @@ if(length(speciesToAssess)>0){
 # Get subspecies abundances relative to whole community ---------------------------------------
 
 if(!is.null(SPECIES.ABUNDANCE.PROFILE) &&
+   SPECIES.ABUNDANCE.PROFILE != "doNotRun" &&
    file.exists(SPECIES.ABUNDANCE.PROFILE)){
   print("Calculating cluster abundances using species abundances...")
   tmp <- BiocParallel::bptry(
