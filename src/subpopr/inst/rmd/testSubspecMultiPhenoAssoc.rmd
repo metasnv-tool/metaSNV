@@ -215,9 +215,11 @@ nSamples
 subSpecSamps <- read.table(paste0(subpopOutDir,speciesID,"_mann_clustering.tab"),
                             row.names = 1,as.is = T)
 
-if(!is.null(sampleExtension) && sampleExtension != ""){
-subSpecSamps$sampleName <- rownames(subSpecSamps) %>% 
-  sub(pattern = sampleExtension, replacement = "", fixed = T) 
+if(!is.null(sampleExtension) && 
+   !is.na(sampleExtension) && 
+   sampleExtension != ""){
+  subSpecSamps$sampleName <- rownames(subSpecSamps) %>% 
+    sub(pattern = sampleExtension, replacement = "", fixed = T) 
 }else{
   subSpecSamps$sampleName <- rownames(subSpecSamps)   
 }
@@ -501,7 +503,7 @@ if(!file.exists(extdFile)){
 subSpecFreqDf <- read.table(extdFile,
                             row.names = 1,as.is = T)
 
-if(!is.null(sampleExtension) && sampleExtension != ""){
+if(!is.null(sampleExtension) && !is.na(sampleExtension) && sampleExtension != ""){
   subSpecFreqDf$sampleName <- rownames(subSpecFreqDf) %>% 
     sub(pattern = sampleExtension, replacement = "", fixed = T)
 }else{
