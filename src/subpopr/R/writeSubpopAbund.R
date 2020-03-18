@@ -10,11 +10,9 @@ writeSubpopAbundMotusProfile <- function(species, clusterFreqs, outDir,motuProfi
   #columns are samples, rows are specI clusters, values are abundance
   motuProfile <- parseMotu2Profile(motuProfileFilePath)
 
-  #accomodate package and non-package
-  taxonomyDf <- getSpeciesTaxonomy(species)
-
   # get the specI cluster ID / mOTU IDs that corresponds to the species being analysed
-  ncbiToMotus <- taxonomyDf %>%
+  ncbiToMotus <- getTaxaMap() %>%
+    filter(ncbiTaxID == species) %>%
     select(ncbiTaxID, ref_mOTU_cluster) %>%
     distinct()
 
