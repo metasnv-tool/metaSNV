@@ -11,18 +11,17 @@ writeSubpopAbundMotusProfile <- function(species, clusterFreqs, outDir,motuProfi
   motuProfile <- parseMotu2Profile(motuProfileFilePath)
 
   #accomodate package and non-package
-  taxaMap <- ifelse("subpopr" %in% tolower(.packages()),
-                    subpopr::TAXA.NCBI.MOTU.MAP, # from /data folder
-                    TAXA.NCBI.MOTU.MAP)
+  taxonomyDf <- getSpeciesTaxonomy(species)
 
   # get the specI cluster ID / mOTU IDs that corresponds to the species being analysed
-  ncbiToMotus <- taxaMap %>%
-    filter(ncbiTaxID == species) %>%
+  ncbiToMotus <- taxonomyDf %>%
     select(ncbiTaxID, ref_mOTU_cluster) %>%
     distinct()
 
   if(nrow(ncbiToMotus) > 1){
-    stop(paste0("More than one mOTU match for species ", species,". mOTUs: ", paste(ncbiToMotus$ref_mOTU_cluster,collapse = ",")))
+    stop(paste0("More than one mOTU match for species ",
+                species,". mOTUs: ",
+                paste(ncbiToMotus$ref_mOTU_cluster,collapse = ",")))
   }
   # get the corresponding mOTU id
   motuID <- ncbiToMotus$ref_mOTU_cluster[1]
