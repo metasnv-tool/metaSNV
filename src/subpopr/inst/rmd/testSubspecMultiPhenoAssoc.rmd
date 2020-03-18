@@ -21,7 +21,7 @@ params:
   sampleExtension:
     value: ".RepGenomesv11.sorted.bam"
   categoryColumnNames:
-    value: ""
+    value: NULL
   maxNLevels:
     value: 20
 ---
@@ -214,8 +214,13 @@ nSamples
 ```{r}
 subSpecSamps <- read.table(paste0(subpopOutDir,speciesID,"_mann_clustering.tab"),
                             row.names = 1,as.is = T)
+
+if(!is.null(sampleExtension) && sampleExtension != ""){
 subSpecSamps$sampleName <- rownames(subSpecSamps) %>% 
-  sub(pattern = sampleExtension, replacement = "", fixed = T)
+  sub(pattern = sampleExtension, replacement = "", fixed = T) 
+}else{
+  subSpecSamps$sampleName <- rownames(subSpecSamps)   
+}
 
 subSpecSamps <- subSpecSamps %>% 
   mutate(clust = sub(x = clust,pattern = "^", replacement = "subspecies")) %>% 
@@ -271,13 +276,6 @@ allData <- phenoDfToTest %>%
   gather(key = "metadataValue",value = "value",-sampleName) %>% 
   right_join(subSpecSamps, by="sampleName")
 
-nSamples <- allData$sampleName %>% unique() %>% length()
-```
-
-Number of samples with subspecies assignments and metadata: 
-
-```{r}
-nSamples
 ```
 
 
@@ -502,8 +500,13 @@ if(!file.exists(extdFile)){
 
 subSpecFreqDf <- read.table(extdFile,
                             row.names = 1,as.is = T)
-subSpecFreqDf$sampleName <- rownames(subSpecFreqDf) %>% 
-  sub(pattern = sampleExtension, replacement = "", fixed = T)
+
+if(!is.null(sampleExtension) && sampleExtension != ""){
+  subSpecFreqDf$sampleName <- rownames(subSpecFreqDf) %>% 
+    sub(pattern = sampleExtension, replacement = "", fixed = T)
+}else{
+  subSpecFreqDf$sampleName <- rownames(subSpecFreqDf)
+}
 
 subSpecFreqDf <- subSpecFreqDf %>% 
   gather(key = "cluster",value = "freq",-sampleName) %>% 
