@@ -1,7 +1,5 @@
-#'
-#'@return data frame with 2 columns: key & value
-#'
-getSpeciesTaxonomy <- function(speciesID){
+
+getTaxaMap <- function(){
   # accomodate package and non-package
   # ifelse() does not work here because returns same shape as test
   if("subpopr" %in% tolower(.packages())){
@@ -9,6 +7,15 @@ getSpeciesTaxonomy <- function(speciesID){
   }else{
     taxaMap <- TAXA.NCBI.MOTU.MAP
   }
+}
+
+
+#'
+#'@return data frame with 2 columns: key & value
+#'
+getSpeciesTaxonomy <- function(speciesID){
+
+  taxaMap <- getTaxaMap()
 
   #get taxa info
   if(speciesID %in% taxaMap$ncbiTaxID){
