@@ -116,22 +116,25 @@ summariseMetadataAssocResults <- function(resultsDir,speciesID,sigCutOff=0.05){
   anySig <- F
   if(!any(sapply(oddsResFiles,file.exists))){
     anySig <- NA
-    extWorked <- "no test results"
-    reportRelPath <- NA
+    extWorked <- "No test results"
   }else{
     for(oddsResFile in oddsResFiles){
       if(file.exists(oddsResFile)){
-        extWorked <- "tests performed"
+        extWorked <- "Tests performed"
         df <- read.csv(oddsResFile)
         # remove row where predictor column == "(Intercept)"
         df <- df[df$predictor != "(Intercept)",]
         anySig <- anySig | any(df$p < sigCutOff)
       }
     }
-    reportRelPath <- paste0("./",speciesID,"_testSubspecMultiPhenoAssoc.html")
-    #reportAbsPath <- paste0(resultsDir,"/",reportRelPath)
-    #reportRelPath <- ifelse(file.exists(reportAbsPath),reportRelPath,paste("not compiled:",reportAbsPath))
   }
+  reportRelPath <- paste0("./",speciesID,"_testSubspecMultiPhenoAssoc.html")
+  if(!file.exists(reportRelPath)){
+    reportRelPath<-NA
+  }
+  #reportAbsPath <- paste0(resultsDir,"/",reportRelPath)
+  #reportRelPath <- ifelse(file.exists(reportAbsPath),reportRelPath,paste("not compiled:",reportAbsPath))
+
   return(list(speciesID=speciesID,
               assocWithMetadataTested=extWorked,
               anySignifAssocWithMetadata=anySig,
