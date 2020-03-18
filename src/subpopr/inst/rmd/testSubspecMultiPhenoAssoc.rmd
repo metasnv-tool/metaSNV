@@ -22,6 +22,8 @@ params:
     value: ".RepGenomesv11.sorted.bam"
   categoryColumnNames:
     value: ""
+  maxNLevels:
+    value: 20
 ---
 
 
@@ -33,6 +35,7 @@ categoriesToShow <- params$categoryColumnNames
 metadataFile <- params$metadataFile
 sampleExtension <- params$sampleExtension
 sampleIDColumnName <- params$sampleIDColumnName
+maxNLevels <- params$maxNLevels
 
 library(kableExtra,warn.conflicts = FALSE)
 
@@ -149,34 +152,37 @@ print(params)
 # Load metadata data
 
 Using metadata file: `r metadataFile`
-```{r}
-phenoDf <- read_csv(file = metadataFile,col_names = T,guess_max = 10000)
-```
 
 ```{r}
+phenoDf <- read_csv(file = metadataFile,col_names = T,
+                    guess_max = 10000) %>% 
+  mutate_all(as.character)
+
 if( ! sampleIDColumnName %in% colnames(phenoDf) ){
   stop("Missing expected ID column named:",sampleIDColumnName)
 }
-if(is.null(categoriesToShow) || 
-   length(categoriesToShow) == 0 || 
-   length(intersect(categoriesToShow, colnames(phenoDf))) == 0 ){
-  categoriesToShow <- phenoDf  %>% 
-    select_if(is.character) %>%
-    colnames()
-  categoriesToShow <- categoriesToShow[categoriesToShow!=sampleIDColumnName] 
-}else{
+
+if(!is.null(categoriesToShow) || 
+   length(categoriesToShow) > 0 ){
   categoriesToShow <- intersect(categoriesToShow, colnames(phenoDf))
   if(length(categoriesToShow) == 0){
-    stop("No categorical metadata to analyse. ",
-         "Column names specified do not match metadata file.")
+    warning("Column names specified for metadata analysis do not match metadata file.",
+            "Using any possible metadata values instead")
   }
 }
+
+if(is.null(categoriesToShow) || 
+   length(categoriesToShow) == 0){
+  colsOkToTest <- apply(phenoDf,2,FUN=function(x){length(unique(x)) <= maxNLevels})
+  categoriesToShow <- colnames(phenoDf[colsOkToTest])
+  categoriesToShow <- categoriesToShow[categoriesToShow!=sampleIDColumnName] 
+}else
 if(is.null(categoriesToShow) || length(categoriesToShow) == 0){
   stop("No categorical metadata to analyse.")
 }
 ```
 
-Analysing categories: 
+Analysing categories (max number of values in each category is `r maxNLevels`): 
 
 ```{r}
 paste(categoriesToShow,collapse=",")
@@ -323,10 +329,18 @@ nSamples
 #   theme(legend.position = "bottom") 
 ```
 
+Missing metadata values for these samples:
+
+```{r}
+allData %>% filter(is.na(metadataValue) | is.na(value))
+```
+
+Plot of metadata values and clusters:
 
 ```{r,fig.width=10}
 getMetadataOverviewPlot <- function(df){
 p <- df %>% 
+  filter(!is.na(metadataValue)) %>% 
   mutate(value = ifelse( ( is.na(value) | value == "not assigned" ) ,
                          NA,paste0(metadataValue,":",value))) %>% # so that it's blank in figure
   arrange(dominantSubspecies,value) %>% 
