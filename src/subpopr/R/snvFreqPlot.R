@@ -1,5 +1,7 @@
 
-snvFreqPlot<-function(species,snvFreqs,outDir,minPropHomogSnvAllelesPerSample=0.8, maxPropReadsNonHomog = 0.1){
+snvFreqPlot<-function(species,snvFreqs,outDir,
+                      minPropHomogSnvAllelesPerSample=0.8,
+                      maxPropReadsNonHomog = 0.1){
 
   maxPropReadsNonHomog = maxPropReadsNonHomog * 100
 
@@ -33,7 +35,9 @@ snvFreqPlot<-function(species,snvFreqs,outDir,minPropHomogSnvAllelesPerSample=0.
     return(prop)
   }
 
-  combos <- expand.grid(cutoffIndex=1:length(cutoffsLow),sampleID=colnames(snvFreqs),stringsAsFactors = F)
+  combos <- expand.grid(cutoffIndex=1:length(cutoffsLow),
+                        sampleID=colnames(snvFreqs),
+                        stringsAsFactors = F)
 
   propLow <- sapply(1:nrow(combos),getPropPassingCutoff,direction="low")
   propHigh <- sapply(1:nrow(combos),getPropPassingCutoff,direction="high")
@@ -51,7 +55,7 @@ snvFreqPlot<-function(species,snvFreqs,outDir,minPropHomogSnvAllelesPerSample=0.
       mutate(x=cutoffIndex-1)
     df %>%
       ggplot(aes_string(x="x", y = y, group="sampleID")) +
-      ylim(c(0,1))+
+      ylim(c(-0.05,1.05))+
       geom_vline(xintercept = cutoffHomog, color = "grey60",linetype="dotted") +
       geom_hline(yintercept = cutoffPropSNV, color = "maroon",linetype="dotted") +
       geom_point(size=0.3)+
@@ -71,7 +75,8 @@ snvFreqPlot<-function(species,snvFreqs,outDir,minPropHomogSnvAllelesPerSample=0.
       guides(fill = guide_colourbar(title.position="top", title.hjust = 0),
              size = guide_legend(title.position="top", title.hjust = 0),
              shape = guide_legend(title.position="top", title.hjust = 0),
-             colour = guide_colourbar(title.position="top", title.hjust = 0,override.aes = list(alpha = 0.1)))
+             colour = guide_colourbar(title.position="top", title.hjust = 0,
+                                      override.aes = list(alpha = 0.1)))
   }
   pAll <- getPlot("propPass")+
       xlab("% away from homogenity at SNV (e.g. x = 5: allele is seen in < 5% or > 95% of reads)") +
