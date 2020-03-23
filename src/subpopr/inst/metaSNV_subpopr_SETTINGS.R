@@ -2,10 +2,10 @@
 METADATA.COLS.TO.TEST=c("gender","geographic_location","studies","subject_disease_status")
 
 
-MAX.PROP.READS.NON.HOMOG = 0.1 # default = 0.1
-MIN.PROP.SNV.HOMOG = 0.8 # default = 0.8
+#MAX.PROP.READS.NON.HOMOG = 0.1 # default = 0.1
+#MIN.PROP.SNV.HOMOG = 0.8 # default = 0.8
 CLUSTERING.PS.CUTOFF = 0.8 # default = 0.8
-SNV.SUBSPEC.UNIQ.CUTOFF = 0.8 # default = 0.8
+#SNV.SUBSPEC.UNIQ.CUTOFF = 0.8 # default = 0.8
 
 LIB.DIR=NULL # set as NULL or leave blank to use default location for R libraries
 
