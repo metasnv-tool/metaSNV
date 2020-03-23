@@ -518,17 +518,30 @@ if(!is.null(SPECIES.ABUNDANCE.PROFILE) &&
 # Test metadata associations ##########
 if(!is.null(METADATA.PATH) && file.exists(METADATA.PATH)){
   if(makeReports){
+
+    doRendMd <- function(spec){
+      flog.info("Rendering metadata association report for species %s", spec)
+      renderTestPhenotypeAssocReport(speciesID = spec,
+      subpopOutDir = OUT.DIR,
+      categoryColumnNames = METADATA.COLS.TO.TEST, #"status",
+      sampleIDColumnName = METADATA.COL.ID, #"ID",
+      sampleExtension = SAMPLE.ID.SUFFIX, #".ULRepGenomesv11.unique.sorted.bam",
+      metadataFile = METADATA.PATH,
+      rmdDir = rmdDir)
+    }
     print("Associating with metadata...")
     tmp <- BiocParallel::bptry(
-      BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
-                             renderTestPhenotypeAssocReport,
-                             subpopOutDir = OUT.DIR,
-                             categoryColumnNames = METADATA.COLS.TO.TEST, #"status",
-                             sampleIDColumnName = METADATA.COL.ID, #"ID",
-                             sampleExtension = SAMPLE.ID.SUFFIX, #".ULRepGenomesv11.unique.sorted.bam",
-                             metadataFile = METADATA.PATH,
-                             rmdDir = rmdDir))
-
+      BiocParallel::bplapply(allSubstrucSpecies,
+                             BPPARAM = bpParam,
+                             doRendMd))
+    # if failed, try again...often it's just a timing conflict error from parallelising
+    if(!all(bpok(tmp))){
+      tmp <- BiocParallel::bptry(
+        BiocParallel::bplapply(X = allSubstrucSpecies,
+                               BPREDO=tmp,
+                               BPPARAM = bpParam,
+                               doRendMd))
+    }
     printBpError(tmp)
   }
   summariseMetadataAssocResultsForAll(OUT.DIR)
