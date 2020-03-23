@@ -19,7 +19,7 @@ useExistingClustering<-FALSE
 suppressPackageStartupMessages(library(futile.logger))
 tmp <- flog.threshold(INFO) # assign to tmp to avoid NULL being returned and printed
 
-if(normalRun){ # HACK TO RUN FROM WITHIN R WITHOUT OPTS ----------
+if(normalRun){ # TO RUN FROM WITHIN R WITHOUT OPTS ----------
 
 
   # Expectation is that this script will sit in the metaSNV directory,
@@ -57,11 +57,14 @@ if(normalRun){ # HACK TO RUN FROM WITHIN R WITHOUT OPTS ----------
                 metavar="file path"),
     make_option(c("-o", "--outputDir"), type="character",
                 default="results",
-                help="Path to directory where subpopr results will be stored. Default is \"./results/\"",
+                help="Path to directory where subpopr results will be stored. \
+                Default is \"./results/\"",
                 metavar="file path"),
     make_option(c("-p", "--procs"), type="integer",
                 default=1,
-                help="Number of cores to use for parallel processing. Default is 1.", metavar="integer"),
+                help="Number of cores to use for parallel processing. \
+                Default is 1.",
+                metavar="integer"),
     make_option(c("-a", "--speciesAbundance"), type="character",
                 default="doNotRun",
                 help="Path to file with species abundances (tsv, optional)",
@@ -76,16 +79,38 @@ if(normalRun){ # HACK TO RUN FROM WITHIN R WITHOUT OPTS ----------
                 metavar="file path"),
     make_option(c("-d", "--metadata"), type="character",
                 default="doNotRun",
-                help="Path to file with metadata csv for odds ratio testing (optional)",
+                help="Path to file with metadata csv for odds ratio \
+                testing (optional)",
                 metavar="file path"),
     make_option(c("-n", "--metadataSampleIDCol"), type="character",
                 default="sampleID",
-                help="Name of column with sample IDs in metadata csv for odds ratio testing (optional)",
+                help="Name of column with sample IDs in metadata csv for \
+                odds ratio testing (optional)",
                 metavar="character"),
     make_option(c("-r", "--createReports"), type="logical",
                 default=TRUE,
-                help="Whether or not to compile html summary reports (uses Rmarkdown)  (TRUE or FALSE). Default is TRUE.",
+                help="Whether or not to compile html summary reports (uses Rmarkdown) \
+                (TRUE or FALSE). Default is TRUE.",
                 metavar="logical"),
+    make_option(c("-x", "--fixReadThreshold"), type="numeric",
+                default=0.8,
+                help="SNV locus filter: max proportion of reads with minor allele \
+                for locus to be considered to be used in defining clusters. (hr)\
+                Default is 0.8 (i.e. 80% of reads have major allele)",
+                metavar="numeric"),
+    make_option(c("-y", "--fixSnvThreshold"), type="numeric",
+                default=0.8,
+                help="Sample filter: min proportion of SNVs where major \
+                allele is sufficently abundant for sample to be used in \
+                defining clusters. (hs) Default is 0.8 \
+                (i.e. 80% of SNV loci have major allele with frequency > x )",
+                metavar="numeric"),
+    make_option(c("-z", "--genotypingThreshold"), type="numeric",
+                default=0.8,
+                help="Genotyping threshold: SNV allele must be more abundand \
+                within the cluster by this many percentage points (as decimal <= 1). \
+                (gs) Default 0.8",
+                metavar="numeric"),
     make_option(c("-s", "--settings"), type="character",
                 #default="./src/subpopr/inst/SETTINGS.R",
                 default=NULL,
@@ -109,6 +134,11 @@ if(normalRun){ # HACK TO RUN FROM WITHIN R WITHOUT OPTS ----------
   opt$metadataSampleIDCol <- "sampleNames"
   opt$metaSnvResultsDir <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v2/metaSNV/outputs_subspec/"
   opt$outputDir <- "results_q3"
+
+  opt$fixReadThreshold <- 0.8
+  opt$fixSnvThreshold <- 0.8
+  opt$genotypingThreshold <- 0.8
+
 }
 
 N.CORES <- opt$procs
@@ -117,6 +147,10 @@ SPECIES.ABUND.PROFILE.IS.MOTUS<-opt$isMotus
 KEGG.PATH <- opt$geneAbundance
 METADATA.PATH <- opt$metadata
 METADATA.COL.ID <- opt$metadataSampleIDCol
+
+MAX.PROP.READS.NON.HOMOG <- opt$fixReadThreshold
+MIN.PROP.SNV.HOMOG <- opt$fixSnvThreshold
+SNV.SUBSPEC.UNIQ.CUTOFF <- opt$genotypingThreshold
 
 makeReports <- TRUE
 toScreen <- TRUE # if TRUE, lots gets printed to screen, if FALSE, only goes to log file
