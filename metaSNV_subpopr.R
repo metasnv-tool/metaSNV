@@ -93,10 +93,10 @@ if(normalRun){ # TO RUN FROM WITHIN R WITHOUT OPTS ----------
                 (TRUE or FALSE). Default is TRUE.",
                 metavar="logical"),
     make_option(c("-x", "--fixReadThreshold"), type="numeric",
-                default=0.8,
-                help="SNV locus filter: max proportion of reads with minor allele \
+                default=0.1,
+                help="SNV locus filter: max proportion of reads with non-major allele \
                 for locus to be considered to be used in defining clusters. (hr)\
-                Default is 0.8 (i.e. 80% of reads have major allele)",
+                Default is 0.1 (i.e. 90% of reads have major allele)",
                 metavar="numeric"),
     make_option(c("-y", "--fixSnvThreshold"), type="numeric",
                 default=0.8,
@@ -135,7 +135,7 @@ if(normalRun){ # TO RUN FROM WITHIN R WITHOUT OPTS ----------
   opt$metaSnvResultsDir <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v2/metaSNV/outputs_subspec/"
   opt$outputDir <- "results_q3"
 
-  opt$fixReadThreshold <- 0.8
+  opt$fixReadThreshold <- 0.1
   opt$fixSnvThreshold <- 0.8
   opt$genotypingThreshold <- 0.8
 
@@ -156,7 +156,7 @@ makeReports <- TRUE
 toScreen <- TRUE # if TRUE, lots gets printed to screen, if FALSE, only goes to log file
 printProgressBar <- TRUE
 
-if (is.null(opt$metaSnvResultsDir)){
+if(is.null(opt$metaSnvResultsDir)){
   print_help(opt_parser)
   stop("Path to metaSNV results must be supplied [-i]", call.=FALSE)
 }
@@ -167,6 +167,17 @@ if (is.null(opt$outputDir)){
 }
 OUT.DIR.BASE <- opt$outputDir
 
+assert0to1<-function(x,nameOfParam){
+  if(!is.numeric(x) | x < 0 | x > 1){
+    stop("Param \"",nameOfParam ,"\"must be numeric and must be between 0 and 1")
+  }
+}
+
+assert0to1(opt$fixReadThreshold,"fixReadThreshold")
+assert0to1(opt$fixSnvThreshold,"fixSnvThreshold")
+assert0to1(opt$genotypingThreshold,"genotypingThreshold")
+
+stop()
 source(paste0(scriptDir,"/src/subpopr/inst/metaSNV_subpopr_SETTINGS.R"))
 SUBPOPR.DIR<-paste0(scriptDir,"/src/subpopr/")
 
