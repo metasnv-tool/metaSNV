@@ -475,6 +475,7 @@ if(makeReports){
                            runRend))
   # if failed, try again...often it's just a timing conflict error from parallelising
   if(!all(bpok(tmp))){
+  print("Retrying compilation of failed reports")
   tmp <- BiocParallel::bptry(
     BiocParallel::bplapply(X = allSubstrucSpecies,
                            BPREDO=tmp,
@@ -536,6 +537,7 @@ if(!is.null(METADATA.PATH) && file.exists(METADATA.PATH)){
                              doRendMd))
     # if failed, try again...often it's just a timing conflict error from parallelising
     if(!all(bpok(tmp))){
+      print("Retrying compilation of failed reports")
       tmp <- BiocParallel::bptry(
         BiocParallel::bplapply(X = allSubstrucSpecies,
                                BPREDO=tmp,
