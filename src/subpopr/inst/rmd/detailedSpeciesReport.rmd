@@ -104,28 +104,11 @@ if(length(speciesFiles)==0){
 ## Taxonomic classification
 
 ```{r}
-#accomodate package and non-package
-taxaMap <- ifelse("subpopr" %in% tolower(.packages()),
-                    subpopr::TAXA.NCBI.MOTU.MAP, # from /data folder
-                    TAXA.NCBI.MOTU.MAP) # should be loaded in environment
-
-# could replace with subpopr::getSpeciesTaxonomy()
-#get taxa info
-if(speciesID %in% taxaMap$ncbiTaxID){
-  taxaMap %>% filter(ncbiTaxID == speciesID) %>% 
-    select(ncbiTaxID,everything(),-isRep) %>% 
-    gather() %>% 
-    distinct() #%>% 
-    #kable() %>% kable_styling()   
-}else if(speciesID %in% taxaMap$ref_mOTU_cluster){
-  taxaMap %>% filter(ref_mOTU_cluster == speciesID) %>%
-    select(ref_mOTU_cluster,everything(),-isRep) %>% 
-    gather() %>% 
-    distinct()  
-}else{
+taxaDf <- getSpeciesTaxonomy(speciesID)
+if(is.null(taxaDF)){
   print(paste("Taxonomy unknown for ",speciesID))
 }
-
+taxaDf
 ```
 
 # Full starting data
