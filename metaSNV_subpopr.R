@@ -177,7 +177,6 @@ assert0to1(opt$fixReadThreshold,"fixReadThreshold")
 assert0to1(opt$fixSnvThreshold,"fixSnvThreshold")
 assert0to1(opt$genotypingThreshold,"genotypingThreshold")
 
-stop()
 source(paste0(scriptDir,"/src/subpopr/inst/metaSNV_subpopr_SETTINGS.R"))
 SUBPOPR.DIR<-paste0(scriptDir,"/src/subpopr/")
 
