@@ -296,7 +296,7 @@ printBpError <- function(result){
   }else{
     print( paste("Error in ",length(which(!bpok(result)))," task(s)",
                  #paste0(which(!bpok(result)),collapse = ","),
-                 ", see ",paste0(OUT.DIR,"/threadLogs") ))
+                 ", see files with text \"Success: FALSE\" in ",paste0(OUT.DIR,"/threadLogs") ))
     print(result[[which(!bpok(result))]])
   }
 }
@@ -454,28 +454,32 @@ printBpError(tmp)
 summariseClusteringExtensionResultsForAll(resultsDir=OUT.DIR,distMeth="mann")
 
 }
+# Compile detailed reports for species with subspecies/clusters --------------
+
+runRend <- function(spec){
+  print("")
+  flog.info("Rendering report for species %s", spec)
+  renderDetailedSpeciesReport(speciesID = spec,
+                              subpopOutDir = OUT.DIR,
+                              metasnvOutDir = METASNV.DIR,
+                              distMethod = DIST.METH.REPORTS ,
+                              bamSuffix = SAMPLE.ID.SUFFIX,
+                              rmdDir = rmdDir)
+}
+
 if(makeReports){
   print("Compiling reports for species with clusters")
   tmp <- BiocParallel::bptry(
-    BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
-                           renderDetailedSpeciesReport,
-                           subpopOutDir = OUT.DIR,
-                           metasnvOutDir = METASNV.DIR,
-                           distMethod = DIST.METH.REPORTS ,
-                           bamSuffix = SAMPLE.ID.SUFFIX,
-                           rmdDir = rmdDir))
+    BiocParallel::bplapply(allSubstrucSpecies,
+                           BPPARAM = bpParam,
+                           runRend))
   # if failed, try again...often it's just a timing conflict error from parallelising
   if(!all(bpok(tmp))){
   tmp <- BiocParallel::bptry(
     BiocParallel::bplapply(X = allSubstrucSpecies,
                            BPREDO=tmp,
                            BPPARAM = bpParam,
-                           renderDetailedSpeciesReport,
-                           subpopOutDir = OUT.DIR,
-                           metasnvOutDir = METASNV.DIR,
-                           distMethod = DIST.METH.REPORTS ,
-                           bamSuffix = SAMPLE.ID.SUFFIX,
-                           rmdDir = rmdDir))
+                           runRend))
   }
   printBpError(tmp)
 }
