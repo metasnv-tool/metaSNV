@@ -341,7 +341,8 @@ printBpError <- function(result){
     print( paste("Error in ",length(which(!bpok(result)))," task(s)",
                  #paste0(which(!bpok(result)),collapse = ","),
                  ", see files with text \"Success: FALSE\" in ",paste0(OUT.DIR,"/threadLogs") ))
-    print(result[[which(!bpok(result))]])
+    #print(result[[which(!bpok(result))]])
+    #above creates this: Error in result[[which(!bpok(result))]] : subscript out of bounds
   }
 }
 
