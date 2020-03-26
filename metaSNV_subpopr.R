@@ -115,7 +115,13 @@ if(normalRun){ # TO RUN FROM WITHIN R WITHOUT OPTS ----------
                 #default="./src/subpopr/inst/SETTINGS.R",
                 default=NULL,
                 help="Use this settings file instead of the command line arguments",
-                metavar="file path")
+                metavar="file path"),
+    make_option(c("-q", "--onlyDoSubspeciesDetection"), type="logical",
+                default=FALSE,
+                help="Whether to only do the first step of the pipeline \
+                (just detect the presence/number of subspecies). Default is FALSE. \
+                Only intended for troubleshooting.",
+                metavar="logical")
   );
 
   opt_parser = OptionParser(option_list=option_list);
@@ -139,6 +145,8 @@ if(normalRun){ # TO RUN FROM WITHIN R WITHOUT OPTS ----------
   opt$fixSnvThreshold <- 0.8
   opt$genotypingThreshold <- 0.8
 
+  opt$onlyDoSubspeciesDetection<-FALSE
+
 }
 
 N.CORES <- opt$procs
@@ -151,6 +159,8 @@ METADATA.COL.ID <- opt$metadataSampleIDCol
 MAX.PROP.READS.NON.HOMOG <- opt$fixReadThreshold
 MIN.PROP.SNV.HOMOG <- opt$fixSnvThreshold
 SNV.SUBSPEC.UNIQ.CUTOFF <- opt$genotypingThreshold
+
+onlyDoSubspeciesDetection<-opt$onlyDoSubspeciesDetection
 
 makeReports <- TRUE
 toScreen <- TRUE # if TRUE, lots gets printed to screen, if FALSE, only goes to log file
@@ -387,6 +397,11 @@ allSubstrucSpecies <- unique(sub(basename(allSubstruc) ,
 
 print(paste0("Species with substructure: ",
              length(allSubstrucSpecies),"/",length(species)))
+
+if(onlyDoSubspeciesDetection){
+  combineAllSummaries(OUT.DIR)
+  stop("Subpopr stopped due to 'onlyDoSubspeciesDetection' flag being true")
+}
 
 # Handle species with no subspecies #####################################################################
 # for those species that did not cluster, generate a report so we can look into why
