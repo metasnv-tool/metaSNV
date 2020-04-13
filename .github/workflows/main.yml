@@ -25,13 +25,15 @@ jobs:
     # Runs a single command using the runners shell
     - name: Install dependencies
       run: |
-        sudo add-apt-repository "deb http://archive.ubuntu.com/ubuntu $(lsb_release -sc) universe"
         sudo apt-get update
         sudo apt-get install -y build-essential libhts-dev libboost-dev libcurl4-openssl-dev libcairo2-dev python-numpy python-pandas r-base pandoc
 
     - name: Install R dependencies
       run: |
         sudo R --vanilla <<EOF
+        if(!requireNamespace("BiocManager", quietly=TRUE)){install.packages("BiocManager", repos="https://cloud.r-project.org/")}
+        if(!requireNamespace("BiocParallel", quietly=TRUE)){BiocManager::install("BiocParallel"); library(BiocParallel)}
+        if(!requireNamespace("coin", quietly=TRUE)){BiocManager::install("coin"); library(coin)}
         if(!requireNamespace("fpc")){install.packages("fpc", repos="https://cloud.r-project.org/"); library(fpc)}
         if(!requireNamespace("ape")){install.packages("ape", repos="https://cloud.r-project.org/"); library(ape)}
         if(!requireNamespace("getopt")){install.packages("getopt", repos="https://cloud.r-project.org/"); library(getopt)}
@@ -49,11 +51,8 @@ jobs:
         if(!requireNamespace("kableExtra")){install.packages("kableExtra", repos="https://cloud.r-project.org/"); library(kableExtra)}
         if(!requireNamespace("rmarkdown")){install.packages("rmarkdown", repos="https://cloud.r-project.org/"); library(rmarkdown)}
         if(!requireNamespace("batchtools")){install.packages("batchtools", repos="https://cloud.r-project.org/"); library(batchtools)}
-        if(!requireNamespace("coin")){install.packages("coin", repos="https://cloud.r-project.org/"); library(coin)}
         if(!requireNamespace("questionr")){install.packages("questionr", repos="https://cloud.r-project.org/"); library(questionr)}
         if(!requireNamespace("futile.logger")){install.packages("futile.logger", repos="https://cloud.r-project.org/"); library(futile.logger)}
-        if(!requireNamespace("BiocManager", quietly=TRUE)){install.packages("BiocManager", repos="https://cloud.r-project.org/")}
-        if(!requireNamespace("BiocParallel", quietly=TRUE)){BiocManager::install("BiocParallel")}
         sessionInfo()
         q()
         EOF
