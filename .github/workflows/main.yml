@@ -72,4 +72,14 @@ jobs:
         python metaSNV.py --help
         python metaSNV_post.py --help
         Rscript metaSNV_subpopr.R --help
-        
+
+    - name: Fetch and unpack test data
+      run: |
+        wget http://swifter.embl.de/~ralves/metaSNV_test_data/testdata.tar.xz
+        tar xvf testdata.tar.xz && rm -f testdata.tar.gz
+
+    - name: Run all of metaSNV with test data
+      run: |
+        ./metaSNV.py output testdata/all_samples testdata/ref/allReferenceGenomes.fasta
+        ./metaSNV_post.py output
+        ./metaSNV_subpopr.R -i output -g testdata/abunds/geneAbundances.tsv -a testdata/abunds/speciesAbundances.tsv
