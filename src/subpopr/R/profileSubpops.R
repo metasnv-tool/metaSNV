@@ -249,7 +249,7 @@ useSpeciesAbundToCalcSubspeciesAbund <- function(species, speciesAbundanceProfil
   if(!file.exists(speciesAbundanceProfileFilePath)){
     stop(paste0("Cannot compute overall subspecies abundances. ",
                 "Required species abundance file not found: ",
-                speciesAbundanceProfileFilePathß))
+                speciesAbundanceProfileFilePath))
     return(NULL)
   }
   # we have the relative abundance of the species' subpops in each cluster
