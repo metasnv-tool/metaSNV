@@ -59,6 +59,7 @@ jobs:
         if(!requireNamespace("questionr", quietly=TRUE)){install.packages("questionr", repos="https://cloud.r-project.org/"); library(questionr)}
         if(!requireNamespace("futile.logger", quietly=TRUE)){install.packages("futile.logger", repos="https://cloud.r-project.org/"); library(futile.logger)}
         if(!requireNamespace("Cairo", quietly=TRUE)){install.packages("Cairo", repos="https://cloud.r-project.org/"); library(Cairo)}
+        if(!requireNamespace("reshape2", quietly=TRUE)){install.packages("reshape2", repos="https://cloud.r-project.org/"); library(reshape2)}
         sessionInfo()
         q()
         EOF
