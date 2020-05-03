@@ -30,7 +30,8 @@ jobs:
         echo 'deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran35/' | sudo tee /etc/apt/sources.list.d/r36.list
         sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
         sudo apt-get update
-        sudo apt-get install -y libhts-dev libboost-dev libxml2-dev libssl-dev libcurl4-openssl-dev libcairo2-dev python-numpy python-pandas r-base pandoc
+        sudo apt-get install -y libhts-dev libboost-dev libxml2-dev libssl-dev libcurl4-openssl-dev libcairo2-dev libxt-dev
+        sudo apt-get install -y python-numpy python-pandas r-base pandoc samtools
 
     - name: Install R dependencies
       run: |
@@ -57,6 +58,7 @@ jobs:
         if(!requireNamespace("batchtools")){install.packages("batchtools", repos="https://cloud.r-project.org/"); library(batchtools)}
         if(!requireNamespace("questionr", quietly=TRUE)){install.packages("questionr", repos="https://cloud.r-project.org/"); library(questionr)}
         if(!requireNamespace("futile.logger", quietly=TRUE)){install.packages("futile.logger", repos="https://cloud.r-project.org/"); library(futile.logger)}
+        if(!requireNamespace("Cairo", quietly=TRUE)){install.packages("Cairo", repos="https://cloud.r-project.org/"); library(Cairo)}
         sessionInfo()
         q()
         EOF
