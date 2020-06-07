@@ -56,8 +56,10 @@ def get_arguments():
 def file_check():
     ''' Check if required files exist (True / False)'''
 
-    args.projdir = '/'.join(args.filt.rstrip('/').split('/')[:-1]) 
-    args.pars = args.filt.rstrip('/').split('/')[-1].strip('filtered')
+    # use -2 here because user will have passed in something
+    # like [....]/outputs/filtered-m50-d5-b40-c5-p0.5/pop
+    args.projdir = '/'.join(args.filt.rstrip('/').split('/')[:-2]) 
+    args.pars = args.filt.rstrip('/').split('/')[-2].strip('filtered')
     args.coverage_file = args.projdir+'/'+args.projdir.split('/')[-1]+'.all_cov.tab'
     args.percentage_file = args.projdir+'/'+args.projdir.split('/')[-1]+'.all_perc.tab'
     args.bedfile = args.projdir+'/'+'bed_header'
