@@ -265,6 +265,8 @@ if __name__ == "__main__":
     # =========================================
 
     pars_toprint = '-m{}-d{}-b{}-c{}-p{}'.format(int(args.m), int(args.d), int(args.b), int(args.c), float(args.p))
+    # don't do this for now - makes it hard to work with subpopr
+    pars_toprint = ""
     filt_folder = args.projdir + '/filtered' + pars_toprint + '/'
 
     if not os.path.exists(filt_folder):
