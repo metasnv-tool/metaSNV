@@ -28,6 +28,8 @@ params:
     value: 'family'
   geneFamilyAbundancesFile:
     value: ''
+  bamSuffix:
+    value: '.bam'
 ---
 
 ```{r setup, include=FALSE}
@@ -36,7 +38,7 @@ knitr::opts_chunk$set(
   echo=TRUE,
   comment=NA,
   warning=TRUE,
-  error=TRUE, # keep running even if error encountered
+  error=F, # keep running even if error encountered
   message=FALSE,
   rows.print=25)
 
@@ -59,6 +61,7 @@ statCutoff <- params$statCutoff #<- 0.05
 rStatCutoff <- params$rStatCutoff # 0.5
 geneFamilyAbundancesFile <- params$geneFamilyAbundancesFile
 minObs <- params$minObs
+bamSuffix <- params$bamSuffix
 ```
 
 # Settings
@@ -82,26 +85,11 @@ do.call(rbind,params) %>% data.frame(stringsAsFactors = F) %>% DT::datatable()
 
 ```{r}
 #accomodate package and non-package
-taxaMap <- ifelse("subpopr" %in% tolower(.packages()),
-                    subpopr::TAXA.NCBI.MOTU.MAP, # from /data folder
-                    TAXA.NCBI.MOTU.MAP) # should be loaded in environment
-
-# could replace with subpopr::getSpeciesTaxonomy()
-#get taxa info
-if(speciesID %in% taxaMap$ncbiTaxID){
-  taxaMap %>% filter(ncbiTaxID == speciesID) %>% 
-    select(ncbiTaxID,everything(),-isRep) %>% 
-    gather() %>% 
-    distinct() #%>% 
-    #kable() %>% kable_styling()   
-}else if(speciesID %in% taxaMap$ref_mOTU_cluster){
-  taxaMap %>% filter(ref_mOTU_cluster == speciesID) %>%
-    select(ref_mOTU_cluster,everything(),-isRep) %>% 
-    gather() %>% 
-    distinct()  
-}else{
+taxaDf <- getSpeciesTaxonomy(speciesID)
+if(is.null(taxaDf)){
   print(paste("Taxonomy unknown for ",speciesID))
 }
+taxaDf
 ```
 
 
@@ -110,16 +98,19 @@ if(speciesID %in% taxaMap$ncbiTaxID){
 Based on correlations between the abundances of the within-species clusters and the abundances of gene families
 
 ```{r}
-pathCorrP <- paste0(subpopOutDir,"/",speciesID,"_corrKegg-pearson.tsv")
-pathCorrS <- paste0(subpopOutDir,"/",speciesID,"_corrKegg-spearman.tsv")
+pathCorrP <- paste0(subpopOutDir,"/",speciesID,"_corrGenes-pearson.tsv")
+pathCorrS <- paste0(subpopOutDir,"/",speciesID,"_corrGenes-spearman.tsv")
 if(!file.exists(pathCorrP)){
-  print(paste0("Aborting due to missing file: ",pathCorrP))
-  knitr::knit_exit()
+  stop(paste0("Aborting due to missing file: ",pathCorrP))
+  #knitr::knit_exit()
 }
 if(!file.exists(pathCorrS)){
   print(paste0("Aborting due to missing file: ",pathCorrS))
-  knitr::knit_exit()
+  #knitr::knit_exit()
 }
+
+print("Using files: ")
+print(c(pathCorrP,pathCorrS))
 
 corrP <- read_tsv(pathCorrP,col_names = T, col_types = cols(
   geneFamily = col_character(),
@@ -139,7 +130,7 @@ corrP <- read_tsv(pathCorrP,col_names = T, col_types = cols(
   q.valueBH = col_double()
 )
 )
-corrS <- read_tsv(paste0(subpopOutDir,"/",speciesID,"_corrKegg-spearman.tsv"),col_names = T, col_types = cols(
+corrS <- read_tsv(pathCorrS,col_names = T, col_types = cols(
   geneFamily = col_character(),
   cluster = col_integer(),
   statistic = col_double(),
@@ -155,11 +146,11 @@ corrS <- read_tsv(paste0(subpopOutDir,"/",speciesID,"_corrKegg-spearman.tsv"),co
 ))
 
 if(!"corrP" %in% ls()){
-  print(paste0("Aborting due to error in loading file: ",corrP))
+  print(paste0("Aborting due to error in loading file: ",pathCorrP))
   knitr::knit_exit()
 }
 if(!"corrS" %in% ls()){
-  print(paste0("Aborting due to error in loading file: ",corrS))
+  print(paste0("Aborting due to error in loading file: ",pathCorrS))
   knitr::knit_exit()
 }
 
@@ -173,14 +164,12 @@ if( max(corrS$nObs, corrP$nObs) < minObs ){
 
 Number of Pearson correlations tested: `r nrow(corrP)`
 
-Number of significant Pearson correlations (q value < `r print(statCutoff)`):  `r sum(corrP$q.valueBH < statCutoff)`
+Number of significant Pearson correlations (q value < `r statCutoff`):  `r sum(corrP$q.valueBH < statCutoff)`
 
 
 Number of Spearman correlations tested: `r nrow(corrS)`
 
-Number of significant Spearman correlations (q value < `r print(statCutoff)`): `r sum(corrS$q.valueBH < statCutoff)`
-
-
+Number of significant Spearman correlations (q value < `r statCutoff`): `r sum(corrS$q.valueBH < statCutoff)`
 
 
 ```{r}
@@ -222,8 +211,6 @@ corr %>%
 ```
 
 # Comparison of Pearson and Spearman correlation results
-
-`r print(unique(as.character(corr$method)))`
 
 ```{r test for both cols}
 haveBothSP <- all( c("pearson","spearman") %in% unique(as.character(corr$method)) ) 
@@ -327,14 +314,23 @@ corr %>% filter(statSigLgl & nObs >= minObs & correlationR > rStatCutoff ) %>%
   formatRound(c("correlationR","conf.int.low","conf.int.high"), digits=2) #%>% formatRound(c("q.valueBH"), digits=4)
 ```
 
+```{r}
+x<-corr %>%
+  filter(statSigLgl & correlationR > rStatCutoff,.preserve = T)
+if(nrow(x)==0){
+  print("No correlations passed the thresholds. Exiting.")
+  knitr::knit_exit()
+}
+```
+
 
 ```{r}
-corr %>% 
-  filter(statSigLgl & correlationR > rStatCutoff) %>% 
+corr %>%
+  filter(statSigLgl & correlationR > rStatCutoff,.preserve = T) %>%
   ggplot(aes(x=correlationR))+
     facet_grid(method~cluster,switch = "y",margins = "cluster") +
   geom_histogram(binwidth = 0.025)+
-  xlim(c( (rStatCutoff-0.05),1.05))+ 
+  xlim(c( (rStatCutoff-0.05),1.05))+
   ylab("Number of gene families")+
   xlab("Strength of correlation (R)")
 ```
@@ -368,10 +364,20 @@ corr %>% filter(geneFamily %in% sigGeneFams) %>%
 
 ```{r,warning=F}
 ## Import gene family abundances
-geneFamilyAbundances <- read_tsv(file = geneFamilyAbundancesFile,comment = "#",trim_ws = T) %>% 
-  rename(geneFamily = X1) %>% gather(key = sampleID, value = geneFamAbund, -geneFamily)
+# this can be big, so only import those that we want to plot
+f <- function(x,pos){ filter(x,X1 %in% sigGeneFams) }
+geneFamilyAbundancesToPlot <- read_tsv_chunked(file = geneFamilyAbundancesFile,
+                                 comment = "#",trim_ws = T,col_names = T,
+                                 chunk_size = 10000,
+                                 callback = DataFrameCallback$new(f),
+                                 cols(
+                                   .default = col_double(),
+                                   X1 = col_character()
+                                 )) %>% 
+  rename(geneFamily = X1) %>% 
+  gather(key = sampleID, value = geneFamAbund, -geneFamily)
 
-geneFamilyAbundancesToPlot <- geneFamilyAbundances %>% filter(geneFamily %in% sigGeneFams)
+#geneFamilyAbundancesToPlot <- geneFamilyAbundances %>% filter(geneFamily %in% sigGeneFams)
 
 allClustAbund <- read.table(paste(subpopOutDir,speciesID,'_allClust_relativeAbund.tab',sep=''),sep='\t')
 colnames(allClustAbund) <- sub(pattern = "X",replacement = "subspecies",x = colnames(allClustAbund))
@@ -379,22 +385,39 @@ allClustAbund$sampleID <- rownames(allClustAbund)
 allClustAbund <- allClustAbund %>% gather(key = cluster,value = clustAbund,-sampleID)
 
 corrsToPlot <- merge(x = geneFamilyAbundancesToPlot,allClustAbund, by = "sampleID")
+if(nrow(corrsToPlot)==0 &
+   "bamSuffix" %in% ls() &
+   !is.null(bamSuffix)){
+  geneFamilyAbundancesToPlot$sampleID <- paste0(geneFamilyAbundancesToPlot$sampleID,bamSuffix)
+  corrsToPlot <- merge(x = geneFamilyAbundancesToPlot,allClustAbund, by = "sampleID")
+}
 
+if(nrow(corrsToPlot)==0){
+  print("Error in combining the subspecies abundances and the gene family abundances.")
+  print(head(geneFamilyAbundancesToPlot))
+  print(head(allClustAbund))
+  stop("Error in combining the subspecies abundances and the gene family abundances.")
+}
 
 plotFamCorr <- function(geneFam) {
   print(geneFam)
   corr %>% filter(geneFamily == geneFam)%>% 
     select(geneFamily, cluster, method, correlationR, q.valueBH, statSigLgl) %>%
     arrange(cluster) %>% rename(Subspecies = cluster) %>%  print()
-  
-  p <- corrsToPlot %>% filter(geneFamily == geneFam) %>% 
+# 
+# corrsToPlot %>% filter(geneFamily == geneFam,.preserve = T) %>% head() %>% print()
+# corrsToPlot %>% filter(geneFamily == geneFam,.preserve = T) %>% tail() %>% print()
+#   
+  p <- corrsToPlot %>% filter(geneFamily == geneFam,.preserve = T) %>%
     ggplot(aes(x= geneFamAbund, y=clustAbund)) + geom_point()+facet_grid(geneFamily~cluster)+
-    ggtitle(paste0("Species ",speciesID,": linear scale")) 
+    ggtitle(paste0("Species ",speciesID,": linear scale"))
   print(p)
-  
+
   print(p+scale_x_log10()+scale_y_log10()+ggtitle(paste0("Species ",speciesID,": log10 scale")))
+
 }
 ```
+
 
 ```{r,eval=!tooManyToPlot}
 if( !tooManyToPlot){
@@ -407,6 +430,8 @@ print("Plotting all 'best' correlations")
 ```{r,eval=tooManyToPlot, results='asis'}
 if(tooManyToPlot){
   cat("### Best correlations")
+  print("")
+  cat("")
   print(paste0("Too many gene families to plot all of them, only plotting best ",floor(maxToPlot/2),
                " and 'worst' ",ceiling(maxToPlot/2), " (all above quality cutoffs)"))
 }
@@ -422,6 +447,7 @@ if(tooManyToPlot){
   rm(tmp)  
 }
 ```
+
 
 ```{r,eval=tooManyToPlot, results='asis'}
 if(tooManyToPlot){

@@ -34,7 +34,29 @@ correlateSubpopProfileWithGeneProfiles <- function(species,outDir,geneAbundanceP
     gather(key = "sampleName",value = "abundance",-geneFamily)
 
 
-  samplesToUse <- intersect(unique(allClustAbund$sampleName), unique(geneFamilyProfiles$sampleName))
+  # only use samples that have gene abundance and subspecies frequency data
+  subspeciesSamples <- unique(allClustAbund$sampleName)
+  geneAbundSamples <- unique(geneFamilyProfiles$sampleName)
+  samplesToUse <- intersect(unique(allClustAbund$sampleName), # subspeciesSamples
+                            unique(geneFamilyProfiles$sampleName)) # gene abund samples
+
+  # first try to fix with most common problem -- presence of extra stuff after file name e.g. [sampleID].subspec71.unique.sorted.bam
+  if(length(samplesToUse) == 0 & exists("SAMPLE.ID.SUFFIX")){
+    namesWithoutSuffix <- geneFamilyProfiles$sampleName
+    namesWithSuffix <- paste0(namesWithoutSuffix,SAMPLE.ID.SUFFIX)
+    samplesToUse <- intersect(namesWithSuffix, subspeciesSamples)
+    if(length(samplesToUse)>0){
+      warning("For species '",species,"': No overlapping sample IDs between clustering and mOTU abundance profiles. ",
+              "Fixed by adding sample suffix '",SAMPLE.ID.SUFFIX,"' to species abundance IDs. ",
+              "Now, out of ",
+              length(subspeciesSamples)," samples with SNV data, ",
+              length(samplesToUse)," have and species abundance data.")
+      geneFamilyProfiles$sampleName <- namesWithSuffix
+    }
+  }
+
+  samplesToUse <- intersect(unique(allClustAbund$sampleName), # subspeciesSamples
+                            unique(geneFamilyProfiles$sampleName)) # gene abund samples
 
   if(length(samplesToUse) == 0){
     stop(paste("No overlapping sample IDs between clustering and gene family abundance profiles.",

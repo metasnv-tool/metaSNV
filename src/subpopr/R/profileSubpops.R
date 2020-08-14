@@ -1,4 +1,3 @@
-
 #' input files required:
 #'   distanceMatrixFileMann = paste0("./data/",species,"_mann_distance_matrix.tab") #.filtered.mann.dist"
 #'   distanceMatrixFileAllele = paste0("./data/",species,"_allele_distance_matrix.tab") #.filtered.allele.dist"
@@ -91,7 +90,8 @@ defineSubpopulations <- function(species, distName = "mann",
     if(length(samps) < minNumberOfSamplesToStart){
       warning(paste0("Too few samples remain after selecting only those in the distance and SNP files. At least ",
                   minNumberOfSamplesToStart," are required for analysis. Aborting for species: ",species))
-      return(NULL)
+      return(paste0("Too few samples remain after selecting only those in the distance and SNP files. At least ",
+                    minNumberOfSamplesToStart," are required for analysis."))
       }
   }
 
@@ -106,7 +106,9 @@ defineSubpopulations <- function(species, distName = "mann",
         warning(paste0("Insufficient samples would remain after selecting samples based on file :",bamFileNamesToUsePath," .",
                     "At least ", minNumberOfSamplesToStart, " samples are required. ",
                     "Only ",length(bamFileNamesToUse)," samples would be selected. Aborting for species: ",species))
-        return(NULL)
+        return(paste0("Insufficient samples would remain after selecting samples based on file :",bamFileNamesToUsePath," .",
+                       "At least ", minNumberOfSamplesToStart, " samples are required. ",
+                       "Only ",length(bamFileNamesToUse)," samples would be selected."))
       }
       allSamps <- intersect(colnames(distMa),colnames(snvFreqs.filtered))
       sampsToKeep <- intersect(allSamps,bamFileNamesToUse)
@@ -114,7 +116,8 @@ defineSubpopulations <- function(species, distName = "mann",
         warning(paste0("Insufficient samples remain after selecting samples based on file :",bamFileNamesToUsePath," .",
                     "Only ",length(sampsToKeep)," samples remain. Aborting for species: ",species,
                     ". \n Maybe format is wrong? Example sample name: ",allSamps[1]))
-        return(NULL)
+        return(paste0("Insufficient samples remain after selecting samples based on file :",bamFileNamesToUsePath," .",
+                    "Only ",length(sampsToKeep)," samples remain."))
       }
       warning(paste0("Samples subselected according to specified file: ", bamFileNamesToUsePath,". Number of samples remaining: ", length(sampsToKeep)))
       snvFreqs.filtered <- snvFreqs.filtered[,sampsToKeep]
@@ -252,6 +255,7 @@ useSpeciesAbundToCalcSubspeciesAbund <- function(species, speciesAbundanceProfil
                 speciesAbundanceProfileFilePath))
     return(NULL)
   }
+
   # we have the relative abundance of the species' subpops in each cluster
   # now we scale the abundance of these subpops by the abundance of the species
 

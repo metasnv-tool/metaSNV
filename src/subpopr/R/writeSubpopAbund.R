@@ -36,8 +36,28 @@ writeSubpopAbundMotusProfile <- function(species, clusterFreqs, outDir,motuProfi
 
   # only use samples that have species abundance and subspecies frequency data
   samplesToUse <- intersect(names(motuProfileThisSpecies), rownames(clusterFreqs))
+
+  # first try to fix with most common problem -- presence of extra stuff after file name e.g. [sampleID].subspec71.unique.sorted.bam
+  if(length(samplesToUse) == 0 & exists("SAMPLE.ID.SUFFIX")){
+    namesWithoutSuffix <- names(motuProfileThisSpecies)
+    namesWithSuffix <- paste0(namesWithoutSuffix,SAMPLE.ID.SUFFIX)
+    samplesToUse <- intersect(namesWithSuffix, rownames(clusterFreqs))
+    if(length(samplesToUse)>0){
+      warning("For species '",species,"': No overlapping sample IDs between clustering and mOTU abundance profiles. ",
+              "Fixed by adding sample suffix '",SAMPLE.ID.SUFFIX,"' to species abundance IDs. ",
+              "Now, out of ",
+              length(rownames(clusterFreqs))," samples with SNV data, ",
+              length(samplesToUse)," have and species abundance data.")
+      names(motuProfileThisSpecies) <- namesWithSuffix
+    }
+  }
+
+  # only use samples that have species abundance and subspecies frequency data
+  samplesToUse <- intersect(names(motuProfileThisSpecies), rownames(clusterFreqs))
+
   if(length(samplesToUse) == 0){
-    stop(paste("No overlapping sample IDs between clustering and mOTU abundance profiles. Are IDs formatted differently? Example clustering IDs: ",
+    stop(paste("No overlapping sample IDs between clustering and mOTU abundance profiles. ",
+               "Are IDs formatted differently? Example clustering IDs: ",
                paste(tail(n=3,rownames(clusterFreqs)),collapse=", "),
                ". Example mOTU profile IDs:",
                paste(tail(n=3,names(motuProfileThisSpecies)),collapse=", "), sep=""))
@@ -95,6 +115,24 @@ writeSubpopAbundSpeciesAbund <- function(species, clusterFreqs, outDir,speciesPr
 
     if(nrow(clusterFreqs) == 0){
     stop(paste0("Species does not have cluster frequencies. Species: ",species))
+    }
+
+  # only use samples that have species abundance and subspecies frequency data
+  samplesToUse <- intersect(names(speciesProfile), rownames(clusterFreqs))
+
+  # first try to fix with most common problem -- presence of extra stuff after file name e.g. [sampleID].subspec71.unique.sorted.bam
+  if(length(samplesToUse) == 0 & exists("SAMPLE.ID.SUFFIX")){
+    namesWithoutSuffix <- names(speciesProfile)
+    namesWithSuffix <- paste0(namesWithoutSuffix,SAMPLE.ID.SUFFIX)
+    samplesToUse <- intersect(namesWithSuffix, rownames(clusterFreqs))
+    if(length(samplesToUse)>0){
+      warning("For species '",species,"': No overlapping sample IDs between clustering and species abundance profiles. ",
+              "Fixed by adding sample suffix '",SAMPLE.ID.SUFFIX,"' to species abundance IDs. ",
+              "Now, out of ",
+              length(rownames(clusterFreqs))," samples with SNV data, ",
+              length(samplesToUse)," have and species abundance data.")
+      names(speciesProfile) <- namesWithSuffix
+    }
   }
 
   # only use samples that have species abundance and subspecies frequency data

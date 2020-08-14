@@ -23,7 +23,8 @@ renderDetailedSpeciesReport <- function(speciesID, distMethod= "mann", metasnvOu
 }
 
 
-renderGeneContentReport <- function(speciesID, subpopOutDir, geneFamilyAbundancesFile, rmdDir) {
+renderGeneContentReport <- function(speciesID, subpopOutDir, geneFamilyAbundancesFile,
+                                    bamSuffix=".bam", rmdDir) {
 
   rStatCutoff <- 0.5
   statCutoff <- 0.05
@@ -38,7 +39,8 @@ renderGeneContentReport <- function(speciesID, subpopOutDir, geneFamilyAbundance
                       subpopOutDir = subpopOutDir,
                       geneFamilyAbundancesFile = geneFamilyAbundancesFile,
                       rStatCutoff = rStatCutoff,
-                      statCutoff = statCutoff),
+                      statCutoff = statCutoff,
+                      bamSuffix = bamSuffix),
                     intermediates_dir=tf, # so that reports can be rendered in parallel,
                     output_dir = subpopOutDir,
                     output_file = paste0(speciesID,"_geneContentReport.html"))
