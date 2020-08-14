@@ -68,8 +68,8 @@ theme_set(theme_bw())
 
 ```{r}
 # speciesID <- "742765"# "155864"
-# subpopOutDir <- "/Volumes/KESU/scb2/metagenomes/human/subspecGeoValidation/all_v2/subpopr/fr11v2UL-human71/params.hr10.hs80.ps80_oneSamplePerSubj/subspec/"
-# subpopOutDir <- "/Volumes/KESU/scb2/metagenomes/human/subspecGeoValidation/all_v2/subpopr/fr11v2UL-human71/params.hr10.hs80.ps80/subspec/"
+# subpopOutDir <- "/Volumes/KESU/scb2/metagenomes/human/subspecGeoValidation/all_v2/subpopr_Jun4/fr11v2UL-human71/params.hr10.hs80.ps80_oneSamplePerSubj/subspec/"
+# # subpopOutDir <- "/Volumes/KESU/scb2/metagenomes/human/subspecGeoValidation/all_v2/subpopr_v2/results_md_s14665/params.hr10.hs80.ps80.gs80/outputs_subspec/"
 # metasnvOutDir <- "/Volumes/KESU/scb2/metagenomes/human/subspecGeoValidation/all_v2/metaSNV/outputs_subspec/"
 # distMethod <- "mann"
 # bamSuffix <- ".fr11v2UL_subspec71.unique.sorted.bam"
@@ -105,7 +105,7 @@ if(length(speciesFiles)==0){
 
 ```{r}
 taxaDf <- getSpeciesTaxonomy(speciesID)
-if(is.null(taxaDF)){
+if(is.null(taxaDf)){
   print(paste("Taxonomy unknown for ",speciesID))
 }
 taxaDf
@@ -264,7 +264,7 @@ ggplot(aes(x=as.factor(nClus),y=confidence))+
   geom_bar(stat="identity")+
   geom_hline(yintercept = psCut,linetype=2)+
   geom_text(aes(label=round(confidence,2)),nudge_y = -0.05,color="white")+
-  xlab("Number of clusters/subspecies")+theme_bw()+ylab("Prediction Strength")
+  xlab("Number of clusters")+theme_bw()+ylab("Prediction Strength")
 ```
 
 
@@ -281,7 +281,7 @@ if(!is.null(clustering)){
     geom_boxplot(outlier.colour = NA)+
     geom_hline(yintercept = psCut,linetype=2)+
     geom_point(alpha=0.5)+
-    xlab("Number of clusters")+ylab("Prediction Strength (50 iterations)\nAsterix is mean used for decision") + 
+    xlab("Number of clusters")+ylab("Prediction Strength (50 iterations)\nRed asterix is mean used for decision") + 
     geom_point(data = psValMeans,mapping = aes(x=clusterNum,y=predictionStrength),color="red",shape=8,size=3)
 }
 ```
@@ -292,12 +292,9 @@ if(!is.null(clustering)){
 
 Given the number of clusters from the Prediction Strength values above, how stable are the clusters:
 
-Confidence in the number of clusters: **`r clustering$stabilityAssessment$numClusStabScore`**
+Confidence in the _number_ of clusters: **`r clustering$stabilityAssessment$numClusStabScore`**
 
-Confidence in each cluster: 
-```{r}
-clustering$stabilityAssessment$clusMembStabScores
-```
+Confidence in each cluster's _composition_:  **`r paste(clustering$stabilityAssessment$clusMembStabScores,collapse=",")`**
 
 See plots below for detailed information.
 
@@ -309,7 +306,7 @@ if(file.exists(f)){try(knitr::include_graphics(f))}else{print(paste0("Can't find
 ```
 
 
-#### Confidence in each cluster
+#### Confidence in each cluster's composition
 
 ```{r}
 if(clustering$numClusters == 1){
@@ -458,65 +455,13 @@ count(genoPos,cluster,name = "numberSNVPositions")
 ```
 
 
-
 ```{r,optipng='-o7', eval=doGenoPos}
 if(doGenoPos){
-  ggplot(genoPos, aes(x=snv,fill=majorAllele))+
-    geom_bar(stat="count")+facet_grid(cluster~.)
-}
-```
-
-
-```{r,optipng='-o7', eval=doGenoPos}
-if(doGenoPos){
-if(nrow(genoPos)<5000){ # otherwise this image is too huge
-ggplot(genoPos, aes(x=position,y=cluster,color=majorAllele))+geom_point(alpha=0.2)+
-  #+xlim(c(min(genoPos$refStart),max(genoPos$refEnd)))
-  facet_grid(snv~.,margins = T)
-}else{
-  print("Cannot render plot, too many data points (>5000). See summary plots below")
-}
-}
-``` 
-
-```{r,optipng='-o7', eval=doGenoPos}
-if(doGenoPos){
-ggplot(genoPos, aes(x=position))+geom_histogram()+
-  #+xlim(c(min(genoPos$refStart),max(genoPos$refEnd)))
-  facet_grid(.~cluster)
-
 ggplot(genoPos, aes(x=position,fill=majorAllele))+geom_histogram(bins = 30)+
   #+xlim(c(min(genoPos$refStart),max(genoPos$refEnd)))
-  facet_grid(snv~cluster,margins = "snv")
-
-ggplot(genoPos, aes(x=position,fill=majorAllele))+geom_histogram(bins = 30)+
-  #+xlim(c(min(genoPos$refStart),max(genoPos$refEnd)))
-  facet_grid(snv~cluster,margins = "snv",scale="free_y")
-}
-```
-
-```{r,optipng='-o7', eval=doGenoPos}
-if(doGenoPos){
-ggplot(genoPos, aes(x=position))+geom_freqpoly()+
-  #+xlim(c(min(genoPos$refStart),max(genoPos$refEnd)))
   facet_grid(.~cluster)
-
-ggplot(genoPos, aes(x=position))+geom_freqpoly()+
-  #+xlim(c(min(genoPos$refStart),max(genoPos$refEnd)))
-  facet_wrap(cluster~snv,scales="free_y")
-
-# ggplot(genoPos, aes(x=position))+geom_density()+
-#   #+xlim(c(min(genoPos$refStart),max(genoPos$refEnd)))
-#   facet_grid(.~cluster)
-# 
-# ggplot(genoPos, aes(x=position))+geom_density()+
-#   #+xlim(c(min(genoPos$refStart),max(genoPos$refEnd)))
-#   facet_wrap(cluster~snv,scales="free_y")
 }
 ```
-
-
-
 
 # Genotype frequency in samples used to define genotype
 
@@ -570,10 +515,14 @@ hap_freq$sampleID %>% unique() %>% length()
 
 ggplot(hap_freq,aes(y=sampleIDtoPlot,x=freq))+
   geom_point(alpha=0.2)+
-  facet_grid(cluster~averagingMethod)+theme(panel.grid = element_blank())
+  facet_grid(cluster~averagingMethod,switch = "both")+theme(panel.grid = element_blank())+
+  ylab("Samples")+xlab("Average frequency of genotyping SNV alleles within sample")+
+  theme(axis.text.y = element_blank(), axis.ticks.y = element_blank())
+
 ggplot(hap_freq,aes(x=freq))+
   geom_histogram(binwidth = 5)+
-  facet_grid(cluster~averagingMethod)
+  facet_grid(cluster~averagingMethod,switch = "both")+
+  ylab("Number of samples")+xlab("Average frequency of genotyping SNV alleles within sample")
 
 ```
 
@@ -597,7 +546,7 @@ hap_freq %>%
 ggplot(aes(fill=cluster,x=sampleID,y=freq))+
   geom_bar(stat = "identity")+
   coord_flip()+
-  facet_grid(majorCluster~averagingMethod,scales="free_y",space="free_y")+
+  facet_grid(majorCluster~averagingMethod,scales="free_y",space="free_y",switch = "both")+
   ylab("Average frequency (percent abundance) of subspecies' genotype")+
   xlab("Samples")+
   #scale_fill_discrete(name="Subspecies")
@@ -611,7 +560,7 @@ ggplot(aes(x=cluster,y=freq))+
   geom_boxplot()+
   geom_violin(alpha=0.1)+#geom_dotplot(binaxis = "y",binwidth = 2)+
   facet_grid(.~majorCluster,scales="free_y")+
-  ylab("Abundance of cluster's genotype /n in samples assigned to each cluster")+
+  ylab("Abundance of cluster's genotype \n in samples assigned to each cluster")+
   xlab("Genotype")
 
 ```
@@ -620,7 +569,7 @@ ggplot(aes(x=cluster,y=freq))+
 # Extended clustering
 
 ```{r}
-extClus <- paste0(subpopOutDir,speciesID,"_extended_clustering_wFreq.tab") 
+extClus <- paste0(subpopOutDir,"/",speciesID,"_extended_clustering_wFreq.tab") 
 if(file.exists(extClus)){
     
   subSpecFreqDf <- read.table(extClus,row.names = 1,as.is = T)
