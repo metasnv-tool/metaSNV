@@ -14,7 +14,7 @@ rm(list=ls())
 
 
 ptm <- proc.time()
-normalRun<-FALSE
+normalRun<-TRUE
 useExistingClustering<-FALSE
 suppressPackageStartupMessages(library(futile.logger))
 tmp <- flog.threshold(INFO) # assign to tmp to avoid NULL being returned and printed
