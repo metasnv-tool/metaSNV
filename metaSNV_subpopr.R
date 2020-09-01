@@ -13,9 +13,12 @@
 rm(list=ls())
 
 
+normalRun<-TRUE # use cmd line args
+useExistingClustering<-TRUE
+useExistingExtension<-TRUE
+makeReports <- FALSE
+
 ptm <- proc.time()
-normalRun<-TRUE
-useExistingClustering<-FALSE
 suppressPackageStartupMessages(library(futile.logger))
 tmp <- flog.threshold(INFO) # assign to tmp to avoid NULL being returned and printed
 
@@ -80,7 +83,7 @@ if(normalRun){ # TO RUN FROM WITHIN R WITHOUT OPTS ----------
                 metavar="logical"),
     make_option(c("-g", "--geneAbundance"), type="character",
                 default="doNotRun",
-                help="Path to file with gene family abundances (tsv, optional)",
+                help="Path to file with gene family abundances (tsv, optional). Species abundances required for gene correlation.",
                 metavar="file path"),
     make_option(c("-d", "--metadata"), type="character",
                 default="doNotRun",
@@ -176,7 +179,6 @@ onlyDoSubspeciesDetection<-opt$onlyDoSubspeciesDetection
 
 SAMPLE.ID.SUFFIX <- opt$sampleSuffix
 
-makeReports <- TRUE
 toScreen <- TRUE # if TRUE, lots gets printed to screen, if FALSE, only goes to log file
 printProgressBar <- TRUE
 
@@ -256,10 +258,10 @@ sink(file = logFile, append = TRUE,
 # Load library dependencies -------------------------------------------
 print("Loading R libraries...")
 
-if(!is.null(LIB.DIR) && dir.exists(LIB.DIR)){
-  .libPaths(c(LIB.DIR))
-  print(paste0("Using R library directories:",paste(.libPaths(),collapse=" : ")))
-}
+#if(!is.null(LIB.DIR) && dir.exists(LIB.DIR)){
+#  .libPaths(c(LIB.DIR))
+#  print(paste0("Using R library directories:",paste(.libPaths(),collapse=" : ")))
+#}
 
 # REQUIRES CAIRO TO BE INSTALLED, EITHER THROUGH 'install.packages()' OR THROUGH 'conda install -c anaconda cairo'
 # requires pandoc
@@ -484,8 +486,11 @@ if(length(allSubstrucSpecies) == 0){
 print("Genotyping clusters")
 print("Identifying genotyping SNVs")
 
+if(useExistingExtension){
+  print("Using previously made .pos files and extension results")
+}else{
 # creates *.pos files
-doExtension <- tryCatch(expr =
+x <- tryCatch(expr =
   pyGetPlacingRelevantSubset(outDir=OUT.DIR,
                              metaSnvDir=METASNV.DIR,
                              scriptDir = pyScriptDir),
@@ -526,6 +531,7 @@ printBpError(tmp)
 
 summariseClusteringExtensionResultsForAll(resultsDir=OUT.DIR,distMeth="mann")
 
+}
 }
 # Compile detailed reports for species with subspecies/clusters --------------
 
@@ -633,7 +639,10 @@ if(!is.null(METADATA.PATH) && file.exists(METADATA.PATH)){
 }
 
 # Test for gene correlations ##########
-if(!is.null(KEGG.PATH) && file.exists(KEGG.PATH)){
+if(!is.null(KEGG.PATH) && file.exists(KEGG.PATH) &&
+   !is.null(SPECIES.ABUNDANCE.PROFILE) && #species abundances required for correlation with gene abundaces
+   SPECIES.ABUNDANCE.PROFILE != "doNotRun" &&
+   file.exists(SPECIES.ABUNDANCE.PROFILE)){
   print(paste("Testing for gene correlations for",length(allSubstrucSpecies),
               "species using",ncoresUsing,"cores"))
 
