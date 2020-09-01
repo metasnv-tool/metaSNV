@@ -14,7 +14,7 @@ rm(list=ls())
 
 
 ptm <- proc.time()
-normalRun<-TRUE
+normalRun<-FALSE
 useExistingClustering<-FALSE
 suppressPackageStartupMessages(library(futile.logger))
 tmp <- flog.threshold(INFO) # assign to tmp to avoid NULL being returned and printed
@@ -49,8 +49,6 @@ if(normalRun){ # TO RUN FROM WITHIN R WITHOUT OPTS ----------
   suppressPackageStartupMessages(library(optparse))
 
   option_list = list(
-    #make_option(c("-s", "--settings"), type="character", default="SETTINGS.R",  # default=NULL,
-    #            help="Settings file, default is %default in current directory", metavar="character")
     make_option(c("-i", "--metaSnvResultsDir"), type="character",
                 default=NULL,
                 help="Path to directory that has the metaSNV results, used as input (required)",
@@ -65,9 +63,16 @@ if(normalRun){ # TO RUN FROM WITHIN R WITHOUT OPTS ----------
                 help="Number of cores to use for parallel processing. \
                 Default is 1.",
                 metavar="integer"),
+    make_option(c("-s", "--sampleSuffix"), type="character",
+                default="",
+                help="The constant suffix after the sample names in metaSNV's input bam files. \
+                e.g. '.bam' or '.unique.sorted.bam'",
+                metavar="string"),
     make_option(c("-a", "--speciesAbundance"), type="character",
                 default="doNotRun",
-                help="Path to file with species abundances (tsv, optional)",
+                help="Path to file with species abundances (tsv, optional). \
+                Rows are species, columns are samples. Column names must match file \
+                names used as metaSNV input (bam files).",
                 metavar="file path"),
     make_option(c("-m", "--isMotus"), type="logical",
                 default=TRUE,
@@ -111,11 +116,6 @@ if(normalRun){ # TO RUN FROM WITHIN R WITHOUT OPTS ----------
                 within the cluster by this many percentage points (as decimal <= 1). \
                 (gs) Default 0.8",
                 metavar="numeric"),
-    make_option(c("-s", "--settings"), type="character",
-                #default="./src/subpopr/inst/SETTINGS.R",
-                default=NULL,
-                help="Use this settings file instead of the command line arguments",
-                metavar="file path"),
     make_option(c("-q", "--onlyDoSubspeciesDetection"), type="logical",
                 default=FALSE,
                 help="Whether to only do the first step of the pipeline \
@@ -129,21 +129,31 @@ if(normalRun){ # TO RUN FROM WITHIN R WITHOUT OPTS ----------
 
 
 }else{
-  scriptDir <- "/g/bork3/home/rossum/software/metaSNV2/metaSNV/"
-  setwd("/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v2/subpopr_v2")
   opt <- list()
-  opt$procs <- 2
-  opt$speciesAbundance <- "doNotRun"
-  opt$isMotus <- T
+  #scriptDir <- "/g/bork3/home/rossum/software/metaSNV2/metaSNV/"
+  #setwd("/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v2/subpopr_v2")
+  #opt$metadata <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v2/metadata_allv2.csv"
+  #opt$metaSnvResultsDir <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v2/metaSNV/outputs_subspec/"
+  #opt$speciesAbundance <- "doNotRun"
   opt$geneAbundance <- "doNotRun"
-  opt$metadata <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v2/metadata_allv2.csv"
-  opt$metadataSampleIDCol <- "sampleNames"
-  opt$metaSnvResultsDir <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v2/metaSNV/outputs_subspec/"
-  opt$outputDir <- "results_q3"
+
+  scriptDir <- "/Users/rossum/Dropbox/PostDocBork/subspecies/toolDevelopment/metaSNV/"
+  workDir <- "/Volumes/KESU/scb2/metagenomes/human/subspecGeoValidation/all_v3/"
+  setwd(paste0(workDir,"/subpopr"))
+  opt$metadata <- paste0(workDir,"metadataForSubspeciesAnalysis.csv")
+  opt$metaSnvResultsDir <- paste0(workDir,"/metaSNV/outputs/")
+  opt$speciesAbundance <- paste0(workDir,"/motus20/motusForSelectedSamples.tsv") #"doNotRun"
+  opt$geneAbundance <- paste0(workDir,"/geneContent/mapToPanGenomes/outputs/counts_unique_norm_tmp1k.tsv")
+  opt$sampleSuffix <- ".subspec71.unique.sorted.bam"
+
+  opt$procs <- 2
+  opt$isMotus <- T
+  opt$metadataSampleIDCol <- "sampleID"
+  opt$outputDir <- "results_md_s49677-u"
 
   opt$fixReadThreshold <- 0.1
   opt$fixSnvThreshold <- 0.8
-  opt$genotypingThreshold <- 0.8
+  opt$genotypingThreshold <- 0.9
 
   opt$onlyDoSubspeciesDetection<-FALSE
 
@@ -159,8 +169,12 @@ METADATA.COL.ID <- opt$metadataSampleIDCol
 MAX.PROP.READS.NON.HOMOG <- opt$fixReadThreshold
 MIN.PROP.SNV.HOMOG <- opt$fixSnvThreshold
 SNV.SUBSPEC.UNIQ.CUTOFF <- opt$genotypingThreshold
+CLUSTERING.PS.CUTOFF <- 0.8
+DIST.METH.REPORTS <- "mann"
 
 onlyDoSubspeciesDetection<-opt$onlyDoSubspeciesDetection
+
+SAMPLE.ID.SUFFIX <- opt$sampleSuffix
 
 makeReports <- TRUE
 toScreen <- TRUE # if TRUE, lots gets printed to screen, if FALSE, only goes to log file
@@ -187,7 +201,7 @@ assert0to1(opt$fixReadThreshold,"fixReadThreshold")
 assert0to1(opt$fixSnvThreshold,"fixSnvThreshold")
 assert0to1(opt$genotypingThreshold,"genotypingThreshold")
 
-source(paste0(scriptDir,"/src/subpopr/inst/metaSNV_subpopr_SETTINGS.R"))
+#source(paste0(scriptDir,"/src/subpopr/inst/metaSNV_subpopr_SETTINGS.R"))
 SUBPOPR.DIR<-paste0(scriptDir,"/src/subpopr/")
 
 SUBPOPR_RESULTS_DIR=paste0(OUT.DIR.BASE,"/params",
@@ -214,7 +228,6 @@ checkFile(SPECIES.ABUNDANCE.PROFILE,"Species abundance")
 checkFile(METADATA.PATH,"Metadata")
 checkFile(KEGG.PATH, "Gene family abundance")
 checkFile(METASNV.DIR, "MetaSNV output directory")
-
 
 # Logging set up -----------------------------------------------------
 
@@ -558,6 +571,7 @@ if(!is.null(SPECIES.ABUNDANCE.PROFILE) &&
    SPECIES.ABUNDANCE.PROFILE != "doNotRun" &&
    file.exists(SPECIES.ABUNDANCE.PROFILE)){
   print("Calculating cluster abundances using species abundances...")
+
   tmp <- BiocParallel::bptry(
     BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
                            useSpeciesAbundToCalcSubspeciesAbund,
@@ -567,6 +581,11 @@ if(!is.null(SPECIES.ABUNDANCE.PROFILE) &&
 
   printBpError(tmp)
   abunds <- collectSubpopAbunds(OUT.DIR)
+  if(is.null(abunds)){
+    warning("Subspecies abundance calculations failed. ",
+            "No expected results files exist (.*hap_coverage_extended_normed.tab). ",
+            "See log files.")
+  }
 
 }else if(SPECIES.ABUNDANCE.PROFILE != "doNotRun"){
   print(paste0("Not running species abundance analysis.",
@@ -619,20 +638,24 @@ if(!is.null(KEGG.PATH) && file.exists(KEGG.PATH)){
               "species using",ncoresUsing,"cores"))
 
   print("Correlating cluster and gene family abundances...")
+  #pearson
   tmp <- BiocParallel::bptry(
     BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
                            correlateSubpopProfileWithGeneProfiles,
                            OUT.DIR,KEGG.PATH,
-                           geneFamilyType="Kegg",
+                           #geneFamilyType="Kegg",
+                           geneFamilyType="Genes",
                            corrMethod="pearson"))
 
   printBpError(tmp)
+  #spearman
   #tmp <- foreach(spec=allSubstrucSpecies) %dopar% correlateSubpopProfileWithGeneProfiles(spec,OUT.DIR,KEGG.PATH,geneFamilyType="Kegg", corrMethod="spearman")
-  tmp <- BiocParallel::bptry(BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
-                                                    correlateSubpopProfileWithGeneProfiles,
-                                                    OUT.DIR,KEGG.PATH,
-                                                    geneFamilyType="Kegg",
-                                                    corrMethod="spearman"))
+  tmp <- BiocParallel::bptry(
+    BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
+                           correlateSubpopProfileWithGeneProfiles,
+                           OUT.DIR,KEGG.PATH,
+                           geneFamilyType="Genes",
+                           corrMethod="spearman"))
 
   printBpError(tmp)
 
@@ -642,6 +665,7 @@ if(!is.null(KEGG.PATH) && file.exists(KEGG.PATH)){
                                                       renderGeneContentReport,
                                                       subpopOutDir = OUT.DIR,
                                                       geneFamilyAbundancesFile = KEGG.PATH,
+                                                      bamSuffix= SAMPLE.ID.SUFFIX,
                                                       rmdDir = rmdDir))
     printBpError(tmp)
   }
