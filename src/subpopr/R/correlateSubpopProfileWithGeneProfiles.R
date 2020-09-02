@@ -27,10 +27,14 @@ correlateSubpopProfileWithGeneProfiles <- function(species,outDir,geneAbundanceP
 
   allClustAbund <- allClustAbundInMin3Samples
 
-  geneFamilyProfiles <- read_tsv(geneAbundancePath,comment = "#",col_names = T,
-                                 cols(.default = col_number(),X1 = col_character())
-                                 ) %>%
-    rename(geneFamily = X1) %>%
+  # geneFamilyProfiles <- read_tsv(geneAbundancePath,comment = "#",col_names = T,
+  #                                cols(.default = col_number(),X1 = col_character())
+  #                                ) %>%
+  #   rename(geneFamily = X1) %>%
+  #   gather(key = "sampleName",value = "abundance",-geneFamily)
+  geneFamilyProfiles <- read_tsv(geneAbundancePath,comment = "#",col_names = T)
+  colnames(geneFamilyProfiles)[1] <- "geneFamily"
+  geneFamilyProfiles <- geneFamilyProfiles %>%
     gather(key = "sampleName",value = "abundance",-geneFamily)
 
 
@@ -46,11 +50,11 @@ correlateSubpopProfileWithGeneProfiles <- function(species,outDir,geneAbundanceP
     namesWithSuffix <- paste0(namesWithoutSuffix,SAMPLE.ID.SUFFIX)
     samplesToUse <- intersect(namesWithSuffix, subspeciesSamples)
     if(length(samplesToUse)>0){
-      warning("For species '",species,"': No overlapping sample IDs between clustering and mOTU abundance profiles. ",
-              "Fixed by adding sample suffix '",SAMPLE.ID.SUFFIX,"' to species abundance IDs. ",
+      warning("For species '",species,"': No overlapping sample IDs between clustering and gene abundance profiles. ",
+              "Fixed by adding sample suffix '",SAMPLE.ID.SUFFIX,"' to IDs in gene abundance file. ",
               "Now, out of ",
               length(subspeciesSamples)," samples with SNV data, ",
-              length(samplesToUse)," have and species abundance data.")
+              length(samplesToUse)," also have gene abundance data.")
       geneFamilyProfiles$sampleName <- namesWithSuffix
     }
   }
