@@ -158,10 +158,10 @@ summariseGeneFamilyCorrelationResults <- function(resultsDir,speciesID,sigCutOff
   #resultsDir <- "/Volumes/KESU/scb2/bork/rossum/subspecies/testingSubpopr/inSilicoMock/mine/smallerTestSet/smallGenomes/04_subpopr_nonPack/params.hr5.hs80.ps80/defaults/"
   #speciesID <- "refGenome2clus"
 
-  suffixes <- c("_corrKegg-spearman.tsv","_corrKegg-pearson.tsv")
-  resFiles <- paste0(resultsDir,speciesID,suffixes)
+  suffixes <- c("_corr*-spearman.tsv","_corr*-pearson.tsv")
+  resFiles <- Sys.glob(paste0(resultsDir,speciesID,suffixes)) #Sys.glob finds existing files that match wildcards
   anySig <- F
-  if(!any(sapply(resFiles,file.exists))){
+  if(length(resFiles)==0){
     anySig <- NA
     corrWorked <- "no test results"
     reportRelPath <- NA
