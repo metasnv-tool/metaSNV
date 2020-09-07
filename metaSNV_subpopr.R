@@ -14,9 +14,11 @@ rm(list=ls())
 
 
 normalRun<-TRUE # use cmd line args
-useExistingClustering<-TRUE
+useExistingClustering<-FALSE
 useExistingExtension<-TRUE
 makeReports <- FALSE
+makeGeneReports <- FALSE
+doSpecies<-FALSE
 
 ptm <- proc.time()
 suppressPackageStartupMessages(library(futile.logger))
@@ -174,6 +176,7 @@ MIN.PROP.SNV.HOMOG <- opt$fixSnvThreshold
 SNV.SUBSPEC.UNIQ.CUTOFF <- opt$genotypingThreshold
 CLUSTERING.PS.CUTOFF <- 0.8
 DIST.METH.REPORTS <- "mann"
+BAMS.TO.USE = NULL
 
 onlyDoSubspeciesDetection<-opt$onlyDoSubspeciesDetection
 
@@ -573,7 +576,7 @@ if(length(speciesToAssess)>0){
 
 # Get subspecies abundances relative to whole community ---------------------------------------
 
-if(!is.null(SPECIES.ABUNDANCE.PROFILE) &&
+if(doSpecies && !is.null(SPECIES.ABUNDANCE.PROFILE) &&
    SPECIES.ABUNDANCE.PROFILE != "doNotRun" &&
    file.exists(SPECIES.ABUNDANCE.PROFILE)){
   print("Calculating cluster abundances using species abundances...")
@@ -668,7 +671,7 @@ if(!is.null(KEGG.PATH) && file.exists(KEGG.PATH) &&
 
   printBpError(tmp)
 
-  if(makeReports){
+  if(makeGeneReports){ #makeReports){
     tmp <- BiocParallel::bptry(BiocParallel::bplapply(allSubstrucSpecies,
                                                       BPPARAM = SerialParam(),#bpParam, # for some reason, parallel fails here
                                                       renderGeneContentReport,
