@@ -15,7 +15,7 @@ rm(list=ls())
 
 normalRun<-TRUE # use cmd line args
 useExistingClustering<-FALSE
-useExistingExtension<-TRUE
+useExistingExtension<-FALSE
 makeReports <- FALSE
 makeGeneReports <- FALSE
 doSpecies<-FALSE
@@ -176,7 +176,6 @@ MIN.PROP.SNV.HOMOG <- opt$fixSnvThreshold
 SNV.SUBSPEC.UNIQ.CUTOFF <- opt$genotypingThreshold
 CLUSTERING.PS.CUTOFF <- 0.8
 DIST.METH.REPORTS <- "mann"
-BAMS.TO.USE = NULL
 
 onlyDoSubspeciesDetection<-opt$onlyDoSubspeciesDetection
 
@@ -207,6 +206,12 @@ assert0to1(opt$fixSnvThreshold,"fixSnvThreshold")
 assert0to1(opt$genotypingThreshold,"genotypingThreshold")
 
 #source(paste0(scriptDir,"/src/subpopr/inst/metaSNV_subpopr_SETTINGS.R"))
+DIST.METH.REPORTS="mann" # what method to use for generating reports: either "mann" or "allele"
+BAMS.TO.USE = NULL # default = NULL
+ANALYSE.ALLELE.DISTANCES = F
+USE.PACKAGE.PREDICTION.STRENGTH = FALSE # default = FALSE
+
+
 SUBPOPR.DIR<-paste0(scriptDir,"/src/subpopr/")
 
 SUBPOPR_RESULTS_DIR=paste0(OUT.DIR.BASE,"/params",
@@ -649,36 +654,60 @@ if(!is.null(KEGG.PATH) && file.exists(KEGG.PATH) &&
   print(paste("Testing for gene correlations for",length(allSubstrucSpecies),
               "species using",ncoresUsing,"cores"))
 
-  print("Correlating cluster and gene family abundances...")
-  #pearson
-  tmp <- BiocParallel::bptry(
-    BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
-                           correlateSubpopProfileWithGeneProfiles,
-                           OUT.DIR,KEGG.PATH,
-                           #geneFamilyType="Kegg",
-                           geneFamilyType="Genes",
-                           corrMethod="pearson"))
-
-  printBpError(tmp)
-  #spearman
-  #tmp <- foreach(spec=allSubstrucSpecies) %dopar% correlateSubpopProfileWithGeneProfiles(spec,OUT.DIR,KEGG.PATH,geneFamilyType="Kegg", corrMethod="spearman")
-  tmp <- BiocParallel::bptry(
-    BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
-                           correlateSubpopProfileWithGeneProfiles,
-                           OUT.DIR,KEGG.PATH,
-                           geneFamilyType="Genes",
-                           corrMethod="spearman"))
-
-  printBpError(tmp)
+#   print("Correlating cluster and gene family abundances...")
+#   #pearson
+#   tmp <- BiocParallel::bptry(
+#     BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
+#                            correlateSubpopProfileWithGeneProfiles,
+#                            OUT.DIR,KEGG.PATH,
+#                            #geneFamilyType="Kegg",
+#                            geneFamilyType="Genes",
+#                            corrMethod="pearson"))
+# 
+#   printBpError(tmp)
+#   #spearman
+#   #tmp <- foreach(spec=allSubstrucSpecies) %dopar% correlateSubpopProfileWithGeneProfiles(spec,OUT.DIR,KEGG.PATH,geneFamilyType="Kegg", corrMethod="spearman")
+#   tmp <- BiocParallel::bptry(
+#     BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
+#                            correlateSubpopProfileWithGeneProfiles,
+#                            OUT.DIR,KEGG.PATH,
+#                            geneFamilyType="Genes",
+#                            corrMethod="spearman"))
+# 
+#     # if failed, try again...often it's just a timing conflict error from parallelising
+#     if(!all(bpok(tmp))){
+#       print("Retrying computation of Spearman correlations")
+#       tmp <- BiocParallel::bptry(
+#         BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
+#                                BPREDO=tmp,
+#                                correlateSubpopProfileWithGeneProfiles,
+#                            OUT.DIR,KEGG.PATH,
+#                            geneFamilyType="Genes",
+#                            corrMethod="spearman"))
+# 			   }
 
   if(makeGeneReports){ #makeReports){
     tmp <- BiocParallel::bptry(BiocParallel::bplapply(allSubstrucSpecies,
-                                                      BPPARAM = SerialParam(),#bpParam, # for some reason, parallel fails here
+                                                      BPPARAM = bpParam, #SerialParam(), # for some reason, parallel fails here
                                                       renderGeneContentReport,
                                                       subpopOutDir = OUT.DIR,
                                                       geneFamilyAbundancesFile = KEGG.PATH,
                                                       bamSuffix= SAMPLE.ID.SUFFIX,
                                                       rmdDir = rmdDir))
+    
+    # if failed, try again...often it's just a timing conflict error from parallelising
+    if(!all(bpok(tmp))){
+      print("Retrying computation of Spearman correlations")
+      tmp <- BiocParallel::bptry(
+        BiocParallel::bplapply(BPREDO=tmp,
+                               allSubstrucSpecies,
+                               BPPARAM = bpParam, #SerialParam(), # for some reason, parallel fails here
+                               renderGeneContentReport,
+                               subpopOutDir = OUT.DIR,
+                               geneFamilyAbundancesFile = KEGG.PATH,
+                               bamSuffix= SAMPLE.ID.SUFFIX,
+                               rmdDir = rmdDir))
+    }
     printBpError(tmp)
   }
   summariseGeneFamilyCorrelationResultsForAll(OUT.DIR)
