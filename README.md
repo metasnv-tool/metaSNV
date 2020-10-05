@@ -83,7 +83,8 @@ Workflow:
 ## 3. Part II: Post-Processing (Filtering & Analysis)
 Note: requires SNP calling (Part II) to be done!
 
-    metaSNV_post.py project_dir [options]
+    metaSNV_Filtering.py project_dir [options]
+    metaSNV_DistDiv.py --filt project_dir/filtered/pop [options]
 
 Example Tutorial
 ================
@@ -108,7 +109,8 @@ Example Tutorial
 
 ## 5. Run filtering and post processing
 
-    $ python metaSNV_post.py tutorial
+    $ python metaSNV_Filtering.py tutorial 
+    $ python metaSNV_DistDiv.py --filt tutorial/filtered/pop --dist
     
     Voila! Your distances will be in the tutorial/distances folder. Enjoy!
 
@@ -132,5 +134,6 @@ run and you can decide on how to schedule and manage them.
     
 ## 3. Run post-processing as usual
 
-    $ python metaSNV_post.py tutorial
+    $ python metaSNV_Filtering.py tutorial 
+    $ python metaSNV_DistDiv.py --filt tutorial/filtered/pop --dist
 
