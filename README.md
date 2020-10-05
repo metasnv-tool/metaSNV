@@ -37,7 +37,7 @@ universe repository before):
 
 ### Installing dependencies using anaconda
 
-If you use [anaconda](https://www.continuum.io/downloads), you can create an
+If you use [anaconda](https://www.anaconda.com/products/individual), you can create an
 environment with all necessary dependencies using the following commands:
 
     conda create --name metaSNV -c bioconda boost htslib pkg-config numpy pandas
@@ -51,7 +51,7 @@ If you do not have a C++ compiler, anaconda can also install G++:
     conda create --name metaSNV -c bioconda boost htslib pkg-config numpy pandas
     source activate metaSNV
     # Add this command:
-    conda install gcc
+    conda install gcc_linux-64 gxx_linux-64 
     export CONDA_ENV_PATH=$CONDA_PREFIX
     export CFLAGS=-I$CONDA_ENV_PATH/include
     export LD_LIBRARY_PATH=$CONDA_ENV_PATH/lib:$LD_LIBRARY_PATH
@@ -94,14 +94,14 @@ Example Tutorial
     $ ./getRefDB.sh
     Select freeze9, as the tutorial files have been mapped against this freeze. 
 
-## 2. Go to the EXAMPLE directory and download the samples with the getSamplesScript.sh
+## 2. Go to the EXAMPLE directory and download the samples with the getExp.sh
 
     $ cd EXAMPLE
-    $ ./getSamplesScript.sh
+    $ ./getExp.sh
 
 ## 3. Make sample list
 
-    $ find `pwd`/EXAMPLE/samples -name “*.bam” > sample_list
+    $ find `pwd`/EXAMPLE/samples -name "*.bam" > sample_list
 
 ## 4. Run the SNV calling step
 
@@ -124,7 +124,7 @@ run and you can decide on how to schedule and manage them.
     
     $ python metaSNV.py tutorial sample_list db/freeze9.genomes.RepGenomesv9.fna --n_splits 8 --print-commands
     
-    Note the addition of the "--print-commnads". This will print out one-liners that you need to run. When done, run same again.
+    Note the addition of the "--print-commands". This will print out one-liners that you need to run. When done, run same again.
 
 ## 2. Get the second set of commands
  
