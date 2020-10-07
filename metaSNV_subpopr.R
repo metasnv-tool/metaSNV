@@ -5,6 +5,7 @@
 # Rscript metaSNV_supopr.R -h
 
 # clear the environment
+
 rm(list=ls())
 
 normalRun<-TRUE # use cmd line args
@@ -21,7 +22,7 @@ tmp <- flog.threshold(INFO) # assign to tmp to avoid NULL being returned and pri
 if(normalRun){
   # Expectation is that this script will sit in the metaSNV directory,
   # which will include a directory ./src/subpopr
-
+  
   # try to set the current working directory to the location of this file
   # works if this file is sourced() or has been called from cmd line (e.g. Rscript metaSNV_subpop.R [...])
   thisFile <- function() {
@@ -36,15 +37,15 @@ if(normalRun){
       return(normalizePath(sys.frames()[[1]]$ofile))
     }
   }
-
+  
   scriptDir <- dirname(thisFile())
-
-
+  
+  
   # Parse params -------------------------------------------------------------
-
+  
   suppressPackageStartupMessages(library(getopt))
   suppressPackageStartupMessages(library(optparse))
-
+  
   option_list = list(
     make_option(c("-i", "--metaSnvResultsDir"), type="character",
                 default=NULL,
@@ -123,11 +124,11 @@ if(normalRun){
                 Only intended for troubleshooting.",
                 metavar="logical")
   );
-
+  
   opt_parser = OptionParser(option_list=option_list);
   opt = parse_args(opt_parser);
-
-
+  
+  
 }else{
   # TO RUN FROM WITHIN R WITHOUT OPTS ----------
   opt <- list()
@@ -137,7 +138,7 @@ if(normalRun){
   #opt$metaSnvResultsDir <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v2/metaSNV/outputs_subspec/"
   #opt$speciesAbundance <- "doNotRun"
   #opt$geneAbundance <- "doNotRun"
-
+  
   scriptDir <- "/Users/rossum/Dropbox/PostDocBork/subspecies/toolDevelopment/metaSNV/"
   workDir <- "/Volumes/KESU/scb2/metagenomes/human/subspecGeoValidation/all_v3/"
   setwd(paste0(workDir,"/subpopr"))
@@ -146,18 +147,18 @@ if(normalRun){
   opt$speciesAbundance <- paste0(workDir,"/motus20/motusForSelectedSamples.tsv") #"doNotRun"
   opt$geneAbundance <- paste0(workDir,"/geneContent/mapToPanGenomes/outputs/counts_unique_norm_tmp1k.tsv")
   opt$sampleSuffix <- ".subspec71.unique.sorted.bam"
-
+  
   opt$procs <- 2
   opt$isMotus <- T
   opt$metadataSampleIDCol <- "sampleID"
   opt$outputDir <- "results_md_s49677-u"
-
+  
   opt$fixReadThreshold <- 0.1
   opt$fixSnvThreshold <- 0.8
   opt$genotypingThreshold <- 0.9
-
+  
   opt$onlyDoSubspeciesDetection<-FALSE
-
+  
 }
 
 N.CORES <- opt$procs
@@ -337,7 +338,7 @@ if(!identical(specDist,specSnpFreq)){
                 " species) are not identical. Using the intersection (",
                 length(species),"species).Species not found in both locations: ",
                 paste(setdiff(specDist,specSnpFreq),collapse = ",")))
-
+  
 }
 
 if(length(specDist) == 0){
@@ -392,19 +393,19 @@ runDefine <- function(spec){
 }
 
 if(!useExistingClustering){
-resultsPerSpecies <- BiocParallel::bptry(
-  BiocParallel::bplapply(species, runDefine, BPPARAM = bpParam))
-printBpError(resultsPerSpecies)
-
-# this is error prone and output is not used anyway
-# resultsPerSpeciesFixed <- resultsPerSpecies
-# if(any(!bpok(resultsPerSpeciesFixed))){
-#   resultsPerSpeciesFixed[[which(!bpok(resultsPerSpeciesFixed))]] <- "Error"
-# }
-# resultsPerSpeciesDF <- cbind.data.frame(SpeciesID=species,
-#                                         ClusteringResult=unlist(resultsPerSpeciesFixed))
-# write.csv(x = resultsPerSpeciesDF,file = paste0(OUT.DIR,"/log_clusteringSummaryPerSpecies.csv"))
-saveRDS(resultsPerSpecies, file = paste0(OUT.DIR,"/log_clusteringSummaryPerSpecies.rds"))
+  resultsPerSpecies <- BiocParallel::bptry(
+    BiocParallel::bplapply(species, runDefine, BPPARAM = bpParam))
+  printBpError(resultsPerSpecies)
+  
+  # this is error prone and output is not used anyway
+  # resultsPerSpeciesFixed <- resultsPerSpecies
+  # if(any(!bpok(resultsPerSpeciesFixed))){
+  #   resultsPerSpeciesFixed[[which(!bpok(resultsPerSpeciesFixed))]] <- "Error"
+  # }
+  # resultsPerSpeciesDF <- cbind.data.frame(SpeciesID=species,
+  #                                         ClusteringResult=unlist(resultsPerSpeciesFixed))
+  # write.csv(x = resultsPerSpeciesDF,file = paste0(OUT.DIR,"/log_clusteringSummaryPerSpecies.csv"))
+  saveRDS(resultsPerSpecies, file = paste0(OUT.DIR,"/log_clusteringSummaryPerSpecies.rds"))
 }
 # summarise the results from clustering
 summariseClusteringResultsForAll(OUT.DIR,distMeth="mann")
@@ -467,7 +468,7 @@ if(makeReports){
                            subpopOutDir = noSubstruc2dir,
                            bamSuffix = SAMPLE.ID.SUFFIX,
                            rmdDir = rmdDir ))
-
+  
   printBpError(tmp)
 }
 # Handle species with subspecies #######################################################################
@@ -493,49 +494,49 @@ print("Identifying genotyping SNVs")
 if(useExistingExtension){
   print("Using previously made .pos files and extension results")
 }else{
-# creates *.pos files
-x <- tryCatch(expr =
-  pyGetPlacingRelevantSubset(outDir=OUT.DIR,
-                             metaSnvDir=METASNV.DIR,
-                             scriptDir = pyScriptDir),
-  error = function(e){
-    print(paste("ERROR: ",e$message ))
-    print("Skipping subspecies genotyping.")
+  # creates *.pos files
+  x <- tryCatch(expr =
+                  pyGetPlacingRelevantSubset(outDir=OUT.DIR,
+                                             metaSnvDir=METASNV.DIR,
+                                             scriptDir = pyScriptDir),
+                error = function(e){
+                  print(paste("ERROR: ",e$message ))
+                  print("Skipping subspecies genotyping.")
+                }
+  )
+  
+  
+  # get all posFiles
+  allPos <- list.files(path=OUT.DIR,pattern = '.*_.\\.pos$',full.names = T)
+  doExtension<-TRUE
+  if(length(allPos) == 0){
+    warning("Genotyping failed. No *.pos files found. Not genotyping subspecies.")
+    doExtension <- FALSE
   }
-)
-
-
-# get all posFiles
-allPos <- list.files(path=OUT.DIR,pattern = '.*_.\\.pos$',full.names = T)
-doExtension<-TRUE
-if(length(allPos) == 0){
-  warning("Genotyping failed. No *.pos files found. Not genotyping subspecies.")
-  doExtension <- FALSE
-}
-
-if(doExtension){
-print("Compiling genotyping SNVs")
-#tmp <- foreach(pos=allPos) %dopar% pyConvertSNPtoAllelTable(posFile = pos)
-tmp <- BiocParallel::bptry(
-  BiocParallel::bplapply(allPos, BPPARAM = bpParam,
-                         pyConvertSNPtoAllelTable,
-                         scriptDir = pyScriptDir))
-
-printBpError(tmp)
-
-print("Determining abundance of clusters using genotyping SNVs")
-#tmp <- foreach(spec=allSubstrucSpecies) %dopar% useGenotypesToProfileSubpops(spec, metaSNVdir=METASNV.DIR, outDir=OUT.DIR )
-tmp <- BiocParallel::bptry(
-  BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
-                         useGenotypesToProfileSubpops,
-                         metaSNVdir=METASNV.DIR,
-                         outDir=OUT.DIR ))
-
-printBpError(tmp)
-
-summariseClusteringExtensionResultsForAll(resultsDir=OUT.DIR,distMeth="mann")
-
-}
+  
+  if(doExtension){
+    print("Compiling genotyping SNVs")
+    #tmp <- foreach(pos=allPos) %dopar% pyConvertSNPtoAllelTable(posFile = pos)
+    tmp <- BiocParallel::bptry(
+      BiocParallel::bplapply(allPos, BPPARAM = bpParam,
+                             pyConvertSNPtoAllelTable,
+                             scriptDir = pyScriptDir))
+    
+    printBpError(tmp)
+    
+    print("Determining abundance of clusters using genotyping SNVs")
+    #tmp <- foreach(spec=allSubstrucSpecies) %dopar% useGenotypesToProfileSubpops(spec, metaSNVdir=METASNV.DIR, outDir=OUT.DIR )
+    tmp <- BiocParallel::bptry(
+      BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
+                             useGenotypesToProfileSubpops,
+                             metaSNVdir=METASNV.DIR,
+                             outDir=OUT.DIR ))
+    
+    printBpError(tmp)
+    
+    summariseClusteringExtensionResultsForAll(resultsDir=OUT.DIR,distMeth="mann")
+    
+  }
 }
 # Compile detailed reports for species with subspecies/clusters --------------
 
@@ -558,12 +559,12 @@ if(makeReports){
                            runRend))
   # if failed, try again...often it's just a timing conflict error from parallelising
   if(!all(bpok(tmp))){
-  print("Retrying compilation of failed reports")
-  tmp <- BiocParallel::bptry(
-    BiocParallel::bplapply(X = allSubstrucSpecies,
-                           BPREDO=tmp,
-                           BPPARAM = bpParam,
-                           runRend))
+    print("Retrying compilation of failed reports")
+    tmp <- BiocParallel::bptry(
+      BiocParallel::bplapply(X = allSubstrucSpecies,
+                             BPREDO=tmp,
+                             BPPARAM = bpParam,
+                             runRend))
   }
   printBpError(tmp)
 }
@@ -581,14 +582,14 @@ if(doSpecies && !is.null(SPECIES.ABUNDANCE.PROFILE) &&
    SPECIES.ABUNDANCE.PROFILE != "doNotRun" &&
    file.exists(SPECIES.ABUNDANCE.PROFILE)){
   print("Calculating cluster abundances using species abundances...")
-
+  
   tmp <- BiocParallel::bptry(
     BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
                            useSpeciesAbundToCalcSubspeciesAbund,
                            speciesAbundanceProfileFilePath=SPECIES.ABUNDANCE.PROFILE,
                            outDir=OUT.DIR,
                            speciesProfileIsMotus = SPECIES.ABUND.PROFILE.IS.MOTUS))
-
+  
   printBpError(tmp)
   abunds <- collectSubpopAbunds(OUT.DIR)
   if(is.null(abunds)){
@@ -596,7 +597,7 @@ if(doSpecies && !is.null(SPECIES.ABUNDANCE.PROFILE) &&
             "No expected results files exist (.*hap_coverage_extended_normed.tab). ",
             "See log files.")
   }
-
+  
 }else if(SPECIES.ABUNDANCE.PROFILE != "doNotRun"){
   print(paste0("Not running species abundance analysis.",
                " Required file not specified or does not exist: ",
@@ -608,16 +609,16 @@ if(doSpecies && !is.null(SPECIES.ABUNDANCE.PROFILE) &&
 # Test metadata associations ##########
 if(!is.null(METADATA.PATH) && file.exists(METADATA.PATH)){
   if(makeReports){
-
+    
     doRendMd <- function(spec){
       flog.info("Rendering metadata association report for species %s", spec)
       renderTestPhenotypeAssocReport(speciesID = spec,
-      subpopOutDir = OUT.DIR,
-      categoryColumnNames = METADATA.COLS.TO.TEST, #"status",
-      sampleIDColumnName = METADATA.COL.ID, #"ID",
-      sampleExtension = SAMPLE.ID.SUFFIX, #".ULRepGenomesv11.unique.sorted.bam",
-      metadataFile = METADATA.PATH,
-      rmdDir = rmdDir)
+                                     subpopOutDir = OUT.DIR,
+                                     categoryColumnNames = METADATA.COLS.TO.TEST, #"status",
+                                     sampleIDColumnName = METADATA.COL.ID, #"ID",
+                                     sampleExtension = SAMPLE.ID.SUFFIX, #".ULRepGenomesv11.unique.sorted.bam",
+                                     metadataFile = METADATA.PATH,
+                                     rmdDir = rmdDir)
     }
     print("Associating with metadata...")
     tmp <- BiocParallel::bptry(
@@ -649,7 +650,7 @@ if(!is.null(KEGG.PATH) && file.exists(KEGG.PATH) &&
    file.exists(SPECIES.ABUNDANCE.PROFILE)){
   print(paste("Testing for gene correlations for",length(allSubstrucSpecies),
               "species using",ncoresUsing,"cores"))
-
+  
   print("Correlating cluster and gene family abundances (Pearson)...")
   #pearson
   tmp <- BiocParallel::bptry(
@@ -658,7 +659,7 @@ if(!is.null(KEGG.PATH) && file.exists(KEGG.PATH) &&
                            OUT.DIR,KEGG.PATH,
                            geneFamilyType="Genes",
                            corrMethod="pearson"))
-
+  
   
   # if failed, try again...often it's just a timing conflict error from parallelising
   if(!all(bpok(tmp))){
@@ -682,21 +683,21 @@ if(!is.null(KEGG.PATH) && file.exists(KEGG.PATH) &&
                            OUT.DIR,KEGG.PATH,
                            geneFamilyType="Genes",
                            corrMethod="spearman"))
-
-    # if failed, try again...often it's just a timing conflict error from parallelising
-    if(!all(bpok(tmp))){
-      print("Retrying computation of Spearman correlations")
-      tmp <- BiocParallel::bptry(
-        BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
-                               BPREDO=tmp,
-                               correlateSubpopProfileWithGeneProfiles,
-                           OUT.DIR,KEGG.PATH,
-                           geneFamilyType="Genes",
-                           corrMethod="spearman"))
-    }
+  
+  # if failed, try again...often it's just a timing conflict error from parallelising
+  if(!all(bpok(tmp))){
+    print("Retrying computation of Spearman correlations")
+    tmp <- BiocParallel::bptry(
+      BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
+                             BPREDO=tmp,
+                             correlateSubpopProfileWithGeneProfiles,
+                             OUT.DIR,KEGG.PATH,
+                             geneFamilyType="Genes",
+                             corrMethod="spearman"))
+  }
   printBpError(tmp)
   
-
+  
   if(makeGeneReports){ #makeReports){
     
     print("Compiling gene content reports...")
