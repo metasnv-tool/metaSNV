@@ -20,6 +20,8 @@ params:
     value: 0.05
   rStatCutoff:
     value: 0.5
+  rStatCutoff_strong:
+    value: 0.7
   minObs:
     value: 10
   subpopOutDir:
@@ -59,6 +61,7 @@ corrPcutOff_default <- params$corrPcutOff_default #<- 0.8
 corrScutOff_default <- params$corrScutOff_default #<- 0.6
 statCutoff <- params$statCutoff #<- 0.05
 rStatCutoff <- params$rStatCutoff # 0.5
+rStatCutoff_strong <- params$rStatCutoff_strong # 0.7
 geneFamilyAbundancesFile <- params$geneFamilyAbundancesFile
 minObs <- params$minObs
 bamSuffix <- params$bamSuffix
@@ -75,6 +78,10 @@ bamSuffix <- params$bamSuffix
 # subpopOutDir <- "~/tmp/subpopTest/testingSubpopr/inSilicoMock/mine/smallerTestSet/smallGenomes/04_subpopr/tmp5/params.hr10.hs80.ps80/insilico/"
 # speciesID <- "refGenome3clus"
 
+#  geneFamilyAbundancesFile <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3//geneContent/mapToPanGenomes/outputs/counts_unique_norm_sumByNog.tsv"
+#  subpopOutDir <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/subpopr/results_md_s257745/params.hr10.hs80.ps80.gs80//outputs/"
+#  speciesID <- "411903"
+# bamSuffix	<- ".subspec71.unique.sorted.bam"
 
 do.call(rbind,params) %>% data.frame(stringsAsFactors = F) %>% DT::datatable()
 ```
@@ -108,10 +115,18 @@ if(!file.exists(pathCorrS)){
   print(paste0("Aborting due to missing file: ",pathCorrS))
   #knitr::knit_exit()
 }
+```
 
-print("Using files: ")
-print(c(pathCorrP,pathCorrS))
+Using files:
 
+```{r}
+#cat(c(pathCorrP,pathCorrS))
+cat(c(pathCorrP),fill = T)
+cat(c(pathCorrS),fill = T)
+```
+
+
+```{r}
 corrP <- read_tsv(pathCorrP,col_names = T, col_types = cols(
   geneFamily = col_character(),
   cluster = col_integer(),
@@ -224,10 +239,19 @@ print("Results not found for both methods.")
 
 Yellow box highlights correlations with high values in both methods
 
-```{r, eval=haveBothSP}
-corr %>% 
+```{r}
+corrW <- corr %>% 
   select(geneFamily, cluster, method, correlationR,statSigLgl) %>% 
-  spread(key = method,value = correlationR,fill = 0.4) %>% 
+  spread(key = method,value = correlationR,fill = NA)
+x <- sum(is.na(corrW$pearson) | is.na(corrW$spearman))
+y <- nrow(corrW)
+```
+
+Not plotting `r x` out of `r y` data points due to value not being present for both Pearson and Spearman correlations. 
+
+```{r, eval=haveBothSP}
+corrW %>% 
+  filter(!is.na(corrW$pearson) & !is.na(corrW$spearman)) %>% 
   ggplot(aes(x=pearson,y=spearman))+
   geom_polygon(data=data.frame(),
                aes(x=c(corrPcutOff_default,corrPcutOff_default,1,1),
@@ -296,60 +320,86 @@ sigGeneFamsDF %>%
 
 ```
 
-# Focus on best correlations
+# Focus on strong subspecies-specific correlations
 
-## Table of best correlations
 
 Here we consider all correlations with: 
 
-- q value < `r statCutoff`
+- q value < `r statCutoff` for both Spearman and Pearson
 - minimum of `r minObs` observations (data points)
-- correlation R statistic > `r rStatCutoff` 
+- correlation R statistic > `r rStatCutoff_strong` for both Spearman and Pearson
+- not correlated with >1 subspecies
+- correlation R statistic for other subspecies < `r rStatCutoff` for both Spearman and Pearson
 
 ```{r}
-corr %>% filter(statSigLgl & nObs >= minObs & correlationR > rStatCutoff ) %>% 
-  select(geneFamily,cluster,nObs,method,correlationR,conf.int.low,conf.int.high,q.valueBH) %>% 
-  mutate(q.valueBH = formatC(q.valueBH, format = "e", digits = 2)) %>% 
-  DT::datatable(filter="top") %>% 
-  formatRound(c("correlationR","conf.int.low","conf.int.high"), digits=2) #%>% formatRound(c("q.valueBH"), digits=4)
+corrSubspeciesSpecificGenes <- corr %>% 
+  group_by(geneFamily, cluster) %>% 
+  summarise(corrPass = all(correlationR > rStatCutoff_strong) & 
+           all(nObs >= minObs ) &
+           all(statSigLgl),
+         corrFail = all(correlationR < rStatCutoff) ) %>% 
+  ungroup() %>% 
+  group_by(geneFamily) %>% 
+  filter(sum(corrPass) == 1 & 
+           sum(corrFail) >= 1 ,.preserve = T) %>% # exactly 1 subspecies should pass, all others should fail
+  ungroup()
+  #filter(statSigLgl & nObs >= minObs & correlationR > rStatCutoff )
+
+corrSubspeciesSpecific <- corr %>% 
+  filter(geneFamily %in% corrSubspeciesSpecificGenes$geneFamily) %>% 
+  left_join(corrSubspeciesSpecificGenes, by=c("geneFamily","cluster"))
 ```
 
 ```{r}
-x<-corr %>%
-  filter(statSigLgl & correlationR > rStatCutoff,.preserve = T)
-if(nrow(x)==0){
+if(nrow(corrSubspeciesSpecific)==0){
   print("No correlations passed the thresholds. Exiting.")
   knitr::knit_exit()
 }
 ```
 
+## Summary of strong subspecies-specific correlations
 
 ```{r}
-corr %>%
-  filter(statSigLgl & correlationR > rStatCutoff,.preserve = T) %>%
+sigGeneFams <- corrSubspeciesSpecific %>% 
+  arrange(-correlationR) %>% 
+  pull(geneFamily) %>% unique()
+```
+
+Found `r length(sigGeneFams)` correlated gene families.
+
+```{r}
+corrSubspeciesSpecificGenes %>% filter(corrPass) %>% count(cluster,name = "Number of specifically and strongly correlated gene families")
+```
+
+Distribution of subspecies-specific correlation strengths
+
+```{r}
+corrSubspeciesSpecific %>%
+  filter(corrPass,.preserve = T) %>% 
   ggplot(aes(x=correlationR))+
-    facet_grid(method~cluster,switch = "y",margins = "cluster") +
+    facet_grid(method~cluster,switch = "y") +
   geom_histogram(binwidth = 0.025)+
-  xlim(c( (rStatCutoff-0.05),1.05))+
+  #xlim(c( (rStatCutoff-0.1),1.05))+
   ylab("Number of gene families")+
   xlab("Strength of correlation (R)")
 ```
 
-
-## Example plots of some gene families
-
-Here we consider all *gene families* that have *at least one correlation with*: 
-
-- q value < `r statCutoff`
-- minimum of `r minObs` observations (data points)
-- correlation R statistic > `r rStatCutoff` (either Spearman or Pearson)
+Table of correlations: 
 
 ```{r}
-sigGeneFams <- corr %>% 
-  filter(statSigLgl & nObs >= minObs & correlationR > rStatCutoff ) %>% 
-  arrange(-correlationR) %>% 
-  pull(geneFamily) %>% unique()
+corrSubspeciesSpecific %>% 
+  select(geneFamily,cluster,nObs,method,correlationR,conf.int.low,conf.int.high,q.valueBH) %>% 
+  mutate(q.valueBH = formatC(q.valueBH, format = "e", digits = 2)) %>% 
+  arrange(geneFamily,cluster,method) %>% 
+  DT::datatable(filter="top") %>% 
+  formatRound(c("correlationR","conf.int.low","conf.int.high"), digits=2) #%>% formatRound(c("q.valueBH"), digits=4)
+```
 
+
+## Example plots of strong subspecies-specific correlations
+
+
+```{r}
 maxToPlot <- 10
 tooManyToPlot <- length(sigGeneFams) > maxToPlot
 
@@ -363,22 +413,31 @@ corr %>% filter(geneFamily %in% sigGeneFams) %>%
 
 
 ```{r,warning=F}
+# keep top best and bottom worst genes for illustration  
+sigGeneFamsTop <- head(sigGeneFams,n = ceiling(maxToPlot/2))
+sigGeneFamsBottom <- tail(sigGeneFams,n = floor(maxToPlot/2))
+sigGeneFams_maxToPlot <- c(sigGeneFamsTop,sigGeneFamsBottom) %>% 
+  unique() # take unique in case length < maxToPlot
+
 ## Import gene family abundances
 # this can be big, so only import those that we want to plot
-f <- function(x,pos){ filter(x,X1 %in% sigGeneFams) }
+f <- function(x,pos){ 
+  rename(x, geneFamily = 1) %>% # rename the first column  
+  filter(geneFamily %in% sigGeneFams_maxToPlot) 
+  }
 geneFamilyAbundancesToPlot <- read_tsv_chunked(file = geneFamilyAbundancesFile,
                                  comment = "#",trim_ws = T,col_names = T,
                                  chunk_size = 10000,
-                                 callback = DataFrameCallback$new(f),
-                                 cols(
-                                   .default = col_double(),
-                                   X1 = col_character()
-                                 )) %>% 
-  rename(geneFamily = X1) %>% 
+                                 callback = DataFrameCallback$new(f)
+                                 ) %>% 
+  rename(geneFamily = 1) %>% # rename the first column  
   gather(key = sampleID, value = geneFamAbund, -geneFamily)
 
-#geneFamilyAbundancesToPlot <- geneFamilyAbundances %>% filter(geneFamily %in% sigGeneFams)
+#geneFamilyAbundancesToPlot <- geneFamilyAbundancesToPlot %>% filter(geneFamily %in% sigGeneFams)
+```
 
+
+```{r}
 allClustAbund <- read.table(paste(subpopOutDir,speciesID,'_allClust_relativeAbund.tab',sep=''),sep='\t')
 colnames(allClustAbund) <- sub(pattern = "X",replacement = "subspecies",x = colnames(allClustAbund))
 allClustAbund$sampleID <- rownames(allClustAbund)
@@ -408,12 +467,21 @@ plotFamCorr <- function(geneFam) {
 # corrsToPlot %>% filter(geneFamily == geneFam,.preserve = T) %>% head() %>% print()
 # corrsToPlot %>% filter(geneFamily == geneFam,.preserve = T) %>% tail() %>% print()
 #   
-  p <- corrsToPlot %>% filter(geneFamily == geneFam,.preserve = T) %>%
-    ggplot(aes(x= geneFamAbund, y=clustAbund)) + geom_point()+facet_grid(geneFamily~cluster)+
-    ggtitle(paste0("Species ",speciesID,": linear scale"))
+  p <- corrsToPlot %>% 
+    filter(geneFamily == geneFam,.preserve = T) %>%
+    # remove samples that don't have any of the clusters
+    group_by(sampleID) %>% 
+    filter(any(clustAbund != 0)) %>% 
+    ggplot(aes(x= geneFamAbund, y=clustAbund)) + 
+    geom_point()+
+    facet_grid(.~cluster)+
+    ggtitle(paste0("Species: ",speciesID,", linear scale\nGene family: ",geneFam))+
+    xlab("Abundance of gene family")+
+    ylab("Abundance of subspecies")
   print(p)
 
-  print(p+scale_x_log10()+scale_y_log10()+ggtitle(paste0("Species ",speciesID,": log10 scale")))
+  print(p+scale_x_log10()+scale_y_log10()+
+          ggtitle(paste0("Species: ",speciesID,", log10 scale\nGene family: ",geneFam)))
 
 }
 ```
@@ -439,10 +507,6 @@ if(tooManyToPlot){
 
 ```{r,eval=tooManyToPlot}
 if(tooManyToPlot){
-
-  sigGeneFamsTop <- sigGeneFams[1:floor(maxToPlot/2)]
-  sigGeneFamsBottom <- sigGeneFams[(length(sigGeneFams)-ceiling(maxToPlot/2)):length(sigGeneFams)]
-
   tmp <- sapply(sigGeneFamsTop, plotFamCorr)
   rm(tmp)  
 }
