@@ -651,15 +651,13 @@ if(!is.null(KEGG.PATH) && file.exists(KEGG.PATH) &&
   print(paste("Testing for gene correlations for",length(allSubstrucSpecies),
               "species using",ncoresUsing,"cores"))
   
-  print("Correlating cluster and gene family abundances (Pearson)...")
+  print("Correlating cluster and gene family abundances (Pearson & Spearman)...")
   #pearson
   tmp <- BiocParallel::bptry(
     BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
                            correlateSubpopProfileWithGeneProfiles,
                            OUT.DIR,KEGG.PATH,
-                           geneFamilyType="Genes",
-                           corrMethod="pearson"))
-  
+                           geneFamilyType="Genes"))
   
   # if failed, try again...often it's just a timing conflict error from parallelising
   if(!all(bpok(tmp))){
@@ -669,34 +667,9 @@ if(!is.null(KEGG.PATH) && file.exists(KEGG.PATH) &&
                              BPREDO=tmp,
                              correlateSubpopProfileWithGeneProfiles,
                              OUT.DIR,KEGG.PATH,
-                             geneFamilyType="Genes",
-                             corrMethod="pearson"))
+                             geneFamilyType="Genes"))
   }
   printBpError(tmp)
-  
-  print("Correlating cluster and gene family abundances (Spearman)...")
-  #spearman
-  #tmp <- foreach(spec=allSubstrucSpecies) %dopar% correlateSubpopProfileWithGeneProfiles(spec,OUT.DIR,KEGG.PATH,geneFamilyType="Kegg", corrMethod="spearman")
-  tmp <- BiocParallel::bptry(
-    BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
-                           correlateSubpopProfileWithGeneProfiles,
-                           OUT.DIR,KEGG.PATH,
-                           geneFamilyType="Genes",
-                           corrMethod="spearman"))
-  
-  # if failed, try again...often it's just a timing conflict error from parallelising
-  if(!all(bpok(tmp))){
-    print("Retrying computation of Spearman correlations")
-    tmp <- BiocParallel::bptry(
-      BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
-                             BPREDO=tmp,
-                             correlateSubpopProfileWithGeneProfiles,
-                             OUT.DIR,KEGG.PATH,
-                             geneFamilyType="Genes",
-                             corrMethod="spearman"))
-  }
-  printBpError(tmp)
-  
   
   if(makeGeneReports){ #makeReports){
     
