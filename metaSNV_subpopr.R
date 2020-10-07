@@ -4,29 +4,21 @@
 # REQUIRES PYTHON 3
 # Rscript metaSNV_supopr.R -h
 
-# mkdir subpoprLocalTest
-# cp -r ~/Dropbox/PostDocBork/subspecies/toolDevelopment/subpopr/R ./subpoprLocalTest/
-# cp -r ~/Dropbox/PostDocBork/subspecies/toolDevelopment/subpopr/inst ./subpoprLocalTest/
-# cp -r ~/Dropbox/PostDocBork/subspecies/toolDevelopment/subpopr/data ./subpoprLocalTest/
-
 # clear the environment
 rm(list=ls())
 
-
 normalRun<-TRUE # use cmd line args
-useExistingClustering<-FALSE
-useExistingExtension<-FALSE
+useExistingClustering<-TRUE
+useExistingExtension<-TRUE
 makeReports <- FALSE
-makeGeneReports <- FALSE
+makeGeneReports <- TRUE
 doSpecies<-FALSE
 
 ptm <- proc.time()
 suppressPackageStartupMessages(library(futile.logger))
 tmp <- flog.threshold(INFO) # assign to tmp to avoid NULL being returned and printed
 
-if(normalRun){ # TO RUN FROM WITHIN R WITHOUT OPTS ----------
-
-
+if(normalRun){
   # Expectation is that this script will sit in the metaSNV directory,
   # which will include a directory ./src/subpopr
 
@@ -85,7 +77,10 @@ if(normalRun){ # TO RUN FROM WITHIN R WITHOUT OPTS ----------
                 metavar="logical"),
     make_option(c("-g", "--geneAbundance"), type="character",
                 default="doNotRun",
-                help="Path to file with gene family abundances (tsv, optional). Species abundances required for gene correlation.",
+                help="Path to file with gene family abundances (tsv, optional). \
+                Species abundances also required for gene correlation. Columns must be named. \
+                First column must be named and contain gene family names. Subsequent column names must be sample IDs. \
+                Columns must sum to 1.",
                 metavar="file path"),
     make_option(c("-d", "--metadata"), type="character",
                 default="doNotRun",
@@ -134,13 +129,14 @@ if(normalRun){ # TO RUN FROM WITHIN R WITHOUT OPTS ----------
 
 
 }else{
+  # TO RUN FROM WITHIN R WITHOUT OPTS ----------
   opt <- list()
   #scriptDir <- "/g/bork3/home/rossum/software/metaSNV2/metaSNV/"
   #setwd("/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v2/subpopr_v2")
   #opt$metadata <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v2/metadata_allv2.csv"
   #opt$metaSnvResultsDir <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v2/metaSNV/outputs_subspec/"
   #opt$speciesAbundance <- "doNotRun"
-  opt$geneAbundance <- "doNotRun"
+  #opt$geneAbundance <- "doNotRun"
 
   scriptDir <- "/Users/rossum/Dropbox/PostDocBork/subspecies/toolDevelopment/metaSNV/"
   workDir <- "/Volumes/KESU/scb2/metagenomes/human/subspecGeoValidation/all_v3/"
@@ -654,39 +650,56 @@ if(!is.null(KEGG.PATH) && file.exists(KEGG.PATH) &&
   print(paste("Testing for gene correlations for",length(allSubstrucSpecies),
               "species using",ncoresUsing,"cores"))
 
-#   print("Correlating cluster and gene family abundances...")
-#   #pearson
-#   tmp <- BiocParallel::bptry(
-#     BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
-#                            correlateSubpopProfileWithGeneProfiles,
-#                            OUT.DIR,KEGG.PATH,
-#                            #geneFamilyType="Kegg",
-#                            geneFamilyType="Genes",
-#                            corrMethod="pearson"))
-# 
-#   printBpError(tmp)
-#   #spearman
-#   #tmp <- foreach(spec=allSubstrucSpecies) %dopar% correlateSubpopProfileWithGeneProfiles(spec,OUT.DIR,KEGG.PATH,geneFamilyType="Kegg", corrMethod="spearman")
-#   tmp <- BiocParallel::bptry(
-#     BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
-#                            correlateSubpopProfileWithGeneProfiles,
-#                            OUT.DIR,KEGG.PATH,
-#                            geneFamilyType="Genes",
-#                            corrMethod="spearman"))
-# 
-#     # if failed, try again...often it's just a timing conflict error from parallelising
-#     if(!all(bpok(tmp))){
-#       print("Retrying computation of Spearman correlations")
-#       tmp <- BiocParallel::bptry(
-#         BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
-#                                BPREDO=tmp,
-#                                correlateSubpopProfileWithGeneProfiles,
-#                            OUT.DIR,KEGG.PATH,
-#                            geneFamilyType="Genes",
-#                            corrMethod="spearman"))
-# 			   }
+  print("Correlating cluster and gene family abundances (Pearson)...")
+  #pearson
+  tmp <- BiocParallel::bptry(
+    BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
+                           correlateSubpopProfileWithGeneProfiles,
+                           OUT.DIR,KEGG.PATH,
+                           geneFamilyType="Genes",
+                           corrMethod="pearson"))
+
+  
+  # if failed, try again...often it's just a timing conflict error from parallelising
+  if(!all(bpok(tmp))){
+    print("Retrying computation of Pearson correlations")
+    tmp <- BiocParallel::bptry(
+      BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
+                             BPREDO=tmp,
+                             correlateSubpopProfileWithGeneProfiles,
+                             OUT.DIR,KEGG.PATH,
+                             geneFamilyType="Genes",
+                             corrMethod="pearson"))
+  }
+  printBpError(tmp)
+  
+  print("Correlating cluster and gene family abundances (Spearman)...")
+  #spearman
+  #tmp <- foreach(spec=allSubstrucSpecies) %dopar% correlateSubpopProfileWithGeneProfiles(spec,OUT.DIR,KEGG.PATH,geneFamilyType="Kegg", corrMethod="spearman")
+  tmp <- BiocParallel::bptry(
+    BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
+                           correlateSubpopProfileWithGeneProfiles,
+                           OUT.DIR,KEGG.PATH,
+                           geneFamilyType="Genes",
+                           corrMethod="spearman"))
+
+    # if failed, try again...often it's just a timing conflict error from parallelising
+    if(!all(bpok(tmp))){
+      print("Retrying computation of Spearman correlations")
+      tmp <- BiocParallel::bptry(
+        BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
+                               BPREDO=tmp,
+                               correlateSubpopProfileWithGeneProfiles,
+                           OUT.DIR,KEGG.PATH,
+                           geneFamilyType="Genes",
+                           corrMethod="spearman"))
+    }
+  printBpError(tmp)
+  
 
   if(makeGeneReports){ #makeReports){
+    
+    print("Compiling gene content reports...")
     tmp <- BiocParallel::bptry(BiocParallel::bplapply(allSubstrucSpecies,
                                                       BPPARAM = bpParam, #SerialParam(), # for some reason, parallel fails here
                                                       renderGeneContentReport,
@@ -697,7 +710,7 @@ if(!is.null(KEGG.PATH) && file.exists(KEGG.PATH) &&
     
     # if failed, try again...often it's just a timing conflict error from parallelising
     if(!all(bpok(tmp))){
-      print("Retrying computation of Spearman correlations")
+      print("Retrying compilation of failed gene content reports")
       tmp <- BiocParallel::bptry(
         BiocParallel::bplapply(BPREDO=tmp,
                                allSubstrucSpecies,
