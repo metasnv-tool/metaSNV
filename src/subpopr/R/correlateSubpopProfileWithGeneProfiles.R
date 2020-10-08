@@ -1,5 +1,5 @@
-# geneAbundancePath <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/geneContent/mapToPanGenomes/outputs/counts_unique_norm_sumByNog.tsv"
-# geneFamilyType <- "TMP1"
+# geneAbundancePath <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/geneContent/mapToPanGenomes/outputs/counts_unique_norm_sumByNog_1k.tsv"
+# geneFamilyType <- "TMP2"
 # species <- "742765"
 # SAMPLE.ID.SUFFIX<-".subspec71.unique.sorted.bam"
 # outDir = "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/subpopr/results_md_s257745/params.hr10.hs80.ps80.gs80/outputs/"
@@ -106,17 +106,24 @@ correlateSubpopProfileWithGeneProfiles <- function(species,outDir,geneAbundanceP
                  pull(geneFamily) %>% unique() %>% length()," geneFamily groups in ",
                length(unique(allClustAbund$sampleName))," samples"))
 
-  # use data table for faster corr computation
-  # this is fast enough but could re-write to avoid this join and use less memory
-  fullData <- inner_join(geneFamilyProfiles, allClustAbund,by="sampleName") %>% as.data.table()
-  
   pseudocount <- min(geneFamilyProfiles$geneAbundNorm[geneFamilyProfiles$geneAbundNorm>0],na.rm = T)/1000
 
-  cor.test.mod <- function(x,y,method,exact,geneFamily,cluster){
+  joinDataAndCorr <- function(toTest,method,exact){
+
+    geneFamlyName <- toTest["gene"]
+    clusterToCorr <- toTest["cluster"]
+    
+    # get matching cluster and gene abundances
+    corrData <- geneFamilyProfiles %>% 
+      filter(geneFamily == geneFamlyName) %>% 
+      inner_join(filter(allClustAbund, cluster == clusterToCorr), by="sampleName")
+    x <- corrData$geneAbundNorm
+    y <- corrData$clustAbund
+    
     # if no variance in either value, don't compute correlation
     if(diff(range(x)) == 0){return(NULL)}
     if(diff(range(y)) == 0){return(NULL)}
-
+    
     # log 10 transform for pearson to reduce weight of rare, large values
     if(method == "pearson"){
       x <- log10(x+pseudocount)
@@ -139,24 +146,29 @@ correlateSubpopProfileWithGeneProfiles <- function(species,outDir,geneAbundanceP
       res$conf.int <- F # otherwise returns 2 rows - one each for high and low conf value
     }
     res$nObs <- length(x)
+    res$cluster <- clusterToCorr
+    res$geneFamily <- geneFamlyName
     return(res)
   }
   
+  geneClusterPairs <- expand.grid(list(gene=unique(geneFamilyProfiles$geneFamily), 
+                                       cluster=unique(allClustAbund$cluster)),
+                                  stringsAsFactors = F)
+
   doAndSaveCorr <- function(corrMethod){
-      corr <- fullData[, cor.test.mod(geneAbundNorm,clustAbund,
-                                  method=corrMethod,
-                                  exact = !(corrMethod=="spearman"),
-                                  geneFamily,cluster ),
-                    by = c("geneFamily","cluster")]
+      resList <- apply(geneClusterPairs,1,joinDataAndCorr,
+                    method=corrMethod,
+                    exact = !(corrMethod=="spearman"))
+      
+      corr <- do.call(rbind.data.frame, resList) %>% 
+        select(geneFamily,cluster,everything())
       
       corr <- select(corr, -data.name, -parameter)
       corr$q.valueBH <- p.adjust(corr$p.value,method = "BH")
       write_delim(x = corr,path = paste0(outDir,"/",species,"_corr",geneFamilyType,"-",corrMethod,".tsv"),delim = "\t")
-      write_delim(x = corr[q.valueBH<0.05],path = paste0(outDir,"/",species,"_corr",geneFamilyType,"-",corrMethod,"-qSig.tsv"),delim = "\t")
       return(corr)
   }
-  #geneFamilyType <- "TMP"
-  corrsList <- map(c("spearman"="spearman","pearson"="pearson"),doAndSaveCorr)
+  corrsList <- sapply(c("spearman"="spearman","pearson"="pearson"),doAndSaveCorr)
   
   subspeciesSpecificGenesDf <- selectSubspeciesSpecificGenes(corrP = corrsList$pearson %>% as_tibble(), 
                                                                   corrS = corrsList$spearman %>% as_tibble())
