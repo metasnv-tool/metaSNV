@@ -9,11 +9,11 @@
 rm(list=ls())
 
 normalRun<-TRUE # use cmd line args
-useExistingClustering<-TRUE
-useExistingExtension<-TRUE
-makeReports <- FALSE
+useExistingClustering<-FALSE
+useExistingExtension<-FALSE
+makeReports <- TRUE
 makeGeneReports <- TRUE
-doSpecies<-FALSE
+doSpecies<-TRUE
 
 ptm <- proc.time()
 suppressPackageStartupMessages(library(futile.logger))
@@ -139,23 +139,36 @@ if(normalRun){
   #opt$speciesAbundance <- "doNotRun"
   #opt$geneAbundance <- "doNotRun"
   
-  scriptDir <- "/Users/rossum/Dropbox/PostDocBork/subspecies/toolDevelopment/metaSNV/"
-  workDir <- "/Volumes/KESU/scb2/metagenomes/human/subspecGeoValidation/all_v3/"
-  setwd(paste0(workDir,"/subpopr"))
-  opt$metadata <- paste0(workDir,"metadataForSubspeciesAnalysis.csv")
-  opt$metaSnvResultsDir <- paste0(workDir,"/metaSNV/outputs/")
-  opt$speciesAbundance <- paste0(workDir,"/motus20/motusForSelectedSamples.tsv") #"doNotRun"
-  opt$geneAbundance <- paste0(workDir,"/geneContent/mapToPanGenomes/outputs/counts_unique_norm_tmp1k.tsv")
-  opt$sampleSuffix <- ".subspec71.unique.sorted.bam"
+  # scriptDir <- "/Users/rossum/Dropbox/PostDocBork/subspecies/toolDevelopment/metaSNV/"
+  # workDir <- "/Volumes/KESU/scb2/metagenomes/human/subspecGeoValidation/all_v3/"
+  # setwd(paste0(workDir,"/subpopr"))
+  # opt$metadata <- paste0(workDir,"metadataForSubspeciesAnalysis.csv")
+  # opt$metaSnvResultsDir <- paste0(workDir,"/metaSNV/outputs/")
+  # opt$speciesAbundance <- paste0(workDir,"/motus20/motusForSelectedSamples.tsv") #"doNotRun"
+  # opt$geneAbundance <- paste0(workDir,"/geneContent/mapToPanGenomes/outputs/counts_unique_norm_tmp1k.tsv")
+  # opt$sampleSuffix <- ".subspec71.unique.sorted.bam"
   
-  opt$procs <- 2
+  # opt$procs <- 3
+  # opt$isMotus <- T
+  # opt$metadataSampleIDCol <- "sampleID"
+  # opt$outputDir <- "results_md_s49677-u"
+  
+  scriptDir <- "/g/scb2/bork/rossum/metaSNV2/metaSNV/"
+  workDir <- "/g/scb2/bork/rossum/subspecies/testingSubpopr/githubWorkflow/"
+  #setwd(paste0(workDir,"/subpopr"))
+  opt$metadata <- "doNotRun"
+  opt$metaSnvResultsDir <- paste0(workDir,"/output/")
+  opt$speciesAbundance <- paste0(workDir,"testdata/abunds/speciesAbundances.tsv") #"doNotRun"
+  opt$geneAbundance <- paste0(workDir,"testdata/abunds/geneAbundances.tsv")
+  opt$sampleSuffix <- ".bam"
+  opt$procs <- 1
   opt$isMotus <- T
-  opt$metadataSampleIDCol <- "sampleID"
-  opt$outputDir <- "results_md_s49677-u"
+  opt$metadataSampleIDCol <- NA
+  opt$outputDir <- paste0(workDir,"/results/")
   
-  opt$fixReadThreshold <- 0.1
+  opt$fixReadThreshold <- 0.2
   opt$fixSnvThreshold <- 0.8
-  opt$genotypingThreshold <- 0.9
+  opt$genotypingThreshold <- 0.8
   
   opt$onlyDoSubspeciesDetection<-FALSE
   
@@ -652,25 +665,25 @@ if(!is.null(KEGG.PATH) && file.exists(KEGG.PATH) &&
               "species using",ncoresUsing,"cores"))
   
   geneFamilyType<-"Genes"
-  print("Correlating cluster and gene family abundances (Pearson & Spearman)...")
-  #pearson
-  tmp <- BiocParallel::bptry(
-    BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
-                           correlateSubpopProfileWithGeneProfiles,
-                           OUT.DIR,KEGG.PATH,
-                           geneFamilyType=geneFamilyType))
-
-  # if failed, try again...often it's just a timing conflict error from parallelising
-  if(!all(bpok(tmp))){
-    print(paste("Retrying",length(which(!bpok(tmp)))," failed computation of correlations..."))
-    tmp <- BiocParallel::bptry(
-      BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam, #SerialParam() could redo with serial param if memory is issue
-                             BPREDO=tmp,
-                             correlateSubpopProfileWithGeneProfiles,
-                             OUT.DIR,KEGG.PATH,
-                             geneFamilyType=geneFamilyType))
-  }
-  printBpError(tmp)
+  # print("Correlating cluster and gene family abundances (Pearson & Spearman)...")
+  # #pearson
+  # tmp <- BiocParallel::bptry(
+  #   BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
+  #                          correlateSubpopProfileWithGeneProfiles,
+  #                          OUT.DIR,KEGG.PATH,
+  #                          geneFamilyType=geneFamilyType))
+  # 
+  # # if failed, try again...often it's just a timing conflict error from parallelising
+  # if(!all(bpok(tmp))){
+  #   print(paste("Retrying",length(which(!bpok(tmp)))," failed computation of correlations..."))
+  #   tmp <- BiocParallel::bptry(
+  #     BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam, #SerialParam() could redo with serial param if memory is issue
+  #                            BPREDO=tmp,
+  #                            correlateSubpopProfileWithGeneProfiles,
+  #                            OUT.DIR,KEGG.PATH,
+  #                            geneFamilyType=geneFamilyType))
+  # }
+  # printBpError(tmp)
   
   if(makeGeneReports){ #makeReports){
     
