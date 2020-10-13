@@ -8,14 +8,30 @@
 correlateSubpopProfileWithGeneProfiles <- function(species,outDir,geneAbundancePath,
                                                    geneFamilyType){
   # library(data.table) # for faster correlations
-  allClustAbund <- read.table(paste(outDir,species,'_allClust_relativeAbund.tab',sep=''),sep='\t')
+  clustAbundPath <- paste(outDir,species,'_allClust_relativeAbund.tab',sep='')
+  if(!file.exists(clustAbundPath)){
+    flog.info(paste0("No cluster abundances file for species ",species,
+                    ". May be due to failed genotyping. ",
+                    "Missing required file for gene content calculation: ",
+                    clustAbundPath))
+    return(0)
+  }
+  
+  if(!file.exists(geneAbundancePath)){
+    flog.info(paste("Missing required gene abundances file for gene content calculation: ",
+                    geneAbundancePath))
+    return(0)
+  }
+  
+  allClustAbund <- read.table(clustAbundPath,sep='\t')
   speciesAbund <- rowSums(allClustAbund)
   
-  allClustAbund <- mutate(allClustAbund, sampleName = rownames(allClustAbund))
+  allClustAbund <- mutate(allClustAbund, sampleName = rownames(allClustAbund)) 
 
   # remove clusters only see in less than 3 samples
   allClustAbundInMin3Samples <- allClustAbund %>%
     gather(key = "cluster",value = "abundance",-sampleName)%>%
+    mutate(cluster = sub(x = cluster, pattern = "^X",replacement = "")) %>% 
     filter(abundance > 0) %>%
     group_by(cluster)  %>% filter( n()>= 3) %>% ungroup()
 
@@ -88,38 +104,41 @@ correlateSubpopProfileWithGeneProfiles <- function(species,outDir,geneAbundanceP
     colnames(geneFamilyProfiles)[-1] <- newColumnNames[colnames(geneFamilyProfiles)[-1]]  
   }
   
-  geneFamilyProfiles <- geneFamilyProfiles %>%
-    gather(key = sampleName, value = abundance, -geneFamily) %>% 
-    group_by(sampleName) %>%
-    mutate(geneAbundNorm = abundance/sum(abundance)) %>%
-    select(-abundance) %>%
-    ungroup()
+
+  # geneFamilyProfiles <- geneFamilyProfiles %>%
+  #   gather(key = sampleName, value = abundance, -geneFamily) %>% 
+  #   group_by(sampleName) %>%
+  #   mutate(geneAbund = abundance/sum(abundance)) %>%
+  #   select(-abundance) %>%
+  #   ungroup()
   
-  allClustAbund <- filter(allClustAbund, sampleName %in% samplesToUse) %>%
-    rename(clustAbund = abundance) %>%
-    mutate(cluster = sub(x = cluster, pattern = "^X",replacement = "")) %>% # remove X prefix that was introduced when cluster was column name
-    complete(cluster, nesting(sampleName), fill = list(clustAbund = 0)) #add 0 abundances for clusters not seen in samples
+  # allClustAbund <- filter(allClustAbund, sampleName %in% samplesToUse) %>%
+  #   rename(clustAbund = abundance) %>%
+  #   mutate(cluster = sub(x = cluster, pattern = "^X",replacement = "")) %>% # remove X prefix that was introduced when cluster was column name
+  #   complete(cluster, nesting(sampleName), fill = list(clustAbund = 0)) #add 0 abundances for clusters not seen in samples
+
 
   nClus <- allClustAbund$cluster %>% unique() %>% length()
   print(paste0("Species ",species,": Testing ",nClus," clusters for correlation with ",
-               geneFamilyProfiles %>% filter(geneAbundNorm>0 & geneFamily !="-1") %>%
-                 pull(geneFamily) %>% unique() %>% length()," geneFamily groups in ",
+               nrow(geneFamilyProfiles)," geneFamily groups in ",
                length(unique(allClustAbund$sampleName))," samples"))
 
-  pseudocount <- min(geneFamilyProfiles$geneAbundNorm[geneFamilyProfiles$geneAbundNorm>0],na.rm = T)/1000
+  x<-geneFamilyProfiles[,-1] %>% as.matrix() %>% as.numeric()
+  pseudocount <- min(x[x>0],na.rm = T)/1000
+  
+  allClustAbund <- filter(allClustAbund, sampleName %in% samplesToUse) %>%
+    rename(clustAbund = abundance)
+  allClustAbundWide <- allClustAbund  %>%
+    spread(key = sampleName,value = clustAbund,fill = 0)
+  
+  sampleOrder <- colnames(geneFamilyProfiles)[-1]
+  allClustAbundWide <- allClustAbundWide[,c("cluster",sampleOrder)]
+  if( any(colnames(allClustAbundWide)[-1] != colnames(geneFamilyProfiles)[-1]) ){
+    stop()
+  }
+  
+  doCorr <- function(x,y,method,exact){
 
-  joinDataAndCorr <- function(toTest,method,exact){
-
-    geneFamlyName <- toTest["gene"]
-    clusterToCorr <- toTest["cluster"]
-    
-    # get matching cluster and gene abundances
-    corrData <- geneFamilyProfiles %>% 
-      filter(geneFamily == geneFamlyName) %>% 
-      inner_join(filter(allClustAbund, cluster == clusterToCorr), by="sampleName")
-    x <- corrData$geneAbundNorm
-    y <- corrData$clustAbund
-    
     # if no variance in either value, don't compute correlation
     if(diff(range(x)) == 0){return(NULL)}
     if(diff(range(y)) == 0){return(NULL)}
@@ -146,23 +165,36 @@ correlateSubpopProfileWithGeneProfiles <- function(species,outDir,geneAbundanceP
       res$conf.int <- F # otherwise returns 2 rows - one each for high and low conf value
     }
     res$nObs <- length(x)
-    res$cluster <- clusterToCorr
-    res$geneFamily <- geneFamlyName
     return(res)
   }
-  
-  geneClusterPairs <- expand.grid(list(gene=unique(geneFamilyProfiles$geneFamily), 
-                                       cluster=unique(allClustAbund$cluster)),
-                                  stringsAsFactors = F)
-
+    
   doAndSaveCorr <- function(corrMethod){
-      resList <- apply(geneClusterPairs,1,joinDataAndCorr,
-                    method=corrMethod,
-                    exact = !(corrMethod=="spearman"))
-      
-      corr <- do.call(rbind.data.frame, resList) %>% 
-        select(geneFamily,cluster,everything())
-      
+    
+    resList <- apply(allClustAbundWide,1,function(x){
+      clusterToCorr <- x[1]
+      clustAbundsAA <- x[-1]
+      res1 <- apply(geneFamilyProfiles,1,function(y){
+        geneFamlyName <- y[1]
+        geneFamilyAbundsAA <- y[-1]
+        res <- doCorr(x = as.numeric(clustAbundsAA),
+                      y = as.numeric(geneFamilyAbundsAA),
+                      method=corrMethod,
+                      exact = !(corrMethod=="spearman"))
+        
+        res$cluster <- clusterToCorr
+        res$geneFamily <- geneFamlyName
+        return(res)
+      })
+      res <- do.call(rbind.data.frame, res1)
+      return(res)
+    })
+    
+    corr <- do.call(rbind.data.frame, resList) %>% 
+      select(geneFamily,cluster,everything())
+    
+    corr$geneFamily <- as.character(corr$geneFamily)
+    corr$cluster <- as.character(corr$cluster)
+
       corr <- select(corr, -data.name, -parameter)
       corr$q.valueBH <- p.adjust(corr$p.value,method = "BH")
       write_delim(x = corr,path = paste0(outDir,"/",species,"_corr",geneFamilyType,"-",corrMethod,".tsv"),delim = "\t")
@@ -176,12 +208,16 @@ correlateSubpopProfileWithGeneProfiles <- function(species,outDir,geneAbundanceP
   write_delim(x = subspeciesSpecificGenesDf,path = paste0(outDir,"/",species,"_corr",geneFamilyType,"-clusterSpecificGenes.tsv"),delim = "\t")
   
   if(nrow(subspeciesSpecificGenesDf) == 0){
-    flog.info(paste("No cluster-specific genes found for species",speciesID))
+    flog.info(paste("No cluster-specific genes found for species",species))
     return(0)
   }
   specificGenes <- unique(subspeciesSpecificGenesDf$geneFamily)
-  fullData %>% 
+  
+  geneFamilyProfilesTall <- geneFamilyProfiles %>%
     filter(geneFamily %in% specificGenes) %>% 
+    gather(key = "sampleName", value = "geneFamAbund", -geneFamily)
+  
+  inner_join(geneFamilyProfilesTall, allClustAbund, by="sampleName") %>% 
     write_delim(path = paste0(outDir,"/",species,"_corr",geneFamilyType,"-clusterSpecificGeneAbundances.tsv"),delim = "\t")
   
   return(length(specificGenes))

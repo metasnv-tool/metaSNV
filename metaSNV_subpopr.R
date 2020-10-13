@@ -559,7 +559,7 @@ if(makeReports){
                            runRend))
   # if failed, try again...often it's just a timing conflict error from parallelising
   if(!all(bpok(tmp))){
-    print("Retrying compilation of failed reports")
+    print(paste("Retrying compilation of",length(which(!bpok(tmp))),"failed reports"))
     tmp <- BiocParallel::bptry(
       BiocParallel::bplapply(X = allSubstrucSpecies,
                              BPREDO=tmp,
@@ -627,7 +627,7 @@ if(!is.null(METADATA.PATH) && file.exists(METADATA.PATH)){
                              doRendMd))
     # if failed, try again...often it's just a timing conflict error from parallelising
     if(!all(bpok(tmp))){
-      print("Retrying compilation of failed reports")
+      print(paste("Retrying compilation of",length(which(!bpok(tmp))),"failed reports"))
       tmp <- BiocParallel::bptry(
         BiocParallel::bplapply(X = allSubstrucSpecies,
                                BPREDO=tmp,
@@ -651,25 +651,26 @@ if(!is.null(KEGG.PATH) && file.exists(KEGG.PATH) &&
   print(paste("Testing for gene correlations for",length(allSubstrucSpecies),
               "species using",ncoresUsing,"cores"))
   
-  print("Correlating cluster and gene family abundances (Pearson & Spearman)...")
-  #pearson
-  tmp <- BiocParallel::bptry(
-    BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
-                           correlateSubpopProfileWithGeneProfiles,
-                           OUT.DIR,KEGG.PATH,
-                           geneFamilyType="Genes"))
-  
-  # if failed, try again...often it's just a timing conflict error from parallelising
-  if(!all(bpok(tmp))){
-    print("Retrying computation of Pearson correlations")
-    tmp <- BiocParallel::bptry(
-      BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
-                             BPREDO=tmp,
-                             correlateSubpopProfileWithGeneProfiles,
-                             OUT.DIR,KEGG.PATH,
-                             geneFamilyType="Genes"))
-  }
-  printBpError(tmp)
+  geneFamilyType<-"Genes"
+  # print("Correlating cluster and gene family abundances (Pearson & Spearman)...")
+  # #pearson
+  # tmp <- BiocParallel::bptry(
+  #   BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
+  #                          correlateSubpopProfileWithGeneProfiles,
+  #                          OUT.DIR,KEGG.PATH,
+  #                          geneFamilyType=geneFamilyType))
+  # 
+  # # if failed, try again...often it's just a timing conflict error from parallelising
+  # if(!all(bpok(tmp))){
+  #   print(paste("Retrying",length(which(!bpok(tmp)))," failed computation of correlations..."))
+  #   tmp <- BiocParallel::bptry(
+  #     BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam, #SerialParam() could redo with serial param if memory is issue
+  #                            BPREDO=tmp,
+  #                            correlateSubpopProfileWithGeneProfiles,
+  #                            OUT.DIR,KEGG.PATH,
+  #                            geneFamilyType=geneFamilyType))
+  # }
+  # printBpError(tmp)
   
   if(makeGeneReports){ #makeReports){
     
@@ -684,7 +685,7 @@ if(!is.null(KEGG.PATH) && file.exists(KEGG.PATH) &&
     
     # if failed, try again...often it's just a timing conflict error from parallelising
     if(!all(bpok(tmp))){
-      print("Retrying compilation of failed gene content reports")
+      print(paste("Retrying compilation of",length(which(!bpok(tmp)))," failed gene content reports"))
       tmp <- BiocParallel::bptry(
         BiocParallel::bplapply(BPREDO=tmp,
                                allSubstrucSpecies,
@@ -697,7 +698,7 @@ if(!is.null(KEGG.PATH) && file.exists(KEGG.PATH) &&
     }
     printBpError(tmp)
   }
-  summariseGeneFamilyCorrelationResultsForAll(OUT.DIR)
+  summariseGeneFamilyCorrelationResultsForAll(OUT.DIR,geneFamilyType)
 }else if(KEGG.PATH != "doNotRun"){
   print(paste0("Not running gene content analysis.",
                " Required file not specified or does not exist: ",

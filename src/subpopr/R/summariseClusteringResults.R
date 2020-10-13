@@ -154,31 +154,31 @@ summariseMetadataAssocResultsForAll <- function(resultsDir,distMeth="mann"){
 
 
 # return a list of strings with: (1) species ID, (2) whether the metadata was tested (3) if any sig assocs were found (4) the html report file
-summariseGeneFamilyCorrelationResults <- function(resultsDir,speciesID,sigCutOff=0.05){
+summariseGeneFamilyCorrelationResults <- function(resultsDir,speciesID,geneFamilyType){
   #resultsDir <- "/Volumes/KESU/scb2/bork/rossum/subspecies/testingSubpopr/inSilicoMock/mine/smallerTestSet/smallGenomes/04_subpopr_nonPack/params.hr5.hs80.ps80/defaults/"
   #speciesID <- "refGenome2clus"
 
-  suffixes <- c("_corr*-spearman.tsv","_corr*-pearson.tsv")
+  suffixes <- c(paste0("_corr",geneFamilyType,"-spearman.tsv"),
+                paste0("_corr",geneFamilyType,"-pearson.tsv"))
   resFiles <- Sys.glob(paste0(resultsDir,speciesID,suffixes)) #Sys.glob finds existing files that match wildcards
+  sigResultSuffix <- paste0("_corr",geneFamilyType,"-clusterSpecificGenes.tsv")
+  sigResultsFile <- Sys.glob(paste0(resultsDir,speciesID,sigResultSuffix))
   anySig <- F
   if(length(resFiles)==0){
     anySig <- NA
-    corrWorked <- "no test results"
+    corrWorked <- "No correlation results"
     reportRelPath <- NA
-
   }else{
-    for(resFile in resFiles){
-      if(file.exists(resFile)){
-        corrWorked <- "tests performed"
-        df <- read.table(resFile,header = T)
-        anySig <- anySig | any(df$q.valueBH < sigCutOff)
-        rm(df)
-      }
-    }
+    x <- sum(sapply(resFiles,fileExistsAndHasRows))
+    corrWorked <- c("Correlation results empty",
+                    "Only one correlation result file present",
+                    "Correlations calculated")[x+1]
     reportRelPath <- paste0("./",speciesID,"_geneContentReport.html")
     #reportAbsPath <- paste0(resultsDir,"/",reportRelPath)
     #reportRelPath <- ifelse(file.exists(reportAbsPath),reportRelPath,paste("not compiled:",reportAbsPath))
   }
+
+  anySig <- fileExistsAndHasRows(sigResultsFile)
 
   return(list(speciesID=speciesID,
               geneFamCorrTested=corrWorked,
@@ -186,17 +186,25 @@ summariseGeneFamilyCorrelationResults <- function(resultsDir,speciesID,sigCutOff
               detailedGeneFamCorrResultsFile=reportRelPath))
 }
 
-summariseGeneFamilyCorrelationResultsForAll <- function(resultsDir,distMeth="mann"){
+fileExistsAndHasRows <- function(filePath){
+  if(is.null(filePath) || 
+     length(filePath) == 0 || 
+     !file.exists(filePath)){return(FALSE)}
+  df <- read.table(filePath,header = T,nrows = 10)
+  return(nrow(df) > 0)
+} 
+
+summariseGeneFamilyCorrelationResultsForAll <- function(resultsDir,distMeth="mann",geneFamilyType){
   allSpeciesRDSs <- getAllClusteringRdsPaths(resultsDir,distMeth="mann")
   allSpeciesNames <- unique(sort(names(allSpeciesRDSs)))
   mdAssoc <- lapply(allSpeciesNames,
                     FUN = summariseGeneFamilyCorrelationResults,
-                    resultsDir=resultsDir)
+                    resultsDir=resultsDir,
+                    geneFamilyType=geneFamilyType)
   df <- do.call(rbind.data.frame,mdAssoc)
   saveRDS(df, paste0(resultsDir,"/summary_geneFamilyCorrAssoc.rds"))
   write.csv(x = df,file = paste0(resultsDir,"/summary_geneFamilyCorrAssoc.csv"),quote = T,row.names = F)
 }
-
 
 combineAllSummaries <- function(resultsDir,distMeth="mann"){
 

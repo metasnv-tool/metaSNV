@@ -26,8 +26,6 @@ params:
     value: 10
   subpopOutDir:
     value: ''
-  familyType:
-    value: 'family'
   geneFamilyAbundancesFile:
     value: ''
   bamSuffix:
@@ -40,7 +38,7 @@ knitr::opts_chunk$set(
   echo=TRUE,
   comment=NA,
   warning=TRUE,
-  error=F, # keep running even if error encountered
+  error=FALSE, # keep running even if error encountered
   message=FALSE,
   rows.print=25)
 
@@ -120,7 +118,7 @@ pathClusterGenesAbundancesDf <-  paste0(subpopOutDir,"/",speciesID,"_corrGenes-c
 
 
 if(!file.exists(pathCorrP)){
-  stop(paste0("Aborting due to missing file: ",pathCorrP))
+  print(paste0("Aborting due to missing file: ",pathCorrP))
   knitr::knit_exit()
 }
 if(!file.exists(pathCorrS)){
@@ -136,9 +134,7 @@ if(!file.exists(pathClusterGenesDf)){
 Using files:
 
 ```{r}
-cat(c(pathCorrP),fill = T)
-cat(c(pathCorrS),fill = T)
-cat(c(pathClusterGenesDf),fill = T)
+data.frame(files=c(pathCorrP,pathCorrS,pathClusterGenesDf))
 ```
 
 
@@ -217,7 +213,7 @@ corrS$conf.int.high <- NA
 corr <- rbind(corrP,corrS) %>% 
   mutate(statSigLgl = q.valueBH < statCutoff,
          statisticallySignificant = if_else(q.valueBH < statCutoff,true = paste0("q < ",statCutoff),false = paste0("q >= ",statCutoff)),
-         cluster = paste0("Subspecies ",cluster),
+         #cluster = paste0("Subspecies ",cluster),
          cluster=factor(cluster)) %>% 
   rename(correlationR = estimate)
 ```
@@ -313,7 +309,7 @@ if(ncol(df) == 4 & all(c("pearson","spearman") %in% colnames(df) ) ){ # has spea
     coord_equal()  
   
   if(nrow(dff)<50){
-    p+ggrepel::geom_text_repel()
+    p+ggrepel::geom_text_repel(size=3)
   }else{
     p
   }
@@ -360,11 +356,9 @@ Additionally, genes must be:
   
 ## Table of cluster-specific genes
 
-Printing up to first 100 rows of file `r pathClusterGenesDf`
+Printing up to first 1000 genes of file `r pathClusterGenesDf`
 
-```{r}
-clusterGenesDf %>% head(100)
-```
+
 
 ```{r}
 if(nrow(clusterGenesDf) == 0){
@@ -377,7 +371,7 @@ if(nrow(clusterGenesDf) == 0){
 ```{r}
 corrSubspeciesSpecific <- corr %>% 
   filter(geneFamily %in% unique(clusterGenesDf$geneFamily) ) %>% 
-  mutate(cluster=as.character(cluster)) %>% 
+  mutate(cluster=as.numeric(as.character(cluster))) %>% 
   left_join(clusterGenesDf, by=c("geneFamily","cluster"))
 
 sigGeneFams <-  corrSubspeciesSpecific %>% 
@@ -386,6 +380,42 @@ sigGeneFams <-  corrSubspeciesSpecific %>%
 ```
 
 Found `r length(sigGeneFams)` correlated gene families.
+
+```{r}
+df <- clusterGenesDf %>% 
+  mutate(cluster = paste("Cluster ",cluster)) %>% 
+  mutate(geneIsCorrelated = case_when( geneIsCorrelated & !geneIsNotCorrelated ~ "Correlated",
+                                       !geneIsCorrelated & geneIsNotCorrelated ~ "-",
+                                       TRUE ~ "unclear")) %>% 
+  select(-geneIsNotCorrelated) 
+
+df %>% 
+  filter(geneIsCorrelated == "Correlated") %>% 
+  group_by(cluster)  %>% 
+  count(geneIsCorrelated,name = "Number of genes correlated")%>% 
+  select(-geneIsCorrelated)
+
+df %>% 
+  spread(key = cluster,value = geneIsCorrelated) %>% 
+  head(1000)%>% 
+  DT::datatable(filter="top")
+```
+
+```{r}
+# replaced with table above
+# corrSubspeciesSpecific %>% 
+#   head(n=100) %>% 
+#   select(geneFamily,cluster,method,correlationR,geneIsCorrelated,geneIsNotCorrelated) %>% 
+#   mutate(geneIsCorrelated = case_when( geneIsCorrelated & !geneIsNotCorrelated ~ "Gene is correlated",
+#                                        !geneIsCorrelated & geneIsNotCorrelated ~ "Gene is not correlated",
+#                                        TRUE ~ "unclear")) %>% 
+#   ggplot(aes(y=geneFamily,x=cluster,fill=geneIsCorrelated)) +
+#     geom_tile()+
+#   theme(legend.position = "bottom")+
+#   guides(fill=guide_legend(ncol=1,byrow=TRUE,title = NULL))+
+#   scale_fill_manual(values=c("grey90","grey20"))
+
+```
 
 
 Distribution of subspecies-specific correlation strengths
@@ -430,8 +460,7 @@ if(!file.exists(pathClusterGenesAbundancesDf)){
   print(paste0("Aborting due to missing file: ",pathClusterGenesAbundancesDf))
   knitr::knit_exit()
 }
-abundancesToPlot <- read_tsv(pathClusterGenesAbundancesDf)  %>% 
-  rename(geneFamAbund = geneAbundNorm)
+abundancesToPlot <- read_tsv(pathClusterGenesAbundancesDf) 
 
 if(nrow(abundancesToPlot) == 0){
   print(paste0("Aborting due to empty file: ",pathClusterGenesAbundancesDf))
@@ -456,6 +485,9 @@ sigGeneFams_maxToPlot <- c(sigGeneFamsTop,sigGeneFamsBottom) %>%
 
 
 ```{r}
+x<-abundancesToPlot$geneFamAbund
+pseudocount <- min(x[x>0],na.rm = T)/1000
+
 plotFamCorr <- function(geneFam) {
   print(geneFam)
   corr %>% filter(geneFamily == geneFam)%>% 
@@ -464,12 +496,14 @@ plotFamCorr <- function(geneFam) {
 # 
 # corrsToPlot %>% filter(geneFamily == geneFam,.preserve = T) %>% head() %>% print()
 # corrsToPlot %>% filter(geneFamily == geneFam,.preserve = T) %>% tail() %>% print()
-#   
+
+  
   p <- abundancesToPlot %>% 
     filter(geneFamily == geneFam,.preserve = T) %>%
     # remove samples that don't have any of the clusters
     group_by(sampleName) %>% 
     filter(any(clustAbund != 0)) %>% 
+    mutate(geneFamAbund = geneFamAbund + pseudocount) %>% # for log10
     ggplot(aes(x= geneFamAbund, y=clustAbund)) + 
     geom_point()+
     facet_grid(.~cluster)+
@@ -523,3 +557,9 @@ if(tooManyToPlot){
   rm(tmp)  
 }
 ```
+
+
+```{r}
+sessionInfo()
+```
+
