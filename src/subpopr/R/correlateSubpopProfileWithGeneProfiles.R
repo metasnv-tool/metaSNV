@@ -1,5 +1,5 @@
-# geneAbundancePath <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/geneContent/mapToPanGenomes/outputs/counts_unique_norm_sumByNog_1k.tsv"
-# geneFamilyType <- "TMP2"
+# geneAbundancePath <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/geneContent/mapToPanGenomes/outputs/counts_unique_norm_sumByNog_10k.tsv"
+# geneFamilyType <- "TMP6"
 # species <- "742765"
 # SAMPLE.ID.SUFFIX<-".subspec71.unique.sorted.bam"
 # outDir = "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/subpopr/results_md_s257745/params.hr10.hs80.ps80.gs80/outputs/"
@@ -24,8 +24,6 @@ correlateSubpopProfileWithGeneProfiles <- function(species,outDir,geneAbundanceP
   }
   
   allClustAbund <- read.table(clustAbundPath,sep='\t')
-  speciesAbund <- rowSums(allClustAbund)
-  
   allClustAbund <- mutate(allClustAbund, sampleName = rownames(allClustAbund)) 
 
   # remove clusters only see in less than 3 samples
@@ -136,6 +134,9 @@ correlateSubpopProfileWithGeneProfiles <- function(species,outDir,geneAbundanceP
   if( any(colnames(allClustAbundWide)[-1] != colnames(geneFamilyProfiles)[-1]) ){
     stop()
   }
+  # add summed cluster to check if gene correlates with species overall
+  speciesAbund <- colSums(allClustAbundWide[,-1])
+  allClustAbundWide[nrow(allClustAbundWide)+1,] <- c("-1",speciesAbund)
   
   doCorr <- function(x,y,method,exact){
 
@@ -202,25 +203,27 @@ correlateSubpopProfileWithGeneProfiles <- function(species,outDir,geneAbundanceP
   }
   corrsList <- sapply(c("spearman"="spearman","pearson"="pearson"),doAndSaveCorr)
   
-  subspeciesSpecificGenesDf <- selectSubspeciesSpecificGenes(corrP = corrsList$pearson %>% as_tibble(), 
+  specificGenesDf <- selectSubspeciesSpecificGenes(corrP = corrsList$pearson %>% as_tibble(), 
                                                                   corrS = corrsList$spearman %>% as_tibble())
-  
+  subspeciesSpecificGenesDf <- specificGenesDf %>% filter(cluster != "-1")
+  speciesSpecificGenesDf <- specificGenesDf %>% filter(cluster == "-1")
   write_delim(x = subspeciesSpecificGenesDf,path = paste0(outDir,"/",species,"_corr",geneFamilyType,"-clusterSpecificGenes.tsv"),delim = "\t")
+  write_delim(x = speciesSpecificGenesDf,path = paste0(outDir,"/",species,"_corr",geneFamilyType,"-speciesSpecificGenes.tsv"),delim = "\t")
   
   if(nrow(subspeciesSpecificGenesDf) == 0){
     flog.info(paste("No cluster-specific genes found for species",species))
     return(0)
   }
-  specificGenes <- unique(subspeciesSpecificGenesDf$geneFamily)
+  subspeciesSpecificGenes <- unique(subspeciesSpecificGenesDf$geneFamily)
   
   geneFamilyProfilesTall <- geneFamilyProfiles %>%
-    filter(geneFamily %in% specificGenes) %>% 
+    filter(geneFamily %in% subspeciesSpecificGenes) %>% 
     gather(key = "sampleName", value = "geneFamAbund", -geneFamily)
   
   inner_join(geneFamilyProfilesTall, allClustAbund, by="sampleName") %>% 
     write_delim(path = paste0(outDir,"/",species,"_corr",geneFamilyType,"-clusterSpecificGeneAbundances.tsv"),delim = "\t")
   
-  return(length(specificGenes))
+  return(length(subspeciesSpecificGenes))
 }
 
 
@@ -236,10 +239,10 @@ selectSubspeciesSpecificGenes <- function(corrP,corrS, minObs=10, statCutoff=0.0
                                                  maxBadCorrR=0.2, 
                                                  minCorrPearson = 0.8, minCorrSpearman = 0.6){
   
-   #corrP = read_tsv("/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/subpopr/results_md_s257745/XX_params.hr10.hs80.ps80.gs80_FULL-RESULTS/outputs/457424_corrGenes-pearson.tsv")
-   #corrS = read_tsv("/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/subpopr/results_md_s257745/XX_params.hr10.hs80.ps80.gs80_FULL-RESULTS/outputs/457424_corrGenes-spearman.tsv") 
+  # corrP = read_tsv("/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/subpopr/results_md_s257745/XX_params.hr10.hs80.ps80.gs80_FULL-RESULTS/outputs/457424_corrGenes-pearson.tsv")
+  # corrS = read_tsv("/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/subpopr/results_md_s257745/XX_params.hr10.hs80.ps80.gs80_FULL-RESULTS/outputs/457424_corrGenes-spearman.tsv")
   # maxBadCorrR = 0.2; minObs=10; statCutoff=0.05;maxBadCorrR=0.2;minCorrPearson = 0.8; minCorrSpearman = 0.6
-  
+
   #merge spearman and pearson results
   corrS$conf.int <- NA
   corrS$conf.int.low <- NA
@@ -251,6 +254,22 @@ selectSubspeciesSpecificGenes <- function(corrP,corrS, minObs=10, statCutoff=0.0
            cluster=factor(cluster)) %>% 
     rename(correlationR = estimate)
 
+  
+  # get genes correlated with species overall
+  
+  speciesSpecificGenesDf <- corr %>% 
+    filter(cluster == "-1") %>% 
+    mutate(corrPass = case_when( method == "pearson" & correlationR >= minCorrPearson & statSigLgl & nObs >= minObs ~ TRUE,
+                                 method == "spearman" & correlationR >= minCorrSpearman & statSigLgl & nObs >= minObs ~ TRUE,
+                                 TRUE ~ FALSE), 
+           corrVeryBad = correlationR < maxBadCorrR ) %>% 
+    group_by(geneFamily,cluster) %>% 
+    summarise(geneIsCorrelated = all(corrPass),
+              geneIsNotCorrelated = all(corrVeryBad)) %>% 
+    filter(geneIsCorrelated) %>% 
+    ungroup()
+  
+    
   # - q value < 0.05 for both Spearman and Pearson
   # - minimum of 10 observations (data points)
   # - correlation R statistic > 0.8 for Pearson
@@ -262,7 +281,10 @@ selectSubspeciesSpecificGenes <- function(corrP,corrS, minObs=10, statCutoff=0.0
   # min Pearson correlation 0.8 - computed on log10‐transformed relative abundances
   # min Spearman correlation 0.6
   
+  
+  
   subspeciesSpecificGenesDf <- corr %>% 
+    filter(cluster != "-1") %>% 
     mutate(corrPass = case_when( method == "pearson" & correlationR >= minCorrPearson & statSigLgl & nObs >= minObs ~ TRUE,
                                     method == "spearman" & correlationR >= minCorrSpearman & statSigLgl & nObs >= minObs ~ TRUE,
                                     TRUE ~ FALSE), 
@@ -271,6 +293,8 @@ selectSubspeciesSpecificGenes <- function(corrP,corrS, minObs=10, statCutoff=0.0
     summarise(geneIsCorrelated = all(corrPass),
               geneIsNotCorrelated = all(corrVeryBad)) %>% 
     ungroup() %>% 
+    mutate( geneIsCorrelated = case_when( geneFamily %in% speciesSpecificGenesDf$geneFamily ~ FALSE,
+                                          TRUE ~ geneIsCorrelated )) %>% 
     group_by(geneFamily) %>% 
     # correlation is specific to one or more subspecies (but not to all)
     filter( xor(geneIsCorrelated,geneIsNotCorrelated) & # gene should be strongly correlated or definitely not correlated with all subspecies
@@ -278,9 +302,9 @@ selectSubspeciesSpecificGenes <- function(corrP,corrS, minObs=10, statCutoff=0.0
             sum(geneIsNotCorrelated) >= 1 , # at least 1 subspecies should fail
            .preserve = T) %>% 
     ungroup()
-    
+  
   # return the number of genes
-  return(subspeciesSpecificGenesDf)
+  return(rbind(speciesSpecificGenesDf,subspeciesSpecificGenesDf))
 }
 
 
