@@ -24,6 +24,11 @@ writeSubpopAbundMotusProfile <- function(species, clusterFreqs, outDir,motuProfi
   # get the corresponding mOTU id
   motuID <- ncbiToMotus$ref_mOTU_cluster[1]
 
+  # special case where motus profile was faked in the test data
+  if(is.na(motuID) && species %in% motuProfile$mOTU){
+    motuID <- species
+  }
+  
   if( ! motuID %in% motuProfile$mOTU){
     stop(paste0("Species not found in mOTU profile. Species: ",species,"; mOTU id: ",motuID))
   }

@@ -23,7 +23,7 @@ renderDetailedSpeciesReport <- function(speciesID, distMethod= "mann", metasnvOu
 }
 
 
-renderGeneContentReport <- function(speciesID, subpopOutDir, geneFamilyAbundancesFile,
+renderGeneContentReport <- function(speciesID, subpopOutDir, geneFamilyType,
                                     bamSuffix=".bam", rmdDir) {
 
   rStatCutoff <- 0.5
@@ -37,7 +37,7 @@ renderGeneContentReport <- function(speciesID, subpopOutDir, geneFamilyAbundance
                     params = list(
                       speciesID = speciesID,
                       subpopOutDir = subpopOutDir,
-                      geneFamilyAbundancesFile = geneFamilyAbundancesFile,
+                      geneFamilyType = geneFamilyType,
                       rStatCutoff = rStatCutoff,
                       statCutoff = statCutoff,
                       bamSuffix = bamSuffix),

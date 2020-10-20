@@ -45,13 +45,15 @@ correlateSubpopProfileWithGeneProfiles <- function(species,outDir,geneAbundanceP
   
   # get sample names from the gene family profiles
   geneFamilyColumnNames <- read_tsv(file = geneAbundancePath,n_max=1,
-                     comment = "#",trim_ws = T,col_names = T) %>% colnames()
+                     comment = "#",trim_ws = T,col_names = T,col_types = cols()
+                     ) %>% colnames()
   geneAbundSamples <- geneFamilyColumnNames[-1]
   
   # only use samples that have gene abundance and subspecies frequency data
   samplesToUse <- intersect(unique(allClustAbund$sampleName), # subspeciesSamples
                             unique(geneAbundSamples)) # gene abund samples
   geneAbundColNamesToUse <- samplesToUse
+  fixColNames<-FALSE
   # first try to fix with most common problem -- presence of extra stuff after file name e.g. [sampleID].subspec71.unique.sorted.bam
   if(length(samplesToUse) == 0 & exists("SAMPLE.ID.SUFFIX")){
     namesWithoutSuffix <- geneAbundSamples
@@ -88,7 +90,9 @@ correlateSubpopProfileWithGeneProfiles <- function(species,outDir,geneAbundanceP
     filter(x,rowSums(x[,-1])>0)
   }
   geneFamilyProfiles <- read_tsv_chunked(file = geneAbundancePath,
-                                                 comment = "#",trim_ws = T,col_names = T,
+                                                 comment = "#",trim_ws = T,
+                                         col_names = T,
+                                         col_types = cols(),
                                                  chunk_size = 10000,
                                                  callback = DataFrameCallback$new(f)
   ) %>% rename(geneFamily = 1) # rename the first column  

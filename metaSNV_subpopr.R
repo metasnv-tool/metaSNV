@@ -692,7 +692,7 @@ if(!is.null(KEGG.PATH) && file.exists(KEGG.PATH) &&
                                                       BPPARAM = bpParam, #SerialParam(), # for some reason, parallel fails here
                                                       renderGeneContentReport,
                                                       subpopOutDir = OUT.DIR,
-                                                      geneFamilyAbundancesFile = KEGG.PATH,
+                                                      geneFamilyType = geneFamilyType,
                                                       bamSuffix= SAMPLE.ID.SUFFIX,
                                                       rmdDir = rmdDir))
     
@@ -705,13 +705,13 @@ if(!is.null(KEGG.PATH) && file.exists(KEGG.PATH) &&
                                BPPARAM = bpParam, #SerialParam(), # for some reason, parallel fails here
                                renderGeneContentReport,
                                subpopOutDir = OUT.DIR,
-                               geneFamilyAbundancesFile = KEGG.PATH,
+                               geneFamilyType = geneFamilyType,
                                bamSuffix= SAMPLE.ID.SUFFIX,
                                rmdDir = rmdDir))
     }
     printBpError(tmp)
   }
-  summariseGeneFamilyCorrelationResultsForAll(OUT.DIR,geneFamilyType)
+  summariseGeneFamilyCorrelationResultsForAll(resultsDir = OUT.DIR,geneFamilyType = geneFamilyType)
 }else if(KEGG.PATH != "doNotRun"){
   print(paste0("Not running gene content analysis.",
                " Required file not specified or does not exist: ",

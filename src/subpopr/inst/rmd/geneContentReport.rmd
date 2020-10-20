@@ -28,6 +28,8 @@ params:
     value: ''
   bamSuffix:
     value: '.bam'
+  geneFamilyType:
+    value: "Gene"
 ---
 
 ```{r setup, include=FALSE}
@@ -60,6 +62,7 @@ rStatCutoff <- params$rStatCutoff # 0.5
 rStatCutoff_strong <- params$rStatCutoff_strong # 0.7
 minObs <- params$minObs
 bamSuffix <- params$bamSuffix
+geneFamilyType <- params$geneFamilyType
 ```
 
 # Settings
@@ -102,12 +105,12 @@ taxaDf
 Based on correlations between the abundances of the within-species clusters and the abundances of gene families
 
 ```{r}
-pathCorrP <- paste0(subpopOutDir,"/",speciesID,"_corrGenes-pearson.tsv")
-pathCorrS <- paste0(subpopOutDir,"/",speciesID,"_corrGenes-spearman.tsv")
+pathCorrP <- paste0(subpopOutDir,"/",speciesID,"_corr",geneFamilyType,"-pearson.tsv")
+pathCorrS <- paste0(subpopOutDir,"/",speciesID,"_corr",geneFamilyType,"-spearman.tsv")
 
-pathClusterGenesDf <- paste0(subpopOutDir,"/",speciesID,"_corrGenes-clusterSpecificGenes.tsv")
-pathSpeciesGenesDf <- paste0(subpopOutDir,"/",speciesID,"_corrGenes-speciesSpecificGenes.tsv")
-pathClusterGenesAbundancesDf <-  paste0(subpopOutDir,"/",speciesID,"_corrGenes-clusterSpecificGeneAbundances.tsv")
+pathClusterGenesDf <- paste0(subpopOutDir,"/",speciesID,"_corr",geneFamilyType,"-clusterSpecificGenes.tsv")
+pathSpeciesGenesDf <- paste0(subpopOutDir,"/",speciesID,"_corr",geneFamilyType,"-speciesSpecificGenes.tsv")
+pathClusterGenesAbundancesDf <-  paste0(subpopOutDir,"/",speciesID,"_corr",geneFamilyType,"-clusterSpecificGeneAbundances.tsv")
 
 
 # pathClusterGenesDf <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/subpopr/results_md_s257745/params.hr10.hs80.ps80.gs80/outputs/216816_corrGenes-clusterSpecificGenes.tsv"
@@ -115,11 +118,11 @@ pathClusterGenesAbundancesDf <-  paste0(subpopOutDir,"/",speciesID,"_corrGenes-c
 # pathCorrP <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/subpopr/results_md_s257745/params.hr10.hs80.ps80.gs80/outputs/216816_corrGenes-pearson.tsv"
 # pathCorrS <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/subpopr/results_md_s257745/params.hr10.hs80.ps80.gs80/outputs/216816_corrGenes-spearman.tsv"
 
-pathClusterGenesDf <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/subpopr/results_md_s257745/params.hr10.hs80.ps80.gs80/outputs/216816_corrTMP5-clusterSpecificGenes.tsv"
-pathSpeciesGenesDf <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/subpopr/results_md_s257745/params.hr10.hs80.ps80.gs80/outputs/216816_corrTMP5-speciesSpecificGenes.tsv"
-pathClusterGenesAbundancesDf <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/subpopr/results_md_s257745/params.hr10.hs80.ps80.gs80/outputs/216816_corrTMP5-clusterSpecificGeneAbundances.tsv"
-pathCorrP <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/subpopr/results_md_s257745/params.hr10.hs80.ps80.gs80/outputs/216816_corrTMP5-pearson.tsv"
-pathCorrS <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/subpopr/results_md_s257745/params.hr10.hs80.ps80.gs80/outputs/216816_corrTMP5-spearman.tsv"
+# pathClusterGenesDf <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/subpopr/results_md_s257745/params.hr10.hs80.ps80.gs80/outputs/216816_corrTMP5-clusterSpecificGenes.tsv"
+# pathSpeciesGenesDf <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/subpopr/results_md_s257745/params.hr10.hs80.ps80.gs80/outputs/216816_corrTMP5-speciesSpecificGenes.tsv"
+# pathClusterGenesAbundancesDf <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/subpopr/results_md_s257745/params.hr10.hs80.ps80.gs80/outputs/216816_corrTMP5-clusterSpecificGeneAbundances.tsv"
+# pathCorrP <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/subpopr/results_md_s257745/params.hr10.hs80.ps80.gs80/outputs/216816_corrTMP5-pearson.tsv"
+# pathCorrS <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/subpopr/results_md_s257745/params.hr10.hs80.ps80.gs80/outputs/216816_corrTMP5-spearman.tsv"
 
 
 

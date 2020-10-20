@@ -29,6 +29,9 @@ parseMotu2Profile <- function(profileFilePath){
   # format, eg: "unknown Clostridiales [meta_mOTU_v2_7800]"
   tax <- do.call(rbind,strsplit(x = rawProfile$X,split = "[ ]* \\["))
   tax <- data.frame(tax)
+  if(ncol(tax)==1){ #in case the formatting was off
+    tax$var2 <- tax[,1]
+  }
   colnames(tax) <- c("speciesName","mOTU")
   tax$mOTU <- sub(x = tax$mOTU, pattern = "]",replacement = "")
 
