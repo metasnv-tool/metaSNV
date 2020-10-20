@@ -64,7 +64,9 @@ summariseClusteringResultsForAll <- function(resultsDir,distMeth="mann"){
   # readr::write_tsv(x = df,path = paste0(resultsDir,"/summary_clustering.tsv"))
 }
 
-# return a list of strings with: (1) species ID, (2) whether the extension worked, (3) new cluster sizes
+# return a list of strings with: (1) species ID, 
+# (2) whether the extension worked, (3) new cluster sizes
+# (4) number of SNVs used in genotyping
 summariseClusteringExtensionResults <- function(resultsDir,speciesID){
 
   # handle case where there was only 1 cluster
@@ -77,7 +79,8 @@ summariseClusteringExtensionResults <- function(resultsDir,speciesID){
       sizesStr <- "NA"
       return(list(speciesID=speciesID,
                   ClusterGenotyping=extWorked,
-                  GenotypedClusterSizes=sizesStr))
+                  GenotypedClusterSizes=sizesStr,
+                  nSNVs="NA"))
     }
   }
 
@@ -88,13 +91,30 @@ summariseClusteringExtensionResults <- function(resultsDir,speciesID){
     subSpecFreqDf <- read.table(extClus,row.names = 1,as.is = T)
     sizes <- table(subSpecFreqDf$clust)
     sizesStr <- paste(sizes,collapse = "-")
+    try(nSNVs <- getSnvGenotypingCount(resultsDir,speciesID))
   }else{
     extWorked <- "Failed"
     sizesStr <- "NA"
+    nSNVs <- "NA"
   }
   return(list(speciesID=speciesID,
               ClusterGenotyping=extWorked,
-              GenotypedClusterSizes=sizesStr))
+              GenotypedClusterSizes=sizesStr,
+              nSNVs=nSNVs))
+}
+
+getSnvGenotypingCount <- function(resultsDir,speciesID){
+  genotypingPositionFiles <- list.files(path = resultsDir,
+                                        pattern = paste0(speciesID,"_.*_hap_positions.tab"),
+                                        full.names = T )
+  
+  nSNVs<- sapply(genotypingPositionFiles, function(x){
+    con <- file(x, "r")
+    n<-length(readLines(con))-1 # -1 for header
+    close(con)
+    return(n)
+  })
+  return(paste(nSNVs, collapse = "-"))
 }
 
 summariseClusteringExtensionResultsForAll <- function(resultsDir,distMeth="mann"){

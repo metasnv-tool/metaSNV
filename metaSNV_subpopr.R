@@ -13,7 +13,7 @@ useExistingClustering<-FALSE
 useExistingExtension<-FALSE
 makeReports <- TRUE
 makeGeneReports <- TRUE
-doSpecies<-TRUE
+calcSpeciesAbunds<-TRUE
 
 ptm <- proc.time()
 suppressPackageStartupMessages(library(futile.logger))
@@ -591,7 +591,7 @@ if(length(speciesToAssess)>0){
 
 # Get subspecies abundances relative to whole community ---------------------------------------
 
-if(doSpecies && !is.null(SPECIES.ABUNDANCE.PROFILE) &&
+if(calcSpeciesAbunds && !is.null(SPECIES.ABUNDANCE.PROFILE) &&
    SPECIES.ABUNDANCE.PROFILE != "doNotRun" &&
    file.exists(SPECIES.ABUNDANCE.PROFILE)){
   print("Calculating cluster abundances using species abundances...")
@@ -721,6 +721,10 @@ if(!is.null(KEGG.PATH) && file.exists(KEGG.PATH) &&
 
 # Summarise results ##########
 print("Summarising results...")
+
+# NOTE TO SELF - REMOVE THIS LINE BELOW
+#summariseClusteringExtensionResultsForAll(resultsDir=OUT.DIR,distMeth="mann")
+
 combineAllSummaries(OUT.DIR)
 if(makeReports){
   renderResultsSummaryReport(OUT.DIR,rmdDir = rmdDir)
