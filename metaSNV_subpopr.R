@@ -665,25 +665,25 @@ if(!is.null(KEGG.PATH) && file.exists(KEGG.PATH) &&
               "species using",ncoresUsing,"cores"))
   
   geneFamilyType<-"Genes"
-  # print("Correlating cluster and gene family abundances (Pearson & Spearman)...")
-  # #pearson
-  # tmp <- BiocParallel::bptry(
-  #   BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
-  #                          correlateSubpopProfileWithGeneProfiles,
-  #                          OUT.DIR,KEGG.PATH,
-  #                          geneFamilyType=geneFamilyType))
-  # 
-  # # if failed, try again...often it's just a timing conflict error from parallelising
-  # if(!all(bpok(tmp))){
-  #   print(paste("Retrying",length(which(!bpok(tmp)))," failed computation of correlations..."))
-  #   tmp <- BiocParallel::bptry(
-  #     BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam, #SerialParam() could redo with serial param if memory is issue
-  #                            BPREDO=tmp,
-  #                            correlateSubpopProfileWithGeneProfiles,
-  #                            OUT.DIR,KEGG.PATH,
-  #                            geneFamilyType=geneFamilyType))
-  # }
-  # printBpError(tmp)
+   print("Correlating cluster and gene family abundances (Pearson & Spearman)...")
+   #pearson
+   tmp <- BiocParallel::bptry(
+     BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
+                            correlateSubpopProfileWithGeneProfiles,
+                            OUT.DIR,KEGG.PATH,
+                            geneFamilyType=geneFamilyType))
+   
+   # if failed, try again...often it's just a timing conflict error from parallelising
+   if(!all(bpok(tmp))){
+     print(paste("Retrying",length(which(!bpok(tmp)))," failed computation of correlations..."))
+     tmp <- BiocParallel::bptry(
+       BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam, #SerialParam() could redo with serial param if memory is issue
+                              BPREDO=tmp,
+                              correlateSubpopProfileWithGeneProfiles,
+                              OUT.DIR,KEGG.PATH,
+                              geneFamilyType=geneFamilyType))
+   }
+  printBpError(tmp)
   
   if(makeGeneReports){ #makeReports){
     
