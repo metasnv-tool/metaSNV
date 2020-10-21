@@ -140,7 +140,8 @@ correlateSubpopProfileWithGeneProfiles <- function(species,outDir,geneAbundanceP
   }
   # add summed cluster to check if gene correlates with species overall
   speciesAbund <- colSums(allClustAbundWide[,-1])
-  allClustAbundWide[nrow(allClustAbundWide)+1,] <- c("-1",speciesAbund)
+  #allClustAbundWide[nrow(allClustAbundWide)+1,] <- c("-1",speciesAbund) # failed on git
+  allClustAbundWide <- rbind(allClustAbundWide, c("-1",speciesAbund))
   
   doCorr <- function(x,y,method,exact){
 
