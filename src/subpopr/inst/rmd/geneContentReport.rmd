@@ -29,7 +29,7 @@ params:
   bamSuffix:
     value: '.bam'
   geneFamilyType:
-    value: "Gene"
+    value: 'Gene'
 ---
 
 ```{r setup, include=FALSE}
@@ -185,10 +185,22 @@ corrS <- read_tsv(pathCorrS,col_names = T, col_types = cols(
   q.valueBH = col_double()
 ))
 
-clusterGenesDf <- read_tsv(pathClusterGenesDf) %>% 
+clusterGenesDf <- read_tsv(pathClusterGenesDf, 
+                           col_types = cols(
+  geneFamily = col_character(),
+  cluster = col_character(),
+  geneIsCorrelated = col_logical(),
+  geneIsNotCorrelated = col_logical()
+)) %>% 
   mutate(cluster = sub(cluster, pattern = "Cluster ",replacement = ""))
 
-speciesGenesDf <- read_tsv(pathSpeciesGenesDf) %>% 
+speciesGenesDf <- read_tsv(pathSpeciesGenesDf,
+                           col_types = cols(
+  geneFamily = col_character(),
+  cluster = col_character(),
+  geneIsCorrelated = col_logical(),
+  geneIsNotCorrelated = col_logical()
+)) %>% 
   mutate(cluster = sub(cluster, pattern = "Cluster ",replacement = ""))
 
 if(!"corrP" %in% ls()){
