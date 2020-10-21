@@ -82,5 +82,6 @@ jobs:
     - name: Run all of metaSNV with test data
       run: |
         ./metaSNV.py output testdata/all_samples testdata/ref/allReferenceGenomes.fasta
-        ./metaSNV_post.py output
+        ./metaSNV_Filtering.py output
+        ./metaSNV_DistDiv.py --filt output/filtered/pop --dist
         ./metaSNV_subpopr.R -i output -g testdata/abunds/geneAbundances.tsv -a testdata/abunds/speciesAbundances.tsv
