@@ -132,41 +132,44 @@ if(normalRun){
 }else{
   # TO RUN FROM WITHIN R WITHOUT OPTS ----------
   opt <- list()
-  #scriptDir <- "/g/bork3/home/rossum/software/metaSNV2/metaSNV/"
-  #setwd("/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v2/subpopr_v2")
-  #opt$metadata <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v2/metadata_allv2.csv"
-  #opt$metaSnvResultsDir <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v2/metaSNV/outputs_subspec/"
-  #opt$speciesAbundance <- "doNotRun"
-  #opt$geneAbundance <- "doNotRun"
+  # scriptDir <- "/g/bork3/home/rossum/software/metaSNV2/metaSNV/"
+  # setwd("/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/subpopr")
+  # opt$metadata <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/sampleSelection/metadataForSubspeciesAnalysis.csv"
+  # opt$metaSnvResultsDir <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/metaSNV/outputs/"
+  # opt$speciesAbundance <- "doNotRun"
+  # opt$geneAbundance <- "doNotRun"
   
   # scriptDir <- "/Users/rossum/Dropbox/PostDocBork/subspecies/toolDevelopment/metaSNV/"
+   scriptDir <- "/g/scb2/bork/rossum/metaSNV2/metaSNV/"
   # workDir <- "/Volumes/KESU/scb2/metagenomes/human/subspecGeoValidation/all_v3/"
-  # setwd(paste0(workDir,"/subpopr"))
-  # opt$metadata <- paste0(workDir,"metadataForSubspeciesAnalysis.csv")
-  # opt$metaSnvResultsDir <- paste0(workDir,"/metaSNV/outputs/")
-  # opt$speciesAbundance <- paste0(workDir,"/motus20/motusForSelectedSamples.tsv") #"doNotRun"
-  # opt$geneAbundance <- paste0(workDir,"/geneContent/mapToPanGenomes/outputs/counts_unique_norm_tmp1k.tsv")
-  # opt$sampleSuffix <- ".subspec71.unique.sorted.bam"
+   workDir <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/"
+  setwd(paste0(workDir,"/subpopr"))
+  opt$metadata <- paste0(workDir,"/sampleSelection/metadataForSubspeciesAnalysis.csv")
+  opt$metaSnvResultsDir <- paste0(workDir,"/metaSNV/outputs/")
+  opt$speciesAbundance <- paste0(workDir,"/motus20/motusForSelectedSamples.tsv") #"doNotRun"
+  opt$geneAbundance <- paste0(workDir,"/geneContent/mapToPanGenomes/outputs/counts_unique_norm_sumByNogBySpecies.tsv")
+  opt$sampleSuffix <- ".subspec71.unique.sorted.bam"
   
-  # opt$procs <- 3
-  # opt$isMotus <- T
-  # opt$metadataSampleIDCol <- "sampleID"
-  # opt$outputDir <- "results_md_s49677-u"
-  
-  scriptDir <- "/g/scb2/bork/rossum/metaSNV2/metaSNV/"
-  workDir <- "/g/scb2/bork/rossum/subspecies/testingSubpopr/githubWorkflow/"
-  #setwd(paste0(workDir,"/subpopr"))
-  opt$metadata <- "doNotRun"
-  opt$metaSnvResultsDir <- paste0(workDir,"/output/")
-  opt$speciesAbundance <- paste0(workDir,"testdata/abunds/speciesAbundances.tsv") #"doNotRun"
-  opt$geneAbundance <- paste0(workDir,"testdata/abunds/geneAbundances.tsv")
-  opt$sampleSuffix <- ".bam"
-  opt$procs <- 1
+  opt$procs <- 2
   opt$isMotus <- T
-  opt$metadataSampleIDCol <- NA
-  opt$outputDir <- paste0(workDir,"/results/")
+  opt$metadataSampleIDCol <- "sampleID"
+  opt$outputDir <- "results_md_s257745"
+  
+  # scriptDir <- "/g/scb2/bork/rossum/metaSNV2/metaSNV/"
+  # workDir <- "/g/scb2/bork/rossum/subspecies/testingSubpopr/githubWorkflow/"
+  # #setwd(paste0(workDir,"/subpopr"))
+  # opt$metadata <- "doNotRun"
+  # opt$metaSnvResultsDir <- paste0(workDir,"/output/")
+  # opt$speciesAbundance <- paste0(workDir,"testdata/abunds/speciesAbundances.tsv") #"doNotRun"
+  # opt$geneAbundance <- paste0(workDir,"testdata/abunds/geneAbundances.tsv")
+  # opt$sampleSuffix <- ".bam"
+  # opt$procs <- 1
+  # opt$isMotus <- T
+  # opt$metadataSampleIDCol <- NA
+  # opt$outputDir <- paste0(workDir,"/results/")
   
   opt$fixReadThreshold <- 0.2
+  opt$fixReadThreshold <- 0.1
   opt$fixSnvThreshold <- 0.8
   opt$genotypingThreshold <- 0.8
   
@@ -377,13 +380,30 @@ dir.create(paste0(OUT.DIR,"/threadLogs"), recursive = T, showWarnings = FALSE)
 print(paste("Running subpopr on",length(species),"species using",ncoresUsing,"cores."))
 print("Progress bar reflects the percentage of species analysed. Progression in time will not be linear.")
 
+errNum <- 1
+runTimeStamp <- format(Sys.time(), "%Y%m%d%H%M")
 printBpError <- function(result){
   if(all(bpok(result))){
     return("") # blank prints "NULL"
   }else{
-    print( paste("Error in ",length(which(!bpok(result)))," task(s)",
-                 #paste0(which(!bpok(result)),collapse = ","),
-                 ", see files with text \"Success: FALSE\" in ",paste0(OUT.DIR,"/threadLogs") ))
+    errIdStr <- paste0(runTimeStamp,"_",errNum)
+    logName <- paste0(OUT.DIR,"/threadLogs/log_errorDetails_",errIdStr,".txt")
+    errNum <<- errNum+1 #update outside of function context
+    errMsgSimple <- paste("Error in ",length(which(!bpok(result)))," task(s).",
+                    "See error log in ",logName," . " )
+    errMsgDetail <- paste("Error in ",length(which(!bpok(result)))," task(s). ",
+                          "See error log in",logName," . ",
+                          "Errors in task numbers: [",
+                          paste0(which(!bpok(result)),collapse = ","),
+                          "] . Species with errors: [",
+                          paste0(names(result[which(!bpok(result))]),collapse = ","),
+                          "] . See also corresponding logs in ",paste0(OUT.DIR,"/threadLogs")  )
+    capture.output(errMsgDetail,file = logName,append = F)
+    capture.output(print("---- ERRORS PER SPECIES ----"),file = logName,append = T)
+    capture.output(print(result),file = logName,append = T)
+    capture.output(print("---- TRACEBACKS ----"),file = logName,append = T)
+    capture.output(lapply(result,FUN = traceback),file = logName,append = T)
+    print(errMsgSimple)
     #print(result[[which(!bpok(result))]])
     #above creates this: Error in result[[which(!bpok(result))]] : subscript out of bounds
   }
@@ -408,6 +428,7 @@ runDefine <- function(spec){
 if(!useExistingClustering){
   resultsPerSpecies <- BiocParallel::bptry(
     BiocParallel::bplapply(species, runDefine, BPPARAM = bpParam))
+  names(resultsPerSpecies) <- species
   printBpError(resultsPerSpecies)
   
   # this is error prone and output is not used anyway
@@ -460,6 +481,7 @@ if(makeReports){
                            subpopOutDir = noSubstruc1dir,
                            bamSuffix = SAMPLE.ID.SUFFIX,
                            rmdDir = rmdDir ))
+  names(tmp) <- noSubstrucSpecies
   printBpError(tmp)
 }
 # get all species where cluster medoids could be defined
@@ -481,7 +503,7 @@ if(makeReports){
                            subpopOutDir = noSubstruc2dir,
                            bamSuffix = SAMPLE.ID.SUFFIX,
                            rmdDir = rmdDir ))
-  
+  names(tmp) <- noSubstrucSpecies
   printBpError(tmp)
 }
 # Handle species with subspecies #######################################################################
@@ -535,6 +557,7 @@ if(useExistingExtension){
                              pyConvertSNPtoAllelTable,
                              scriptDir = pyScriptDir))
     
+    names(tmp) <- allPos
     printBpError(tmp)
     
     print("Determining abundance of clusters using genotyping SNVs")
@@ -545,6 +568,7 @@ if(useExistingExtension){
                              metaSNVdir=METASNV.DIR,
                              outDir=OUT.DIR ))
     
+    names(tmp) <- allSubstrucSpecies
     printBpError(tmp)
     
     summariseClusteringExtensionResultsForAll(resultsDir=OUT.DIR,distMeth="mann")
@@ -579,6 +603,7 @@ if(makeReports){
                              BPPARAM = bpParam,
                              runRend))
   }
+  names(tmp) <- allSubstrucSpecies
   printBpError(tmp)
 }
 
@@ -603,6 +628,7 @@ if(calcSpeciesAbunds && !is.null(SPECIES.ABUNDANCE.PROFILE) &&
                            outDir=OUT.DIR,
                            speciesProfileIsMotus = SPECIES.ABUND.PROFILE.IS.MOTUS))
   
+  names(tmp) <- allSubstrucSpecies
   printBpError(tmp)
   abunds <- collectSubpopAbunds(OUT.DIR)
   if(is.null(abunds)){
@@ -647,6 +673,7 @@ if(!is.null(METADATA.PATH) && file.exists(METADATA.PATH)){
                                BPPARAM = bpParam,
                                doRendMd))
     }
+    names(tmp) <- allSubstrucSpecies
     printBpError(tmp)
   }
   summariseMetadataAssocResultsForAll(OUT.DIR)
@@ -666,7 +693,6 @@ if(!is.null(KEGG.PATH) && file.exists(KEGG.PATH) &&
   
   geneFamilyType<-"Genes"
    print("Correlating cluster and gene family abundances (Pearson & Spearman)...")
-   #pearson
    tmp <- BiocParallel::bptry(
      BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
                             correlateSubpopProfileWithGeneProfiles,
@@ -683,6 +709,7 @@ if(!is.null(KEGG.PATH) && file.exists(KEGG.PATH) &&
                               OUT.DIR,KEGG.PATH,
                               geneFamilyType=geneFamilyType))
    }
+   names(tmp) <- allSubstrucSpecies
   printBpError(tmp)
   
   if(makeGeneReports){ #makeReports){
@@ -709,6 +736,7 @@ if(!is.null(KEGG.PATH) && file.exists(KEGG.PATH) &&
                                bamSuffix= SAMPLE.ID.SUFFIX,
                                rmdDir = rmdDir))
     }
+    names(tmp) <- allSubstrucSpecies
     printBpError(tmp)
   }
   summariseGeneFamilyCorrelationResultsForAll(resultsDir = OUT.DIR,geneFamilyType = geneFamilyType)
@@ -721,9 +749,6 @@ if(!is.null(KEGG.PATH) && file.exists(KEGG.PATH) &&
 
 # Summarise results ##########
 print("Summarising results...")
-
-# NOTE TO SELF - REMOVE THIS LINE BELOW
-#summariseClusteringExtensionResultsForAll(resultsDir=OUT.DIR,distMeth="mann")
 
 combineAllSummaries(OUT.DIR)
 if(makeReports){
