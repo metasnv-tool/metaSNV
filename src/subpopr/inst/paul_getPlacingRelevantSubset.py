@@ -28,7 +28,7 @@ for f in glob.glob(hapDir+'/*hap_positions.tab'):
         l = line.rstrip().split('\t')
         c = l[1].split(':')
         #code = c[0]+':'+c[1]+':'+c[3]
-        code = c[0]+':'+c[2]
+        code = c[0]+':'+c[2] # ref seq ID : position
         if code not in positionDictionary:
             positionDictionary[code] = []
         if fileDictionary[spec+'.pos'] not in positionDictionary[code]:
@@ -42,7 +42,7 @@ for a in glob.glob(metaSNVdir+'/snpCaller/called_SNPs*'):
 #    print(a)
     for line in open(a):
         l = line.split('\t')
-        code = l[0]+':'+l[2]
+        code = l[0]+':'+l[2] # reference seq ID : postion 
         if code in positionDictionary:
             for ff in positionDictionary[code]:
                 ff.write(line)
