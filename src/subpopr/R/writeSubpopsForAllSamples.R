@@ -6,6 +6,7 @@
 #'e.g. if sample X has -1 for 30% of the genotyping SNVs, then it is not assigned to a cluster
 #'and not included in results
 writeSubpopsForAllSamples <- function(species,sampleNames, outDir,
+                                      maxPropUncalledSNV = 0.2,
                                       minGenotypeAbundance = 80){
 
   # use paul_getPlacingRelevantSubset.py to create 537011_2.pos file from

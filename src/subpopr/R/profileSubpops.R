@@ -239,6 +239,7 @@ useGenotypesToProfileSubpops <- function(species, metaSNVdir, outDir,
   extendedClusteringFreqs <- writeSubpopsForAllSamples(species,
                                                        sampleNamesInMetaSNVorder,
                                                        outDir,
+                                                       maxPropUncalledSNV = maxPropUncalledSNV,
                                                        minGenotypeAbundance = minGenotypeAbundance)
 
   if(is.null(extendedClusteringFreqs) || nrow(extendedClusteringFreqs) == 0){
