@@ -133,12 +133,20 @@ writeSubpopsForAllSamples <- function(species,sampleNames, outDir,
   nSampNotClearClus <- sum(rowSums(full)<80 | rowSums(full)>120)
   full <- full[which(rowSums(full)>=80 & rowSums(full)<=120),]
 
+  nSampLowPresence <- sum(rowSums(full)<80)
+  nSampMultiPresence <- sum(rowSums(full)<=120)
+  full <- full[which(rowSums(full)>=80 & rowSums(full)<=120),]
+
 
   if(nSampNotClearClus > 0){
     write(file=paste(outDir,species,'_extended_clustering_stat.txt',sep=''),
           x = paste0("Species ",species, ": ",
                      nSampNotClearClus,' out of ', nrow(full)+nSampNotClearClus ,
-                     ' samples rejected due to incoherent subpecies assignment'),append = T)
+                     ' samples rejected due to incoherent subpecies assignment. ',
+                     "Number of samples where summed abundance of clusters was < 80%: ",
+                     nSampLowPresence,
+                     ". Number of samples where summed abundance of clusters was > 120%:",
+                     nSampMultiPresence),append = T)
   }
 
 
