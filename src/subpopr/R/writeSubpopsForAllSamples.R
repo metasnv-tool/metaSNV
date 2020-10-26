@@ -134,9 +134,7 @@ writeSubpopsForAllSamples <- function(species,sampleNames, outDir,
   full <- full[which(rowSums(full)>=80 & rowSums(full)<=120),]
 
   nSampLowPresence <- sum(rowSums(full)<80)
-  nSampMultiPresence <- sum(rowSums(full)<=120)
-  full <- full[which(rowSums(full)>=80 & rowSums(full)<=120),]
-
+  nSampMultiPresence <- sum(rowSums(full)>120)
 
   if(nSampNotClearClus > 0){
     write(file=paste(outDir,species,'_extended_clustering_stat.txt',sep=''),
