@@ -3,9 +3,14 @@
 #'@param sampleNames character vector of all samples names used in metaSNV - order is important
 #'@return data frame of clusters and abundance/frequency within samples or NULL if no genotyping positions were identified
 #'@param maxPropUncalledSNV maximum proportion of genotyping SNVs positions that can be NA per sample
+#'@param minAlleleAbundance  percentage of reads that must have the allele for it to be considered present in a sample
+#'@param minGenotypePrevalence percentage of genotyping SNVs must be present for sample to be assigned to cluster
 #'e.g. if sample X has -1 for 30% of the genotyping SNVs, then it is not assigned to a cluster
 #'and not included in results
-writeSubpopsForAllSamples <- function(species,sampleNames, outDir, maxPropUncalledSNV = 0.2){
+writeSubpopsForAllSamples <- function(species,sampleNames, outDir,
+                                      maxPropUncalledSNV = 0.2,
+                                      minAlleleAbundance = 80,
+                                      minGenotypePrevalence = 80){
 
   # use paul_getPlacingRelevantSubset.py to create 537011_2.pos file from
   # 1. [species]_[cluster]_hap_positions.tab (from writeGenotypeFreqs(...) )
@@ -85,9 +90,9 @@ writeSubpopsForAllSamples <- function(species,sampleNames, outDir, maxPropUncall
     hap_freq <- data.frame(apply(data,2,median,na.rm=T))
 
     # new way -- take the percent of genotyping SNVs that are present
-    minAbundance <- 80 # this percentage of reads must have the allele for it to be considered present
+    #minAlleleAbundance <- 80 # this percentage of reads must have the allele for it to be considered present
     hap_freq <- data.frame(apply(data,2,function(x){
-      genotypePresent <- x > minAbundance
+      genotypePresent <- x > minAlleleAbundance
       genotypePresent <- genotypePresent[!is.na(genotypePresent)] # remove NAs
       # these are the SNV positions that were not covered with sufficient depth in the sample
       prevalenceOfGenotype <- sum(genotypePresent,na.rm = T)/length(genotypePresent)
@@ -125,15 +130,15 @@ writeSubpopsForAllSamples <- function(species,sampleNames, outDir, maxPropUncall
   dd <- subset(dd,i==1)
 
   #Remove samples that don't seem to have a coherent assignment. Not much we can do about these.
-  # minPrevalence <- 80 # this percentage of genotyping SNVs must be present for sample to be assigned to cluster
   # 120 would mean that SNVs from multiple genotypes were observed at high abundance
   #nSampNotClearClus <- sum(rowSums(full)<80 | rowSums(full)>120)
   #full <- full[which(rowSums(full)>=80 & rowSums(full)<=120),]
 
   # row max < 80 means that no cluster had at least 80% of its genotyping SNVs present
   # row sum > 120 means that multiple clusters had most of their genotyping SNVs present
-  nSampNotClearClus <- sum( rowMax(full,na.rm=T)<80 | rowSums(full)>120)
-  full <- full[which(rowMax(full,na.rm=T)>=80 & rowSums(full)<=120),]
+  #minGenotypePrevalence <- 80
+  nSampNotClearClus <- sum( rowMax(full,na.rm=T)<minGenotypePrevalence | rowSums(full)>120)
+  full <- full[which(rowMax(full,na.rm=T)>=minGenotypePrevalence & rowSums(full)<=120),]
 
   if(nSampNotClearClus > 0){
     write(file=paste(outDir,species,'_extended_clustering_stat.txt',sep=''),

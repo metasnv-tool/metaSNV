@@ -196,8 +196,16 @@ defineSubpopulations <- function(species, distName = "mann",
 #                               outDir = "/Users/rossum/Dropbox/PostDocBork/subspecies/toolDevelopment/subpopr/ES_PC/metaSNV/fr11_v1/minFilter/",
 #                               metaSNVdir = "/Users/rossum/Dropbox/PostDocBork/subspecies/toolDevelopment/subpopr/ES_PC/metaSNV/fr11_v1/minFilter/outputs_minFilter")
 
-#' @export
-useGenotypesToProfileSubpops <- function(species, metaSNVdir, outDir){
+#'@export
+#'@param maxPropUncalledSNV maximum proportion of genotyping SNVs positions that can be NA per sample
+#'@param minAlleleAbundance  percentage of reads that must have the allele for it to be considered present in a sample
+#'@param minGenotypePrevalence percentage of genotyping SNVs must be present for sample to be assigned to cluster
+#'e.g. if sample X has -1 for 30% of the genotyping SNVs, then it is not assigned to a cluster
+#'and not included in results
+useGenotypesToProfileSubpops <- function(species, metaSNVdir, outDir,
+                                         maxPropUncalledSNV = 0.2,
+                                         minAlleleAbundance = 80,
+                                         minGenotypePrevalence = 80){
 
   # use the genotype profiles to classify all samples
   # reads in output from writeGenotypeFreqs
@@ -230,7 +238,12 @@ useGenotypesToProfileSubpops <- function(species, metaSNVdir, outDir){
   sampleNamesInMetaSNVorder <- as.character(ss$V1)
   sampleNamesInMetaSNVorder <- basename(sampleNamesInMetaSNVorder)
 
-  extendedClusteringFreqs <- writeSubpopsForAllSamples(species, sampleNamesInMetaSNVorder, outDir)
+  extendedClusteringFreqs <- writeSubpopsForAllSamples(species,
+                                                       sampleNamesInMetaSNVorder,
+                                                       outDir,
+                                                       maxPropUncalledSNV = maxPropUncalledSNV,
+                                                       minAlleleAbundance = minAlleleAbundance,
+                                                       minGenotypePrevalence = minGenotypePrevalence)
 
   if(is.null(extendedClusteringFreqs) || nrow(extendedClusteringFreqs) == 0){
     warning(paste0("Species does not have cluster frequencies. Species: ",species))
