@@ -7,6 +7,10 @@ rowMeans = function(d,na.rm = T) {
   apply(d,1,function(x) mean(x[x!=-1],na.rm = na.rm))
 }
 
+rowMax = function(d,na.rm = T) {
+  apply(d,1,function(x) max(x,na.rm = na.rm))
+}
+
 makeNA <- function(DT) {
   DT[DT==-1] <- NA
 #  for (j in seq_len(ncol(DT)))

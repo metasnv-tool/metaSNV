@@ -43,7 +43,6 @@ writeSubpopsForAllSamples <- function(species,sampleNames, outDir, maxPropUncall
                            header=T,row.names=1,sep='\t',as.is = T)
 
     # subset full file of SNPs to just get those SNPs specific to this cluster (as opposed to all clusters for this specI)
-    # SNP ids generated in metaSNV are different in the filtered/pop files than in the snpCaller/ files :(
     # metaSNV ids also change if a annotation file was used or not
     # e.g.
     # 515620.PRJNA29073.CP001104:-:1219674:A  == {species}:{annotation}:{position}:{allele}
@@ -82,7 +81,18 @@ writeSubpopsForAllSamples <- function(species,sampleNames, outDir, maxPropUncall
     }
 
     #Compute the frequency for this genotype
+    # old way was just to take the median of the SNV frequencies
     hap_freq <- data.frame(apply(data,2,median,na.rm=T))
+
+    # new way -- take the percent of genotyping SNVs that are present
+    minAbundance <- 80 # this percentage of reads must have the allele for it to be considered present
+    hap_freq <- data.frame(apply(data,2,function(x){
+      genotypePresent <- x > minAbundance
+      genotypePresent <- genotypePresent[!is.na(genotypePresent)] # remove NAs
+      # these are the SNV positions that were not covered with sufficient depth in the sample
+      prevalenceOfGenotype <- sum(genotypePresent,na.rm = T)/length(genotypePresent)
+      return(prevalenceOfGenotype*100)
+    }))
     colnames(hap_freq) <- 'freq'
     hap_freq$Cluster <- cluster
     hap_freq$Sample <- rownames(hap_freq)
@@ -115,8 +125,15 @@ writeSubpopsForAllSamples <- function(species,sampleNames, outDir, maxPropUncall
   dd <- subset(dd,i==1)
 
   #Remove samples that don't seem to have a coherent assignment. Not much we can do about these.
-  nSampNotClearClus <- sum(rowSums(full)<80 | rowSums(full)>120)
-  full <- full[which(rowSums(full)>=80 & rowSums(full)<=120),]
+  # minPrevalence <- 80 # this percentage of genotyping SNVs must be present for sample to be assigned to cluster
+  # 120 would mean that SNVs from multiple genotypes were observed at high abundance
+  #nSampNotClearClus <- sum(rowSums(full)<80 | rowSums(full)>120)
+  #full <- full[which(rowSums(full)>=80 & rowSums(full)<=120),]
+
+  # row max < 80 means that no cluster had at least 80% of its genotyping SNVs present
+  # row sum > 120 means that multiple clusters had most of their genotyping SNVs present
+  nSampNotClearClus <- sum( rowMax(full,na.rm=T)<80 | rowSums(full)>120)
+  full <- full[which(rowMax(full,na.rm=T)>=80 & rowSums(full)<=120),]
 
   if(nSampNotClearClus > 0){
     write(file=paste(outDir,species,'_extended_clustering_stat.txt',sep=''),
