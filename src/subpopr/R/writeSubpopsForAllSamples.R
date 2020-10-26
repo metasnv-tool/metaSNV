@@ -115,7 +115,6 @@ writeSubpopsForAllSamples <- function(species,sampleNames, outDir,
     return(NULL)
   }
 
-
   write.table(all_prevalenceGte5,row.names = F,
               paste(outDir,species,'_extended_clustering_prevalenceGte5.tsv',sep=''),
               sep='\t',quote=F)
