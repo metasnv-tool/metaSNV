@@ -198,14 +198,12 @@ defineSubpopulations <- function(species, distName = "mann",
 
 #'@export
 #'@param maxPropUncalledSNV maximum proportion of genotyping SNVs positions that can be NA per sample
-#'@param minAlleleAbundance  percentage of reads that must have the allele for it to be considered present in a sample
-#'@param minGenotypePrevalence percentage of genotyping SNVs must be present for sample to be assigned to cluster
+#'@param minGenotypeAbundance minimum mean abundance of genotyping SNVs for sample to be assigned to cluster
 #'e.g. if sample X has -1 for 30% of the genotyping SNVs, then it is not assigned to a cluster
 #'and not included in results
 useGenotypesToProfileSubpops <- function(species, metaSNVdir, outDir,
                                          maxPropUncalledSNV = 0.2,
-                                         minAlleleAbundance = 80,
-                                         minGenotypePrevalence = 80){
+                                         minGenotypeAbundance = 80){
 
   # use the genotype profiles to classify all samples
   # reads in output from writeGenotypeFreqs
@@ -241,9 +239,7 @@ useGenotypesToProfileSubpops <- function(species, metaSNVdir, outDir,
   extendedClusteringFreqs <- writeSubpopsForAllSamples(species,
                                                        sampleNamesInMetaSNVorder,
                                                        outDir,
-                                                       maxPropUncalledSNV = maxPropUncalledSNV,
-                                                       minAlleleAbundance = minAlleleAbundance,
-                                                       minGenotypePrevalence = minGenotypePrevalence)
+                                                       minGenotypeAbundance = minGenotypeAbundance)
 
   if(is.null(extendedClusteringFreqs) || nrow(extendedClusteringFreqs) == 0){
     warning(paste0("Species does not have cluster frequencies. Species: ",species))
