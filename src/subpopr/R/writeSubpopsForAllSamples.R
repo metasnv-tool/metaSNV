@@ -23,6 +23,7 @@ writeSubpopsForAllSamples <- function(species,sampleNames, outDir,
   }
 
   all_freq <- NULL
+  all_prevalenceGte5 <- NULL
 
   # for each cluster .pos file for this species
   for (d in all_hap) {
@@ -88,19 +89,24 @@ writeSubpopsForAllSamples <- function(species,sampleNames, outDir,
     hap_freq <- data.frame(apply(data,2,mean,na.rm=T))
 
     # new way -- take the percent of genotyping SNVs that are present
-    #minAlleleAbundance <- 80 # this percentage of reads must have the allele for it to be considered present
-    # hap_freq <- data.frame(apply(data,2,function(x){
-    #   genotypePresent <- x > minAlleleAbundance
-    #   genotypePresent <- genotypePresent[!is.na(genotypePresent)] # remove NAs
-    #   # these are the SNV positions that were not covered with sufficient depth in the sample
-    #   prevalenceOfGenotype <- sum(genotypePresent,na.rm = T)/length(genotypePresent)
-    #   return(prevalenceOfGenotype*100)
-    # }))
+    #minAlleleAbundance <- 10 # this percentage of reads must have the allele for it to be considered present
+    hap_prevalenceGte5 <- data.frame(apply(data,2,function(x){
+      minAlleleAbundance <- 5 #could replace with min(5,mean(x,na.rm = T)) # to handle low abund clusters
+      genotypePresent <- x >= minAlleleAbundance
+      genotypePresent <- genotypePresent[!is.na(genotypePresent)] # remove NAs
+      # these are the SNV positions that were not covered with sufficient depth in the sample
+      prevalenceOfGenotype <- sum(genotypePresent,na.rm = T)/length(genotypePresent)
+      return(prevalenceOfGenotype*100)
+    }))
     colnames(hap_freq) <- 'freq'
     hap_freq$Cluster <- cluster
     hap_freq$Sample <- rownames(hap_freq)
-
     all_freq <- rbind(all_freq,hap_freq)
+
+    colnames(hap_prevalenceGte5) <- 'prevalenceGenotypingSNVs'
+    hap_prevalenceGte5$Cluster <- cluster
+    hap_prevalenceGte5$Sample <- rownames(hap_prevalenceGte5)
+    all_prevalenceGte5 <- rbind(all_prevalenceGte5,hap_prevalenceGte5)
   }
 
   if(is.null(all_freq)){
@@ -108,6 +114,12 @@ writeSubpopsForAllSamples <- function(species,sampleNames, outDir,
           x = paste0("Species ",species, ": 0/",length(all_hap)," clusters had usable placing data."),append = T)
     return(NULL)
   }
+
+
+  write.table(all_prevalenceGte5,row.names = F,
+              paste(outDir,species,'_extended_clustering_prevalenceGte5.tsv',sep=''),
+              sep='\t',quote=F)
+
 
   #Get samples that could be quantified in all genotypes
   all_freq <- subset(all_freq,!is.na(all_freq$freq))
@@ -146,7 +158,6 @@ writeSubpopsForAllSamples <- function(species,sampleNames, outDir,
                      ". Number of samples where summed abundance of clusters was > 120%:",
                      nSampMultiPresence),append = T)
   }
-
 
 
   write.table(full,paste(outDir,species,'_extended_clustering_wFreq.tab',sep=''),sep='\t',quote=F)
