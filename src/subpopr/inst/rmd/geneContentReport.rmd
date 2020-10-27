@@ -399,7 +399,14 @@ if(!file.exists(pathClusterGenesAbundancesDf)){
   knitr::knit_exit()
 }
 #Loading the gene and cluster abundances to plot the specifc genes
-abundancesToPlot <- read_tsv(pathClusterGenesAbundancesDf) 
+abundancesToPlot <- read_tsv(pathClusterGenesAbundancesDf,
+                             col_types = cols(
+                               geneFamily = col_character(),
+                               sampleName = col_character(),
+                               geneFamAbund = col_double(),
+                               cluster = col_double(),
+                               clustAbund = col_double()
+                             )) 
 
 if(nrow(abundancesToPlot) == 0){
   print(paste0("Aborting due to empty file: ",pathClusterGenesAbundancesDf))
