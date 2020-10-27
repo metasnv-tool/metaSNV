@@ -23,9 +23,7 @@ writeSubpopsForAllSamples <- function(species,sampleNames, outDir,
   }
 
   all_freq <- NULL # median
-  all_freq_sd <- NULL
-  all_freq_mean <- NULL
-  all_prevalenceGte5 <- NULL
+  all_freq_summary <- NULL
 
   # for each cluster .pos file for this species
   for (d in all_hap) {
@@ -88,39 +86,21 @@ writeSubpopsForAllSamples <- function(species,sampleNames, outDir,
     #Compute the frequency for this genotype
     # old way was just to take the median of the SNV frequencies
     hap_freq_median <- data.frame(apply(data,2,median,na.rm=T))
-    hap_freq_sd <- data.frame(apply(data,2,sd,na.rm=T))
-    hap_freq_mean <- data.frame(apply(data,2,mean,na.rm=T))
-    #hap_freq <- data.frame(apply(data,2,mean,na.rm=T))
+    hap_freq_summary <- data.frame(mean=apply(data,2,mean,na.rm=T),
+                                   median=apply(data,2,median,na.rm=T),
+                                   standardDeviation=apply(data,2,sd,na.rm=T),
+                                   prevalence=apply(data,2,function(x){x<-x[!is.na(x)]; sum(x>0)/length(x)}),
+                                   prevalenceGte5=apply(data,2,function(x){x<-x[!is.na(x)]; sum(x>=5)/length(x)}))
 
-    # new way -- take the percent of genotyping SNVs that are present
-    #minAlleleAbundance <- 10 # this percentage of reads must have the allele for it to be considered present
-    hap_prevalenceGte5 <- data.frame(apply(data,2,function(x){
-      minAlleleAbundance <- 5 #could replace with min(5,mean(x,na.rm = T)) # to handle low abund clusters
-      genotypePresent <- x >= minAlleleAbundance
-      genotypePresent <- genotypePresent[!is.na(genotypePresent)] # remove NAs
-      # these are the SNV positions that were not covered with sufficient depth in the sample
-      prevalenceOfGenotype <- sum(genotypePresent,na.rm = T)/length(genotypePresent)
-      return(prevalenceOfGenotype*100)
-    }))
-    colnames(hap_freq_median) <- 'freq'
+    colnames(hap_freq_median) <- 'freq' # dataframe with 1 column and samples as row names
     hap_freq_median$Cluster <- cluster
     hap_freq_median$Sample <- rownames(hap_freq_median)
     all_freq <- rbind(all_freq,hap_freq_median)
 
-    colnames(hap_freq_sd) <- 'freqStandardDeviation'
-    hap_freq_sd$Cluster <- cluster
-    hap_freq_sd$Sample <- rownames(hap_freq_sd)
-    all_freq_sd <- rbind(all_freq_sd,hap_freq_sd)
+    hap_freq_summary$Cluster <- cluster
+    hap_freq_summary$Sample <- rownames(hap_freq_summary)
+    all_freq_summary <- rbind(all_freq_summary,hap_freq_summary)
 
-    colnames(hap_freq_mean) <- 'freqMean'
-    hap_freq_mean$Cluster <- cluster
-    hap_freq_mean$Sample <- rownames(hap_freq_mean)
-    all_freq_mean <- rbind(all_freq_mean,hap_freq_mean)
-
-    colnames(hap_prevalenceGte5) <- 'prevalenceGenotypingSNVs'
-    hap_prevalenceGte5$Cluster <- cluster
-    hap_prevalenceGte5$Sample <- rownames(hap_prevalenceGte5)
-    all_prevalenceGte5 <- rbind(all_prevalenceGte5,hap_prevalenceGte5)
   }
 
   if(is.null(all_freq)){
@@ -129,33 +109,30 @@ writeSubpopsForAllSamples <- function(species,sampleNames, outDir,
     return(NULL)
   }
 
-  write.table(all_prevalenceGte5,row.names = F,
-              paste(outDir,species,'_extended_clustering_prevalenceGte5.tsv',sep=''),
-              sep='\t',quote=F)
-
-  write.table(hap_freq_sd,row.names = F,
-              paste(outDir,species,'_extended_clustering_freqSd.tsv',sep=''),
-              sep='\t',quote=F)
-
-  write.table(hap_freq_mean,row.names = F,
-              paste(outDir,species,'_extended_clustering_freqMean.tsv',sep=''),
+  write.table(hap_freq_summary,row.names = F,
+              paste(outDir,species,'_extended_clustering_abundanceSummaryStats.tsv',sep=''),
               sep='\t',quote=F)
 
 
-  #Get samples that could be quantified in all genotypes
-  all_freq <- subset(all_freq,!is.na(all_freq$freq))
-  t <- table(all_freq$Sample)
-  n <- names(which(t == max(t)))
-  all_freq <- subset(all_freq, Sample %in% n)
-
-  #This is a stupid way of doing this transformation but i cannot be bothered to do it better
-  full <- data.frame(row.names=rownames(subset(all_freq,Cluster==1)))
-  for (c in unique(all_freq$Cluster)) {
-    s <- subset(all_freq,c==Cluster)
-    s <- s[,1,drop=F]
-    colnames(s) <- c
-    full <- cbind(full,s)
+  rmNAandSpread <- function(df){
+    #Get samples that could be quantified in all genotypes
+    df <- subset(df,!is.na(df$freq))
+    t <- table(df$Sample)
+    n <- names(which(t == max(t)))
+    df <- subset(df, Sample %in% n)
+  
+    #This is a stupid way of doing this transformation but i cannot be bothered to do it better
+    df_wide <- data.frame(row.names=rownames(subset(df,Cluster==1)))
+    for (c in unique(df$Cluster)) {
+      s <- subset(df,c==Cluster)
+      s <- s[,1,drop=F]
+      colnames(s) <- c
+      df_wide <- cbind(df_wide,s)
+    }
+    return(df_wide)
   }
+
+  full <- rmNAandSpread(all_freq)
 
   #not used
   #dd <- read.table(paste(outDir,species,'_hap_freq_median.tab',sep=''),sep='\t',row.names=NULL,header=T)
@@ -179,8 +156,21 @@ writeSubpopsForAllSamples <- function(species,sampleNames, outDir,
                      ". Number of samples where summed abundance of clusters was > 120%:",
                      nSampMultiPresence),append = T)
   }
-
-
+  
+  # remove samples that have high abundance but low prevalence of genotyping SNVs
+  # these are likely not well characterised by the original dataset
+  # if the subspecies has over 30% abundance, then 80% of its genotyping SNV positions should be covered
+  badSamples <- unique(all_freq_summary[all_freq_summary$median>30 & all_freq_summary$prevalence<0.80,"Sample"])
+  if( length(badSamples) > 0){
+    write(file=paste(outDir,species,'_extended_clustering_stat.txt',sep=''),
+          x = paste0("Species ",species, ": ",
+                     length(badSamples),' out of ', nrow(filtered) ,
+                     ' samples rejected due to extreme mismatch between ',
+                     'median abundance of genotyping SNVs (>30%) and prevalence of genotyping SNVs (<80%).')
+          ,append = T)
+    filtered <- filtered[!row.names(filtered) %in% badSamples,]
+  }
+  
   write.table(full,paste(outDir,species,'_extended_clustering_wFreq_unfiltered.tab',sep=''),sep='\t',quote=F)
   write.table(filtered,paste(outDir,species,'_extended_clustering_wFreq.tab',sep=''),sep='\t',quote=F)
 
