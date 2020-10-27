@@ -22,7 +22,7 @@ tmp <- flog.threshold(INFO) # assign to tmp to avoid NULL being returned and pri
 if(normalRun){
   # Expectation is that this script will sit in the metaSNV directory,
   # which will include a directory ./src/subpopr
-  
+
   # try to set the current working directory to the location of this file
   # works if this file is sourced() or has been called from cmd line (e.g. Rscript metaSNV_subpop.R [...])
   thisFile <- function() {
@@ -37,15 +37,15 @@ if(normalRun){
       return(normalizePath(sys.frames()[[1]]$ofile))
     }
   }
-  
+
   scriptDir <- dirname(thisFile())
-  
-  
+
+
   # Parse params -------------------------------------------------------------
-  
+
   suppressPackageStartupMessages(library(getopt))
   suppressPackageStartupMessages(library(optparse))
-  
+
   option_list = list(
     make_option(c("-i", "--metaSnvResultsDir"), type="character",
                 default=NULL,
@@ -124,11 +124,11 @@ if(normalRun){
                 Only intended for troubleshooting.",
                 metavar="logical")
   );
-  
+
   opt_parser = OptionParser(option_list=option_list);
   opt = parse_args(opt_parser);
-  
-  
+
+
 }else{
   # TO RUN FROM WITHIN R WITHOUT OPTS ----------
   opt <- list()
@@ -138,7 +138,7 @@ if(normalRun){
   # opt$metaSnvResultsDir <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/metaSNV/outputs/"
   # opt$speciesAbundance <- "doNotRun"
   # opt$geneAbundance <- "doNotRun"
-  
+
   # scriptDir <- "/Users/rossum/Dropbox/PostDocBork/subspecies/toolDevelopment/metaSNV/"
    scriptDir <- "/g/scb2/bork/rossum/metaSNV2/metaSNV/"
   # workDir <- "/Volumes/KESU/scb2/metagenomes/human/subspecGeoValidation/all_v3/"
@@ -149,12 +149,12 @@ if(normalRun){
   opt$speciesAbundance <- paste0(workDir,"/motus20/motusForSelectedSamples.tsv") #"doNotRun"
   opt$geneAbundance <- paste0(workDir,"/geneContent/mapToPanGenomes/outputs/counts_unique_norm_sumByNogBySpecies.tsv")
   opt$sampleSuffix <- ".subspec71.unique.sorted.bam"
-  
+
   opt$procs <- 2
   opt$isMotus <- T
   opt$metadataSampleIDCol <- "sampleID"
   opt$outputDir <- "results_md_s257745"
-  
+
   # scriptDir <- "/g/scb2/bork/rossum/metaSNV2/metaSNV/"
   # workDir <- "/g/scb2/bork/rossum/subspecies/testingSubpopr/githubWorkflow/"
   # #setwd(paste0(workDir,"/subpopr"))
@@ -167,14 +167,14 @@ if(normalRun){
   # opt$isMotus <- T
   # opt$metadataSampleIDCol <- NA
   # opt$outputDir <- paste0(workDir,"/results/")
-  
+
   opt$fixReadThreshold <- 0.2
   opt$fixReadThreshold <- 0.1
   opt$fixSnvThreshold <- 0.8
   opt$genotypingThreshold <- 0.8
-  
+
   opt$onlyDoSubspeciesDetection<-FALSE
-  
+
 }
 
 N.CORES <- opt$procs
@@ -354,7 +354,7 @@ if(!identical(specDist,specSnpFreq)){
                 " species) are not identical. Using the intersection (",
                 length(species),"species).Species not found in both locations: ",
                 paste(setdiff(specDist,specSnpFreq),collapse = ",")))
-  
+
 }
 
 if(length(specDist) == 0){
@@ -430,7 +430,7 @@ if(!useExistingClustering){
     BiocParallel::bplapply(species, runDefine, BPPARAM = bpParam))
   names(resultsPerSpecies) <- species
   printBpError(resultsPerSpecies)
-  
+
   # this is error prone and output is not used anyway
   # resultsPerSpeciesFixed <- resultsPerSpecies
   # if(any(!bpok(resultsPerSpeciesFixed))){
@@ -461,12 +461,12 @@ if(onlyDoSubspeciesDetection){
 # for those species that did not cluster, generate a report so we can look into why
 
 # get all species where no potential cluster medoids could be defined
-noSubstruc1dir <- getClustMedoidDefnFailedDir(OUT.DIR)
-noSubstruc1 <- list.files(path=noSubstruc1dir,
+medoidFailedDir <- getClustMedoidDefnFailedDir(OUT.DIR)
+medoidFailed <- list.files(path=medoidFailedDir,
                           pattern = paste0(DIST.METH.REPORTS ,
                                            '_distMatrixUsedForClustMedoidDefns\\.txt$'),
                           full.names = T)
-noSubstrucSpecies <- unique(sub(basename(noSubstruc1) ,
+medoidFailedSpecies <- unique(sub(basename(medoidFailed) ,
                                 pattern = paste0("_",DIST.METH.REPORTS ,
                                                  "_distMatrixUsedForClustMedoidDefns\\.txt"),
                                 replacement = ""))
@@ -474,14 +474,14 @@ noSubstrucSpecies <- unique(sub(basename(noSubstruc1) ,
 if(makeReports){
   print("Compiling reports for species without clusters due to centroid failure")
   tmp <- BiocParallel::bptry(
-    BiocParallel::bplapply(noSubstrucSpecies, BPPARAM = bpParam,
+    BiocParallel::bplapply(medoidFailedSpecies, BPPARAM = bpParam,
                            renderDetailedSpeciesReport,
                            metasnvOutDir = METASNV.DIR,
                            distMethod = DIST.METH.REPORTS ,
-                           subpopOutDir = noSubstruc1dir,
+                           subpopOutDir = medoidFailedDir,
                            bamSuffix = SAMPLE.ID.SUFFIX,
                            rmdDir = rmdDir ))
-  names(tmp) <- noSubstrucSpecies
+  names(tmp) <- medoidFailedSpecies
   printBpError(tmp)
 }
 # get all species where cluster medoids could be defined
@@ -539,8 +539,8 @@ if(useExistingExtension){
                   print("Skipping subspecies genotyping.")
                 }
   )
-  
-  
+
+
   # get all posFiles
   allPos <- list.files(path=OUT.DIR,pattern = '.*_.\\.pos$',full.names = T)
   doExtension<-TRUE
@@ -548,7 +548,7 @@ if(useExistingExtension){
     warning("Genotyping failed. No *.pos files found. Not genotyping subspecies.")
     doExtension <- FALSE
   }
-  
+
   if(doExtension){
     print("Compiling genotyping SNVs")
     #tmp <- foreach(pos=allPos) %dopar% pyConvertSNPtoAllelTable(posFile = pos)
@@ -556,10 +556,10 @@ if(useExistingExtension){
       BiocParallel::bplapply(allPos, BPPARAM = bpParam,
                              pyConvertSNPtoAllelTable,
                              scriptDir = pyScriptDir))
-    
+
     names(tmp) <- allPos
     printBpError(tmp)
-    
+
     print("Determining abundance of clusters using genotyping SNVs")
     #tmp <- foreach(spec=allSubstrucSpecies) %dopar% useGenotypesToProfileSubpops(spec, metaSNVdir=METASNV.DIR, outDir=OUT.DIR )
     tmp <- BiocParallel::bptry(
@@ -567,12 +567,12 @@ if(useExistingExtension){
                              useGenotypesToProfileSubpops,
                              metaSNVdir=METASNV.DIR,
                              outDir=OUT.DIR ))
-    
+
     names(tmp) <- allSubstrucSpecies
     printBpError(tmp)
-    
+
     summariseClusteringExtensionResultsForAll(resultsDir=OUT.DIR,distMeth="mann")
-    
+
   }
 }
 # Compile detailed reports for species with subspecies/clusters --------------
@@ -620,14 +620,14 @@ if(calcSpeciesAbunds && !is.null(SPECIES.ABUNDANCE.PROFILE) &&
    SPECIES.ABUNDANCE.PROFILE != "doNotRun" &&
    file.exists(SPECIES.ABUNDANCE.PROFILE)){
   print("Calculating cluster abundances using species abundances...")
-  
+
   tmp <- BiocParallel::bptry(
     BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
                            useSpeciesAbundToCalcSubspeciesAbund,
                            speciesAbundanceProfileFilePath=SPECIES.ABUNDANCE.PROFILE,
                            outDir=OUT.DIR,
                            speciesProfileIsMotus = SPECIES.ABUND.PROFILE.IS.MOTUS))
-  
+
   names(tmp) <- allSubstrucSpecies
   printBpError(tmp)
   abunds <- collectSubpopAbunds(OUT.DIR)
@@ -636,7 +636,7 @@ if(calcSpeciesAbunds && !is.null(SPECIES.ABUNDANCE.PROFILE) &&
             "No expected results files exist (.*hap_coverage_extended_normed.tab). ",
             "See log files.")
   }
-  
+
 }else if(SPECIES.ABUNDANCE.PROFILE != "doNotRun"){
   print(paste0("Not running species abundance analysis.",
                " Required file not specified or does not exist: ",
@@ -648,7 +648,7 @@ if(calcSpeciesAbunds && !is.null(SPECIES.ABUNDANCE.PROFILE) &&
 # Test metadata associations ##########
 if(!is.null(METADATA.PATH) && file.exists(METADATA.PATH)){
   if(makeReports){
-    
+
     doRendMd <- function(spec){
       flog.info("Rendering metadata association report for species %s", spec)
       renderTestPhenotypeAssocReport(speciesID = spec,
@@ -690,7 +690,7 @@ if(!is.null(KEGG.PATH) && file.exists(KEGG.PATH) &&
    file.exists(SPECIES.ABUNDANCE.PROFILE)){
   print(paste("Testing for gene correlations for",length(allSubstrucSpecies),
               "species using",ncoresUsing,"cores"))
-  
+
   geneFamilyType<-"Genes"
    print("Correlating cluster and gene family abundances (Pearson & Spearman)...")
    tmp <- BiocParallel::bptry(
@@ -698,7 +698,7 @@ if(!is.null(KEGG.PATH) && file.exists(KEGG.PATH) &&
                             correlateSubpopProfileWithGeneProfiles,
                             OUT.DIR,KEGG.PATH,
                             geneFamilyType=geneFamilyType))
-   
+
    # if failed, try again...often it's just a timing conflict error from parallelising
    if(!all(bpok(tmp))){
      print(paste("Retrying",length(which(!bpok(tmp)))," failed computation of correlations..."))
@@ -711,9 +711,9 @@ if(!is.null(KEGG.PATH) && file.exists(KEGG.PATH) &&
    }
    names(tmp) <- allSubstrucSpecies
   printBpError(tmp)
-  
+
   if(makeGeneReports){ #makeReports){
-    
+
     print("Compiling gene content reports...")
     tmp <- BiocParallel::bptry(BiocParallel::bplapply(allSubstrucSpecies,
                                                       BPPARAM = bpParam, #SerialParam(), # for some reason, parallel fails here
@@ -722,7 +722,7 @@ if(!is.null(KEGG.PATH) && file.exists(KEGG.PATH) &&
                                                       geneFamilyType = geneFamilyType,
                                                       bamSuffix= SAMPLE.ID.SUFFIX,
                                                       rmdDir = rmdDir))
-    
+
     # if failed, try again...often it's just a timing conflict error from parallelising
     if(!all(bpok(tmp))){
       print(paste("Retrying compilation of",length(which(!bpok(tmp)))," failed gene content reports"))
