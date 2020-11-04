@@ -54,7 +54,7 @@ computeClusters <- function(species, dist, doFilterSamplesByAlleleDist,
 
       warning(paste0(filePrefix,": After removing samples that do not have extreme SNV frequencies, ",
                   "insufficient samples (< 7) remain to pick the number of clusters and cluster medoids. ",
-                  "Cutoff for SNV allele frequency: 90%. ",
+                  "Cutoff for SNV allele frequency: ", maxPropReadsNonHomog," . ",
                   "Cutoff for proportion of SNV positions passing allele frequency cutoff per sample: ",
                   minPropHomogSnvAllelesPerSample,". ",
                   "For values see ",outDir,"/",species,"_freq_composition.tab",
@@ -76,6 +76,11 @@ computeClusters <- function(species, dist, doFilterSamplesByAlleleDist,
 
   }else{
     distForMedoids <- dist
+  }
+  
+  if(!is.null(nrow(as.matrix(dist))) && nrow(as.matrix(dist)) < 100){
+    warning(paste0(filePrefix,": fewer than 100 samples being used in determining number of clusters. Results may not be robust. ",
+                   "Number of samples: ",nrow(as.matrix(dist))))
   }
 
   # identify number of clusters and their medoids and assign samples to clusters
