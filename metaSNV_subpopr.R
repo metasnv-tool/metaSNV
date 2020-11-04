@@ -9,8 +9,8 @@
 rm(list=ls())
 
 normalRun<-TRUE # use cmd line args
-useExistingClustering<-FALSE
-useExistingExtension<-FALSE
+#useExistingClustering<-FALSE
+useExistingExtension<-FALSE # genotypes and extensions
 makeReports <- TRUE
 makeGeneReports <- TRUE
 calcSpeciesAbunds<-TRUE
@@ -122,6 +122,11 @@ if(normalRun){
                 help="Whether to only do the first step of the pipeline \
                 (just detect the presence/number of subspecies). Default is FALSE. \
                 Only intended for troubleshooting.",
+                metavar="logical"),
+    make_option(c("--useExistingClustering"), type="logical",
+                default=FALSE,
+                help="Whether to use clustering results from a previous run. Default is FALSE. \
+                Only intended for troubleshooting.",
                 metavar="logical")
   );
 
@@ -174,6 +179,7 @@ if(normalRun){
   opt$genotypingThreshold <- 0.8
 
   opt$onlyDoSubspeciesDetection<-FALSE
+  opt$useExistingClustering <- FALSE
 
 }
 
@@ -191,6 +197,7 @@ CLUSTERING.PS.CUTOFF <- 0.8
 DIST.METH.REPORTS <- "mann"
 
 onlyDoSubspeciesDetection<-opt$onlyDoSubspeciesDetection
+useExistingClustering <- opt$useExistingClustering
 
 SAMPLE.ID.SUFFIX <- opt$sampleSuffix
 
@@ -220,7 +227,7 @@ assert0to1(opt$genotypingThreshold,"genotypingThreshold")
 
 #source(paste0(scriptDir,"/src/subpopr/inst/metaSNV_subpopr_SETTINGS.R"))
 DIST.METH.REPORTS="mann" # what method to use for generating reports: either "mann" or "allele"
-BAMS.TO.USE = NULL # default = NULL
+BAMS.TO.USE = NULL #"/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v2/oneSamplePerSubject_bamNames.txt" #NULL # default = NULL
 ANALYSE.ALLELE.DISTANCES = F
 USE.PACKAGE.PREDICTION.STRENGTH = FALSE # default = FALSE
 
@@ -440,6 +447,12 @@ if(!useExistingClustering){
   #                                         ClusteringResult=unlist(resultsPerSpeciesFixed))
   # write.csv(x = resultsPerSpeciesDF,file = paste0(OUT.DIR,"/log_clusteringSummaryPerSpecies.csv"))
   saveRDS(resultsPerSpecies, file = paste0(OUT.DIR,"/log_clusteringSummaryPerSpecies.rds"))
+  try({
+    resultsPerSpeciesDF <- stack(resultsPerSpecies)
+    colnames(resultsPerSpeciesDF) <-  c("result", "species")
+    write.table(resultsPerSpeciesDF,row.names=F,
+                paste0(OUT.DIR,"/log_clusteringSummaryPerSpecies.txt"))
+  })
 }
 # summarise the results from clustering
 summariseClusteringResultsForAll(OUT.DIR,distMeth="mann")
@@ -481,8 +494,10 @@ if(makeReports){
                            subpopOutDir = medoidFailedDir,
                            bamSuffix = SAMPLE.ID.SUFFIX,
                            rmdDir = rmdDir ))
-  names(tmp) <- medoidFailedSpecies
-  printBpError(tmp)
+  if(!all(bpok(tmp))){
+    names(tmp) <- medoidFailedSpecies
+    printBpError(tmp)
+  }
 }
 # get all species where cluster medoids could be defined
 # but clusters were not significant (PS values < threshold)
@@ -503,8 +518,10 @@ if(makeReports){
                            subpopOutDir = noSubstruc2dir,
                            bamSuffix = SAMPLE.ID.SUFFIX,
                            rmdDir = rmdDir ))
-  names(tmp) <- noSubstrucSpecies
-  printBpError(tmp)
+  if(!all(bpok(tmp))){
+    names(tmp) <- noSubstrucSpecies
+    printBpError(tmp)    
+  }
 }
 # Handle species with subspecies #######################################################################
 
@@ -557,8 +574,10 @@ if(useExistingExtension){
                              pyConvertSNPtoAllelTable,
                              scriptDir = pyScriptDir))
 
+    if(!all(bpok(tmp))){
     names(tmp) <- allPos
     printBpError(tmp)
+    }
 
     print("Determining abundance of clusters using genotyping SNVs")
     #tmp <- foreach(spec=allSubstrucSpecies) %dopar% useGenotypesToProfileSubpops(spec, metaSNVdir=METASNV.DIR, outDir=OUT.DIR )
@@ -568,8 +587,10 @@ if(useExistingExtension){
                              metaSNVdir=METASNV.DIR,
                              outDir=OUT.DIR ))
 
+    if(!all(bpok(tmp))){
     names(tmp) <- allSubstrucSpecies
     printBpError(tmp)
+    }
 
     summariseClusteringExtensionResultsForAll(resultsDir=OUT.DIR,distMeth="mann")
 
@@ -602,9 +623,10 @@ if(makeReports){
                              BPREDO=tmp,
                              BPPARAM = bpParam,
                              runRend))
+      
+    names(tmp) <- allSubstrucSpecies
+    printBpError(tmp)
   }
-  names(tmp) <- allSubstrucSpecies
-  printBpError(tmp)
 }
 
 speciesToAssess <- list.files(path=OUT.DIR,pattern = '.*_extended_clustering_wFreq.tab$',full.names = F) %>%
@@ -628,8 +650,11 @@ if(calcSpeciesAbunds && !is.null(SPECIES.ABUNDANCE.PROFILE) &&
                            outDir=OUT.DIR,
                            speciesProfileIsMotus = SPECIES.ABUND.PROFILE.IS.MOTUS))
 
+  if(!all(bpok(tmp))){
   names(tmp) <- allSubstrucSpecies
   printBpError(tmp)
+  }
+  
   abunds <- collectSubpopAbunds(OUT.DIR)
   if(is.null(abunds)){
     warning("Subspecies abundance calculations failed. ",
@@ -672,9 +697,9 @@ if(!is.null(METADATA.PATH) && file.exists(METADATA.PATH)){
                                BPREDO=tmp,
                                BPPARAM = bpParam,
                                doRendMd))
+      names(tmp) <- allSubstrucSpecies
+      printBpError(tmp)
     }
-    names(tmp) <- allSubstrucSpecies
-    printBpError(tmp)
   }
   summariseMetadataAssocResultsForAll(OUT.DIR)
 }else if(METADATA.PATH != "doNotRun"){
@@ -707,10 +732,10 @@ if(!is.null(KEGG.PATH) && file.exists(KEGG.PATH) &&
                               BPREDO=tmp,
                               correlateSubpopProfileWithGeneProfiles,
                               OUT.DIR,KEGG.PATH,
-                              geneFamilyType=geneFamilyType))
+                                geneFamilyType=geneFamilyType))
+     names(tmp) <- allSubstrucSpecies
+     printBpError(tmp)
    }
-   names(tmp) <- allSubstrucSpecies
-  printBpError(tmp)
 
   if(makeGeneReports){ #makeReports){
 
@@ -735,9 +760,10 @@ if(!is.null(KEGG.PATH) && file.exists(KEGG.PATH) &&
                                geneFamilyType = geneFamilyType,
                                bamSuffix= SAMPLE.ID.SUFFIX,
                                rmdDir = rmdDir))
+      
+      names(tmp) <- allSubstrucSpecies
+      printBpError(tmp)
     }
-    names(tmp) <- allSubstrucSpecies
-    printBpError(tmp)
   }
   summariseGeneFamilyCorrelationResultsForAll(resultsDir = OUT.DIR,geneFamilyType = geneFamilyType)
 }else if(KEGG.PATH != "doNotRun"){
