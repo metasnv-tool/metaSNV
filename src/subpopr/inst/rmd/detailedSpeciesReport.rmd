@@ -42,14 +42,14 @@ psCut <- params$psCut
 library(knitr,warn.conflicts = FALSE)
 library(Cairo,warn.conflicts = FALSE)
 
-knitr::knit_hooks$set(optipng = hook_optipng) # supposed to help avoid super large files
+#knitr::knit_hooks$set(optipng = hook_optipng) # supposed to help avoid super large files
 knitr::opts_chunk$set(
   echo=TRUE,
   comment=NA,
   warning=TRUE,
   error=TRUE, # keep running even if error encountered
   message=FALSE,
-  optipng='', # activate the hook, also set in some chunks below as -o7 for max compression
+  #optipng='', # activate the hook, also set in some chunks below as -o7 for max compression
   dev= "CairoPNG", #R.devices::png2, # "png" doesn't work on seneca
   rows.print=25)
 
@@ -216,7 +216,7 @@ Samples that have mostly homogenous alleles in most of their SNV positions
 
 Black side bar indicates the samples that were used in deciding the number of clusters
 
-```{r heat1, optipng='-o7'}
+```{r heat1}
 inClusDist <- rownames(distMatrixPostBasicQC) %in% rownames(distMatrixUsedForClus)
 distMatrixToPlot <- distMatrixPostBasicQC
 rownames(distMatrixToPlot) <- sub(rownames(distMatrixToPlot),pattern = bamSuffix,replacement = "",fixed = T) 
@@ -233,7 +233,7 @@ Number of samples used for clustering  (for medoid identification): `r dim(distM
 
 Heatmap re-drawn only with samples used for medoid identification:
 
-```{r heat2, optipng='-o7'}
+```{r heat2}
 distMatrixToPlot <- distMatrixUsedForClus
 rownames(distMatrixToPlot) <- sub(rownames(distMatrixToPlot),pattern = bamSuffix,replacement = "",fixed = T) 
 colnames(distMatrixToPlot) <- sub(colnames(distMatrixToPlot),pattern = bamSuffix,replacement = "",fixed = T)
@@ -371,7 +371,7 @@ Heatmap here is only for illustration; it uses centroid clustering overall (i.e.
 
 Clusters that are too small have been discarded here
 
-```{r heat3, optipng='-o7'}
+```{r heat3}
 clusterAssignments_init <- read_tsv(clustFile,skip = 1,col_names = c("sampleID","cluster"),
                                     col_types = cols(
   sampleID = col_character(),
@@ -391,7 +391,7 @@ nClus <- length(unique(as.numeric(clustAssign$cluster)))
 
 The coloured side bar indicates cluster sample belongs to, the black and white top bar indicates whether sample was used to define cluster medioids.
 
-```{r heat4, optipng='-o7'}
+```{r heat4}
 heatmap(symm = T,scale = "none",x = distMatrixToPlot,distfun = as.dist,
         hclustfun = function(x){hclust(x,method=hclustMethodForHeatmaps)},
         RowSideColors = c("grey80",viridisLite::viridis(n=nClus))[as.numeric(clustAssign$cluster)+1],
@@ -455,7 +455,7 @@ count(genoPos,cluster,name = "numberSNVPositions")
 ```
 
 
-```{r,optipng='-o7', eval=doGenoPos}
+```{r, eval=doGenoPos}
 if(doGenoPos){
 ggplot(genoPos, aes(x=position,fill=majorAllele))+geom_histogram(bins = 30)+
   #+xlim(c(min(genoPos$refStart),max(genoPos$refEnd)))
@@ -511,7 +511,7 @@ hap_freq$sampleID %>% unique() %>% length()
 ```
 
 
-```{r,optipng='-o7'}
+```{r}
 
 ggplot(hap_freq,aes(y=sampleIDtoPlot,x=freq))+
   geom_point(alpha=0.2)+
@@ -527,7 +527,7 @@ ggplot(hap_freq,aes(x=freq))+
 ```
 
 
-```{r,optipng='-o7'}
+```{r}
 hap_freq <- hap_freq %>% 
   group_by(sampleID,averagingMethod) %>% 
   arrange(sampleID,desc(freq),averagingMethod) %>% 
@@ -554,7 +554,7 @@ ggplot(aes(fill=cluster,x=sampleID,y=freq))+
 
 ```
 
-```{r,optipng='-o7'}
+```{r}
 hap_freq %>% 
 ggplot(aes(x=cluster,y=freq))+
   geom_boxplot()+

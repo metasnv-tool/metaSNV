@@ -46,7 +46,7 @@ knitr::opts_chunk$set(
   echo=TRUE,
   warning=FALSE,
   error=TRUE,# keep running even if error encountered
-  optipng='', # activate the hook, also set in some chunks below as -o7 for max compression
+  #optipng='', # activate the hook, also set in some chunks below as -o7 for max compression
   dev= "CairoPNG", #R.devices::png2, # "png" doesn't work on seneca
   message=FALSE,
   rows.print=25)
