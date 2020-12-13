@@ -460,7 +460,7 @@ if(!useExistingClustering){
     write.table(resultsPerSpeciesDF,row.names=F,
                 paste0(OUT.DIR,"/log_clusteringSummaryPerSpecies.txt"))
   })
-}
+
 # summarise the results from clustering
 print("Summarising clustering results.")
 summariseClusteringResultsForAll(OUT.DIR,distMeth="mann")
@@ -531,6 +531,11 @@ if(makeReports){
     printBpError(tmp)
   }
 }
+}
+allSubstruc <- list.files(path=OUT.DIR,
+                          pattern = '_hap_out\\.txt$',full.names = T)
+allSubstrucSpecies <- unique(sub(basename(allSubstruc) ,
+                                 pattern = "_hap_out\\.txt$",replacement = ""))
 # Handle species with subspecies #######################################################################
 
 # continue processing those species that could be used to define subspecies
