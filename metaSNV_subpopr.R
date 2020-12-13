@@ -531,11 +531,15 @@ if(makeReports){
     printBpError(tmp)
   }
 }
-}
-allSubstruc <- list.files(path=OUT.DIR,
+}else{
+ allSubstruc <- list.files(path=OUT.DIR,
                           pattern = '_hap_out\\.txt$',full.names = T)
 allSubstrucSpecies <- unique(sub(basename(allSubstruc) ,
                                  pattern = "_hap_out\\.txt$",replacement = ""))
+print(paste0("Species with substructure: ",
+             length(allSubstrucSpecies),"/",length(species)))
+}
+
 # Handle species with subspecies #######################################################################
 
 # continue processing those species that could be used to define subspecies
@@ -546,6 +550,8 @@ if(length(allSubstrucSpecies) == 0){
   stop(paste0("Substructure not detected in any species (",
               length(species)," tested). Aborting."))
 }
+
+
 
 # Genotype clusters #####################################################
 # Try to determine genotypes for each cluster
