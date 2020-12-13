@@ -392,7 +392,6 @@ bpParam <- MulticoreParam(workers = min(N.CORES,length(species)),
 dir.create(paste0(OUT.DIR,"/threadLogs"), recursive = T, showWarnings = FALSE)
 
 print(paste("Running subpopr on",length(species),"species using",ncoresUsing,"cores."))
-print("Progress bar reflects the percentage of species analysed. Progression in time will not be linear.")
 
 errNum <- 1
 runTimeStamp <- format(Sys.time(), "%Y%m%d%H%M")
@@ -440,6 +439,7 @@ runDefine <- function(spec){
 }
 
 if(!useExistingClustering){
+  print("Progress bar reflects the percentage of species analysed. Progression in time will not be linear.")
   resultsPerSpecies <- BiocParallel::bptry(
     BiocParallel::bplapply(species, runDefine, BPPARAM = bpParam))
   names(resultsPerSpecies) <- species
