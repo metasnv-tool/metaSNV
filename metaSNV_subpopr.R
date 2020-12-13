@@ -461,83 +461,83 @@ if(!useExistingClustering){
                 paste0(OUT.DIR,"/log_clusteringSummaryPerSpecies.txt"))
   })
 
-# summarise the results from clustering
-print("Summarising clustering results.")
-summariseClusteringResultsForAll(OUT.DIR,distMeth="mann")
+  # summarise the results from clustering
+  print("Summarising clustering results.")
+  summariseClusteringResultsForAll(OUT.DIR,distMeth="mann")
 
-allSubstruc <- list.files(path=OUT.DIR,
-                          pattern = '_hap_out\\.txt$',full.names = T)
-allSubstrucSpecies <- unique(sub(basename(allSubstruc) ,
-                                 pattern = "_hap_out\\.txt$",replacement = ""))
+  allSubstruc <- list.files(path=OUT.DIR,
+                            pattern = '_hap_out\\.txt$',full.names = T)
+  allSubstrucSpecies <- unique(sub(basename(allSubstruc) ,
+                                   pattern = "_hap_out\\.txt$",replacement = ""))
 
-print(paste0("Species with substructure: ",
-             length(allSubstrucSpecies),"/",length(species)))
+  print(paste0("Species with substructure: ",
+               length(allSubstrucSpecies),"/",length(species)))
 
-if(onlyDoSubspeciesDetection){
-  combineAllSummaries(OUT.DIR)
-  stop("Subpopr stopped due to 'onlyDoSubspeciesDetection' flag being true")
-}
-
-# Handle species with no subspecies #####################################################################
-# for those species that did not cluster, generate a report so we can look into why
-
-# get all species where no potential cluster medoids could be defined
-medoidFailedDir <- getClustMedoidDefnFailedDir(OUT.DIR)
-medoidFailed <- list.files(path=medoidFailedDir,
-                          pattern = paste0(DIST.METH.REPORTS ,
-                                           '_distMatrixUsedForClustMedoidDefns\\.txt$'),
-                          full.names = T)
-medoidFailedSpecies <- unique(sub(basename(medoidFailed) ,
-                                pattern = paste0("_",DIST.METH.REPORTS ,
-                                                 "_distMatrixUsedForClustMedoidDefns\\.txt"),
-                                replacement = ""))
-
-if(makeReports){
-  print("Compiling reports for species without clusters due to centroid failure")
-  tmp <- BiocParallel::bptry(
-    BiocParallel::bplapply(medoidFailedSpecies, BPPARAM = bpParam,
-                           renderDetailedSpeciesReport,
-                           metasnvOutDir = METASNV.DIR,
-                           distMethod = DIST.METH.REPORTS ,
-                           subpopOutDir = medoidFailedDir,
-                           bamSuffix = SAMPLE.ID.SUFFIX,
-                           rmdDir = rmdDir ))
-  if(!all(bpok(tmp))){
-    names(tmp) <- medoidFailedSpecies
-    printBpError(tmp)
+  if(onlyDoSubspeciesDetection){
+    combineAllSummaries(OUT.DIR)
+    stop("Subpopr stopped due to 'onlyDoSubspeciesDetection' flag being true")
   }
-}
-# get all species where cluster medoids could be defined
-# but clusters were not significant (PS values < threshold)
-noSubstruc2dir <- getNoClusteringDir(OUT.DIR)
-noSubstruc2 <- list.files(path=noSubstruc2dir,
-                          pattern = paste0(DIST.METH.REPORTS ,'_distMatrixUsedForClustMedoidDefns\\.txt$'),
-                          full.names = T)
-noSubstrucSpecies <- unique(sub(basename(noSubstruc2) ,
-                                pattern = paste0("_",DIST.METH.REPORTS ,"_distMatrixUsedForClustMedoidDefns\\.txt"),
-                                replacement = ""))
-if(makeReports){
-  print("Compiling reports for species without clusters")
-  tmp <- BiocParallel::bptry(
-    BiocParallel::bplapply(noSubstrucSpecies,
-                           renderDetailedSpeciesReport,
-                           metasnvOutDir = METASNV.DIR,
-                           distMethod = DIST.METH.REPORTS ,
-                           subpopOutDir = noSubstruc2dir,
-                           bamSuffix = SAMPLE.ID.SUFFIX,
-                           rmdDir = rmdDir ))
-  if(!all(bpok(tmp))){
-    names(tmp) <- noSubstrucSpecies
-    printBpError(tmp)
+
+  # Handle species with no subspecies #####################################################################
+  # for those species that did not cluster, generate a report so we can look into why
+
+  # get all species where no potential cluster medoids could be defined
+  medoidFailedDir <- getClustMedoidDefnFailedDir(OUT.DIR)
+  medoidFailed <- list.files(path=medoidFailedDir,
+                             pattern = paste0(DIST.METH.REPORTS ,
+                                              '_distMatrixUsedForClustMedoidDefns\\.txt$'),
+                             full.names = T)
+  medoidFailedSpecies <- unique(sub(basename(medoidFailed) ,
+                                    pattern = paste0("_",DIST.METH.REPORTS ,
+                                                     "_distMatrixUsedForClustMedoidDefns\\.txt"),
+                                    replacement = ""))
+
+  if(makeReports){
+    print("Compiling reports for species without clusters due to centroid failure")
+    tmp <- BiocParallel::bptry(
+      BiocParallel::bplapply(medoidFailedSpecies, BPPARAM = bpParam,
+                             renderDetailedSpeciesReport,
+                             metasnvOutDir = METASNV.DIR,
+                             distMethod = DIST.METH.REPORTS ,
+                             subpopOutDir = medoidFailedDir,
+                             bamSuffix = SAMPLE.ID.SUFFIX,
+                             rmdDir = rmdDir ))
+    if(!all(bpok(tmp))){
+      names(tmp) <- medoidFailedSpecies
+      printBpError(tmp)
+    }
   }
-}
+  # get all species where cluster medoids could be defined
+  # but clusters were not significant (PS values < threshold)
+  noSubstruc2dir <- getNoClusteringDir(OUT.DIR)
+  noSubstruc2 <- list.files(path=noSubstruc2dir,
+                            pattern = paste0(DIST.METH.REPORTS ,'_distMatrixUsedForClustMedoidDefns\\.txt$'),
+                            full.names = T)
+  noSubstrucSpecies <- unique(sub(basename(noSubstruc2) ,
+                                  pattern = paste0("_",DIST.METH.REPORTS ,"_distMatrixUsedForClustMedoidDefns\\.txt"),
+                                  replacement = ""))
+  if(makeReports){
+    print("Compiling reports for species without clusters")
+    tmp <- BiocParallel::bptry(
+      BiocParallel::bplapply(noSubstrucSpecies,
+                             renderDetailedSpeciesReport,
+                             metasnvOutDir = METASNV.DIR,
+                             distMethod = DIST.METH.REPORTS ,
+                             subpopOutDir = noSubstruc2dir,
+                             bamSuffix = SAMPLE.ID.SUFFIX,
+                             rmdDir = rmdDir ))
+    if(!all(bpok(tmp))){
+      names(tmp) <- noSubstrucSpecies
+      printBpError(tmp)
+    }
+  }
 }else{
- allSubstruc <- list.files(path=OUT.DIR,
-                          pattern = '_hap_out\\.txt$',full.names = T)
-allSubstrucSpecies <- unique(sub(basename(allSubstruc) ,
-                                 pattern = "_hap_out\\.txt$",replacement = ""))
-print(paste0("Species with substructure: ",
-             length(allSubstrucSpecies),"/",length(species)))
+  allSubstruc <- list.files(path=OUT.DIR,
+                            pattern = '_hap_out\\.txt$',full.names = T)
+  allSubstrucSpecies <- unique(sub(basename(allSubstruc) ,
+                                   pattern = "_hap_out\\.txt$",replacement = ""))
+  print(paste0("Species with substructure: ",
+               length(allSubstrucSpecies),"/",length(species)))
 }
 
 # Handle species with subspecies #######################################################################
