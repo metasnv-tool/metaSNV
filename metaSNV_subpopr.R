@@ -9,8 +9,8 @@
 rm(list=ls())
 
 normalRun<-TRUE # use cmd line args
-#useExistingClustering<-FALSE
-useExistingExtension<-FALSE # genotypes and extensions
+useExistingClustering<-FALSE
+useExistingGenotyping<-FALSE # genotypes and extensions
 makeReports <- TRUE
 makeGeneReports <- TRUE
 calcSpeciesAbunds<-TRUE
@@ -127,6 +127,11 @@ if(normalRun){
                 default=FALSE,
                 help="Whether to use clustering results from a previous run. Default is FALSE. \
                 Only intended for troubleshooting.",
+                metavar="logical"),
+    make_option(c("--useExistingGenotyping"), type="logical",
+                default=FALSE,
+                help="Whether to use cluster genotyping results from a previous run. Default is FALSE. \
+                Only intended for troubleshooting or recovering from errors.",
                 metavar="logical")
   );
 
@@ -180,6 +185,7 @@ if(normalRun){
 
   opt$onlyDoSubspeciesDetection<-FALSE
   opt$useExistingClustering <- FALSE
+  opt$useExistingGenotyping <- FALSE
 
 }
 
@@ -198,6 +204,7 @@ DIST.METH.REPORTS <- "mann"
 
 onlyDoSubspeciesDetection<-opt$onlyDoSubspeciesDetection
 useExistingClustering <- opt$useExistingClustering
+useExistingGenotyping <- opt$useExistingGenotyping
 
 SAMPLE.ID.SUFFIX <- opt$sampleSuffix
 
@@ -520,7 +527,7 @@ if(makeReports){
                            rmdDir = rmdDir ))
   if(!all(bpok(tmp))){
     names(tmp) <- noSubstrucSpecies
-    printBpError(tmp)    
+    printBpError(tmp)
   }
 }
 # Handle species with subspecies #######################################################################
@@ -541,11 +548,11 @@ if(length(allSubstrucSpecies) == 0){
 # 2) get abundances of these genotypes per sample (~subspecies abundace)
 
 print("Genotyping clusters")
-print("Identifying genotyping SNVs")
 
-if(useExistingExtension){
-  print("Using previously made .pos files and extension results")
+if(useExistingGenotyping){
+  print("Using previously identified genotypes (.pos and .pos.freq files)")
 }else{
+  print("Identifying genotyping SNVs")
   # creates *.pos files
   x <- tryCatch(expr =
                   pyGetPlacingRelevantSubset(outDir=OUT.DIR,
@@ -560,13 +567,9 @@ if(useExistingExtension){
 
   # get all posFiles
   allPos <- list.files(path=OUT.DIR,pattern = '.*_.\\.pos$',full.names = T)
-  doExtension<-TRUE
   if(length(allPos) == 0){
     warning("Genotyping failed. No *.pos files found. Not genotyping subspecies.")
-    doExtension <- FALSE
-  }
-
-  if(doExtension){
+  }else{
     print("Compiling genotyping SNVs")
     #tmp <- foreach(pos=allPos) %dopar% pyConvertSNPtoAllelTable(posFile = pos)
     tmp <- BiocParallel::bptry(
@@ -578,24 +581,24 @@ if(useExistingExtension){
     names(tmp) <- allPos
     printBpError(tmp)
     }
-
-    print("Determining abundance of clusters using genotyping SNVs")
-    #tmp <- foreach(spec=allSubstrucSpecies) %dopar% useGenotypesToProfileSubpops(spec, metaSNVdir=METASNV.DIR, outDir=OUT.DIR )
-    tmp <- BiocParallel::bptry(
-      BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
-                             useGenotypesToProfileSubpops,
-                             metaSNVdir=METASNV.DIR,
-                             outDir=OUT.DIR ))
-
-    if(!all(bpok(tmp))){
-    names(tmp) <- allSubstrucSpecies
-    printBpError(tmp)
-    }
-
-    summariseClusteringExtensionResultsForAll(resultsDir=OUT.DIR,distMeth="mann")
-
   }
+} # end if useExistingGenotyping
+
+print("Determining abundance of clusters using genotyping SNVs")
+#tmp <- foreach(spec=allSubstrucSpecies) %dopar% useGenotypesToProfileSubpops(spec, metaSNVdir=METASNV.DIR, outDir=OUT.DIR )
+tmp <- BiocParallel::bptry(
+  BiocParallel::bplapply(allSubstrucSpecies, BPPARAM = bpParam,
+                         useGenotypesToProfileSubpops,
+                         metaSNVdir=METASNV.DIR,
+                         outDir=OUT.DIR ))
+
+if(!all(bpok(tmp))){
+  names(tmp) <- allSubstrucSpecies
+  printBpError(tmp)
 }
+
+summariseClusteringExtensionResultsForAll(resultsDir=OUT.DIR,distMeth="mann")
+
 # Compile detailed reports for species with subspecies/clusters --------------
 
 runRend <- function(spec){
@@ -623,7 +626,7 @@ if(makeReports){
                              BPREDO=tmp,
                              BPPARAM = bpParam,
                              runRend))
-      
+
     names(tmp) <- allSubstrucSpecies
     printBpError(tmp)
   }
@@ -654,7 +657,7 @@ if(calcSpeciesAbunds && !is.null(SPECIES.ABUNDANCE.PROFILE) &&
   names(tmp) <- allSubstrucSpecies
   printBpError(tmp)
   }
-  
+
   abunds <- collectSubpopAbunds(OUT.DIR)
   if(is.null(abunds)){
     warning("Subspecies abundance calculations failed. ",
@@ -760,7 +763,7 @@ if(!is.null(KEGG.PATH) && file.exists(KEGG.PATH) &&
                                geneFamilyType = geneFamilyType,
                                bamSuffix= SAMPLE.ID.SUFFIX,
                                rmdDir = rmdDir))
-      
+
       names(tmp) <- allSubstrucSpecies
       printBpError(tmp)
     }
