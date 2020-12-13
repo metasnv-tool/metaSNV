@@ -462,6 +462,7 @@ if(!useExistingClustering){
   })
 }
 # summarise the results from clustering
+print("Summarising clustering results.")
 summariseClusteringResultsForAll(OUT.DIR,distMeth="mann")
 
 allSubstruc <- list.files(path=OUT.DIR,
