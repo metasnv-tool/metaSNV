@@ -28,6 +28,10 @@ writeSubpopsForAllSamples <- function(species,sampleNames, outDir,
   # for each cluster .pos file for this species
   for (d in all_hap) {
     fullData <- read.table(d,header=F,row.names=1,sep='\t')
+    if(length(sampleNames) != ncol(fullData) ){
+      stop(paste0("File: ",d," does not have expected number of columns (each column is a sample).",
+                  " According to all_samples, it should have ",length(sampleNames)," columns."))
+    }
     colnames(fullData) <- sampleNames # TODO fix this to be less fragile
     fullData <- makeNA(fullData) # change -1 from metaSNV to NA
 
@@ -120,7 +124,7 @@ writeSubpopsForAllSamples <- function(species,sampleNames, outDir,
     t <- table(df$Sample)
     n <- names(which(t == max(t)))
     df <- subset(df, Sample %in% n)
-  
+
     #This is a stupid way of doing this transformation but i cannot be bothered to do it better
     df_wide <- data.frame(row.names=rownames(subset(df,Cluster==1)))
     for (c in unique(df$Cluster)) {
@@ -156,7 +160,7 @@ writeSubpopsForAllSamples <- function(species,sampleNames, outDir,
                      ". Number of samples where summed abundance of clusters was > 120%:",
                      nSampMultiPresence),append = T)
   }
-  
+
   # remove samples that have high abundance but low prevalence of genotyping SNVs
   # these are likely not well characterised by the original dataset
   # if the subspecies has over 30% abundance, then 80% of its genotyping SNV positions should be covered
@@ -170,7 +174,7 @@ writeSubpopsForAllSamples <- function(species,sampleNames, outDir,
           ,append = T)
     filtered <- filtered[!row.names(filtered) %in% badSamples,]
   }
-  
+
   write.table(full,paste(outDir,species,'_extended_clustering_wFreq_unfiltered.tab',sep=''),sep='\t',quote=F)
   write.table(filtered,paste(outDir,species,'_extended_clustering_wFreq.tab',sep=''),sep='\t',quote=F)
 
