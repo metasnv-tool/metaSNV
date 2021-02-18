@@ -151,8 +151,8 @@ def compute_diversity(sample1, sample2):
         out = np.outer(x.s1.values, x.s2.values)
         return np.nansum(out) - np.nansum(out.diagonal())
 
-    sample1d = sample1.ix[sample1.index[sample1.index.duplicated()]]
-    sample2d = sample2.ix[sample2.index[sample2.index.duplicated()]]
+    sample1d = sample1.loc[sample1.index[sample1.index.duplicated()]]
+    sample2d = sample2.loc[sample2.index[sample2.index.duplicated()]]
 
     if not len(sample1d) or not len(sample2d):
         # No duplicates
