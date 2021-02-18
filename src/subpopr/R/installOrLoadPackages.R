@@ -1,3 +1,4 @@
+# if loading Cairo fails, can also use conda (e.g. conda install -c r r-cairo)
 if(!requireNamespace("BiocManager", quietly=TRUE)){install.packages("BiocManager", repos="https://cloud.r-project.org/")}
 if(!requireNamespace("BiocParallel", quietly=TRUE)){BiocManager::install("BiocParallel"); library(BiocParallel)}
 if(!requireNamespace("coin", quietly=TRUE)){install.packages("coin", repos="https://cloud.r-project.org/"); library(coin)}
