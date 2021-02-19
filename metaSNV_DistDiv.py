@@ -184,7 +184,7 @@ def computeDiv(filt_file, horizontal_coverage, vertical_coverage, bedfile_tab, m
     if matched:
         def filt_proportion(x):
             if len(x) == 2:
-                x = x.iloc[1]
+                x = x.iloc[1:1] # use 1:1 to get a dataframe instead of a series
             n = np.count_nonzero(np.isnan(x))
             return n>(len(x)*(0.1))
 
@@ -240,7 +240,7 @@ def computeDivNS(filt_file, horizontal_coverage, vertical_coverage, bedfile_tab,
     if matched:
         def filt_proportion(x):
             if len(x) == 2:
-                x = x.iloc[1]
+                x = x.iloc[1:1]# use 1:1 to get a dataframe instead of a series
             n = np.count_nonzero(np.isnan(x))
             return n>(len(x)*(0.1))
 
