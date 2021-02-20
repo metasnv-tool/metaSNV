@@ -240,10 +240,10 @@ getClusMembStabScore <- function(clustID,clusMembStability){
 
 saveClustStabilityPlots <- function(outDir, filePrefix, clusNumStabilityPlots, clusMembStabilityPlots) {
 
-  png(filename = paste(outDir,"/",filePrefix,'_clusNumStability-box.png',sep=''),
-      res = 200,width = 12,height = 10,units = "cm")
-  print(clusNumStabilityPlots[[1]])
-  dev.off()
+  # png(filename = paste(outDir,"/",filePrefix,'_clusNumStability-box.png',sep=''),
+  #     res = 200,width = 12,height = 10,units = "cm")
+  # print(clusNumStabilityPlots[[1]])
+  # dev.off()
 
   png(filename = paste(outDir,"/",filePrefix,'_clusNumStability-heatmap.png',sep=''),
       res = 200,width = 12,height = 10,units = "cm")
