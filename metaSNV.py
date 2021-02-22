@@ -90,7 +90,7 @@ def get_header(args):
     args.ctg_len = args.project_dir + '/bed_header'
 
 def compute_summary(args):
-    '''This information is required by metaSNV_post.py'''
+    '''This information is required by metaSNV_Filtering.py'''
 
     project_name = path.basename(args.project_dir)
     cov_dir = path.join(args.project_dir, 'cov')

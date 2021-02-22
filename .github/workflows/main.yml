@@ -2,7 +2,7 @@
 
 name: CI
 
-# Controls when the action will run. Triggers the workflow on push or pull request 
+# Controls when the action will run. Triggers the workflow on push or pull request
 # events but only for the master branch
 on:
   push:
@@ -63,15 +63,16 @@ jobs:
         sessionInfo()
         q()
         EOF
-        
+
     - name: Compile
-      run: make 
+      run: make
 
     # Runs a set of commands using the runners shell
     - name: Check help outputs
       run: |
         python metaSNV.py --help
-        python metaSNV_post.py --help
+        python metaSNV_Filtering.py --help
+        python metaSNV_DistDiv.py --help
         Rscript metaSNV_subpopr.R --help
 
     - name: Fetch and unpack test data
