@@ -85,21 +85,21 @@ snvFreqPlot<-function(species,snvFreqs,outDir,
       ggtitle(paste0("What proportion of SNVs are 'almost' homogeneous for this species?\n (",species,") Each line is a sample.",
                      " Total # SNVs: ",totalSNVs))
 
-  pLow <- getPlot("propLow") +
-    xlab("% away from homogenity at SNV (e.g. x = 5: allele is seen in < 5% of reads)") +
-    ylab("Proportion of SNVs with the same allele in < x% of reads (pass the cutoff x)")+
-    ggtitle(paste0("What proportion of SNVs are 'almost' *never* seen for this species?\n (",species,") Each line is a sample.",
-                   " Total # SNVs: ",totalSNVs))
-
-  pHigh <- getPlot("propHigh") +
-    xlab("% away from homogenity at SNV (e.g. x = 5: allele is seen in > 95% of reads)") +
-    ylab("Proportion of SNVs with the same allele in > 100-x % of reads (pass the cutoff x)")+
-    ggtitle(paste0("What proportion of SNVs are 'almost' *always* seen for this species?\n (",species,") Each line is a sample.",
-                   " Total # SNVs: ",totalSNVs))
+  # pLow <- getPlot("propLow") +
+  #   xlab("% away from homogenity at SNV (e.g. x = 5: allele is seen in < 5% of reads)") +
+  #   ylab("Proportion of SNVs with the same allele in < x% of reads (pass the cutoff x)")+
+  #   ggtitle(paste0("What proportion of SNVs are 'almost' *never* seen for this species?\n (",species,") Each line is a sample.",
+  #                  " Total # SNVs: ",totalSNVs))
+  #
+  # pHigh <- getPlot("propHigh") +
+  #   xlab("% away from homogenity at SNV (e.g. x = 5: allele is seen in > 95% of reads)") +
+  #   ylab("Proportion of SNVs with the same allele in > 100-x % of reads (pass the cutoff x)")+
+  #   ggtitle(paste0("What proportion of SNVs are 'almost' *always* seen for this species?\n (",species,") Each line is a sample.",
+  #                  " Total # SNVs: ",totalSNVs))
 
   ggsave(pAll,filename = paste0(outDir,"/",species,"_snvFreq_HighOrLow.png"),units = "in",width = 7,height = 7,dpi = 200)
-  ggsave(pHigh,filename = paste0(outDir,"/",species,"_snvFreq_High.png"),units = "in",width = 7,height = 7,dpi = 200)
-  ggsave(pLow,filename = paste0(outDir,"/",species,"_snvFreq_Low.png"),units = "in",width = 7,height = 7,dpi = 200)
+  #ggsave(pHigh,filename = paste0(outDir,"/",species,"_snvFreq_High.png"),units = "in",width = 7,height = 7,dpi = 200)
+  #ggsave(pLow,filename = paste0(outDir,"/",species,"_snvFreq_Low.png"),units = "in",width = 7,height = 7,dpi = 200)
 
 
   pSum <- cutoffData %>% filter((cutoffData$cutoffIndex) == cutoffHomogIndex) %>%
