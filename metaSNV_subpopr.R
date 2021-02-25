@@ -199,8 +199,8 @@ N.CORES <- opt$procs
 SPECIES.ABUNDANCE.PROFILE<-opt$speciesAbundance
 SPECIES.ABUND.PROFILE.IS.MOTUS<-opt$isMotus
 KEGG.PATH <- opt$geneAbundance
-METADATA.PATH <- opt$metadata
-METADATA.COL.ID <- opt$metadataSampleIDCol
+METADATA.PATH <- NULL #opt$metadata
+METADATA.COL.ID <- NULL #opt$metadataSampleIDCol
 
 MAX.PROP.READS.NON.HOMOG <- opt$fixReadThreshold
 MIN.PROP.SNV.HOMOG <- opt$fixSnvThreshold
@@ -726,11 +726,11 @@ if(!is.null(METADATA.PATH) && file.exists(METADATA.PATH)){
     }
   }
   summariseMetadataAssocResultsForAll(OUT.DIR)
-}else if(METADATA.PATH != "doNotRun"){
- # print(paste0("Not running phenotype/metadata association analysis.",
- #              " Required file not specified or does not exist: ",
- #              METADATA.PATH))
-}
+}#else if(METADATA.PATH != "doNotRun"){
+  #print(paste0("Not running phenotype/metadata association analysis.",
+  #             " Required file not specified or does not exist: ",
+  #             METADATA.PATH))
+#}
 
 # Test for gene correlations ##########
 if(!is.null(KEGG.PATH) && file.exists(KEGG.PATH) &&
