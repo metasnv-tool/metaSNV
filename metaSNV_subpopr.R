@@ -64,24 +64,25 @@ if(normalRun){
     make_option(c("-s", "--sampleSuffix"), type="character",
                 default="",
                 help="The constant suffix after the sample names in metaSNV's input bam files. \
-                e.g. '.bam' or '.unique.sorted.bam'",
+                e.g. '.bam' or '.unique.sorted.bam'. Default is no suffix.",
                 metavar="string"),
     make_option(c("-a", "--speciesAbundance"), type="character",
                 default="doNotRun",
                 help="Path to file with species abundances (tsv, optional). \
                 Rows are species, columns are samples. Column names must match file \
-                names used as metaSNV input (bam files).",
+                names used as metaSNV input (bam files). Required only for gene content analysis.",
                 metavar="file path"),
     make_option(c("-m", "--isMotus"), type="logical",
                 default=TRUE,
-                help="Is the species abundance profile produced by mOTUs2? (TRUE or FALSE)",
+                help="Is the species abundance profile produced by mOTUs2? (TRUE or FALSE). \
+                Default is TRUE. Required only for gene content analysis.",
                 metavar="logical"),
     make_option(c("-g", "--geneAbundance"), type="character",
                 default="doNotRun",
                 help="Path to file with gene family abundances (tsv, optional). \
                 Species abundances also required for gene correlation. Columns must be named. \
                 First column must be named and contain gene family names. Subsequent column names must be sample IDs. \
-                Columns must sum to 1.",
+                Columns must sum to 1. Required only for gene content analysis.",
                 metavar="file path"),
 #    make_option(c("-d", "--metadata"), type="character",
 #                default="doNotRun",
@@ -102,7 +103,8 @@ if(normalRun){
                 default=100,
                 help="Minimum number of samples with SNV data required for subpopulation \
                 detection for a species. \
-                Using values lower than 100 on typical human fecal data yields unstable results.",
+                Using values lower than 100 on typical human fecal data yields unstable results.\
+                Default is 100.",
                 metavar="numeric"),
     make_option(c("-x", "--fixReadThreshold"), type="numeric",
                 default=0.1,
