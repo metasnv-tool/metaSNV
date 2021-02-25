@@ -83,21 +83,27 @@ if(normalRun){
                 First column must be named and contain gene family names. Subsequent column names must be sample IDs. \
                 Columns must sum to 1.",
                 metavar="file path"),
-    make_option(c("-d", "--metadata"), type="character",
-                default="doNotRun",
-                help="Path to file with metadata csv for odds ratio \
-                testing (optional)",
-                metavar="file path"),
-    make_option(c("-n", "--metadataSampleIDCol"), type="character",
-                default="sampleID",
-                help="Name of column with sample IDs in metadata csv for \
-                odds ratio testing (optional)",
-                metavar="character"),
+#    make_option(c("-d", "--metadata"), type="character",
+#                default="doNotRun",
+#                help="Path to file with metadata csv for odds ratio \
+#                testing (optional)",
+#                metavar="file path"),
+#    make_option(c("-n", "--metadataSampleIDCol"), type="character",
+#                default="sampleID",
+#                help="Name of column with sample IDs in metadata csv for \
+#                odds ratio testing (optional)",
+#                metavar="character"),
     make_option(c("-r", "--createReports"), type="logical",
                 default=TRUE,
                 help="Whether or not to compile html summary reports (uses Rmarkdown) \
                 (TRUE or FALSE). Default is TRUE.",
                 metavar="logical"),
+    make_option(c("--minNumSamples"), type="numeric",
+                default=100,
+                help="Minimum number of samples with SNV data required for subpopulation \
+                detection for a species. \
+                Using values lower than 100 on typical human fecal data yields unstable results.",
+                metavar="numeric"),
     make_option(c("-x", "--fixReadThreshold"), type="numeric",
                 default=0.1,
                 help="SNV locus filter: max proportion of reads with non-major allele \
@@ -201,6 +207,7 @@ MIN.PROP.SNV.HOMOG <- opt$fixSnvThreshold
 SNV.SUBSPEC.UNIQ.CUTOFF <- opt$genotypingThreshold
 CLUSTERING.PS.CUTOFF <- 0.8
 DIST.METH.REPORTS <- "mann"
+MIN.N.SAMPLES <- opt$minNumSamples
 
 onlyDoSubspeciesDetection<-opt$onlyDoSubspeciesDetection
 useExistingClustering <- opt$useExistingClustering
@@ -300,7 +307,7 @@ print("Loading R libraries...")
 
 # REQUIRES CAIRO TO BE INSTALLED, EITHER THROUGH 'install.packages()' OR THROUGH 'conda install -c anaconda cairo'
 # requires pandoc
-suppressPackageStartupMessages(library(Cairo))
+#suppressPackageStartupMessages(library(Cairo))
 suppressPackageStartupMessages(library(fpc))
 suppressPackageStartupMessages(library(ape))
 suppressPackageStartupMessages(library(ggplot2))
@@ -311,11 +318,11 @@ suppressPackageStartupMessages(library(tidyr))
 suppressPackageStartupMessages(library(readr))
 suppressPackageStartupMessages(library(ggrepel))
 suppressPackageStartupMessages(library(data.table))
-suppressPackageStartupMessages(library(kableExtra)) # to do: remove this from package
+#suppressPackageStartupMessages(library(kableExtra)) # to do: remove this from package
 suppressPackageStartupMessages(library(rmarkdown)) # for report rendering
 
-suppressPackageStartupMessages(library(coin)) # only used in phenotype assoc test part -- remove?
-suppressPackageStartupMessages(library(questionr)) # only used in phenotype assoc test part -- remove?
+#suppressPackageStartupMessages(library(coin)) # only used in phenotype assoc test part -- remove?
+#suppressPackageStartupMessages(library(questionr)) # only used in phenotype assoc test part -- remove?
 suppressPackageStartupMessages(library(BiocParallel))
 suppressPackageStartupMessages(library(batchtools))
 
@@ -435,7 +442,8 @@ runDefine <- function(spec){
                        psCut = CLUSTERING.PS.CUTOFF,
                        uniqSubpopSnvFreqThreshold = SNV.SUBSPEC.UNIQ.CUTOFF,
                        bamFileNamesToUsePath = BAMS.TO.USE,
-                       usePackagePredStrength = USE.PACKAGE.PREDICTION.STRENGTH)
+                       usePackagePredStrength = USE.PACKAGE.PREDICTION.STRENGTH,
+                       minNumberOfSamplesToStart=MIN.N.SAMPLES)
 }
 
 if(!useExistingClustering){
@@ -547,8 +555,9 @@ if(!useExistingClustering){
 # get all species with clustering/substructure
 
 if(length(allSubstrucSpecies) == 0){
-  stop(paste0("Substructure not detected in any species (",
+  print(paste0("Substructure not detected in any species (",
               length(species)," tested). Aborting."))
+  quit()
 }
 
 
@@ -718,9 +727,9 @@ if(!is.null(METADATA.PATH) && file.exists(METADATA.PATH)){
   }
   summariseMetadataAssocResultsForAll(OUT.DIR)
 }else if(METADATA.PATH != "doNotRun"){
-  print(paste0("Not running phenotype/metadata association analysis.",
-               " Required file not specified or does not exist: ",
-               METADATA.PATH))
+ # print(paste0("Not running phenotype/metadata association analysis.",
+ #              " Required file not specified or does not exist: ",
+ #              METADATA.PATH))
 }
 
 # Test for gene correlations ##########
