@@ -235,6 +235,8 @@ def main():
                         help='Number of jobs to run simmultaneously. Will create same number of splits, unless n_splits set differently.')
     parser.add_argument('--n_splits', metavar='INT', default=1,type=int,
                         help='Number of bins to split ref into')
+    parser.add_argument('--use_prev_cov', default=False, action="store_true",
+                        help='Use "cov/" and "outputs.all_cov.tab" and "outputs.all_perc.tab" data produced by previous metaSNV run')
 
     args = parser.parse_args()
     args.project_dir = args.project_dir.rstrip('/')
@@ -258,13 +260,16 @@ SOLUTION: make\n\n'''.format(basedir))
     if args.threads > 1 and args.n_splits==1:
         args.n_splits=args.threads
 
-    if path.exists(args.project_dir) and not args.print_commands:
+    if path.exists(args.project_dir) and not args.print_commands and not args.use_prev_cov:
         stderr.write("Project directory '{}' already exists\n\n\n".format(args.project_dir))
         exit(1)
 
     create_directories(args.project_dir)
-    compute_opt(args)
-    compute_summary(args)
+    
+    if not args.use_prev_cov:
+      compute_opt(args)
+      compute_summary(args)
+      
     get_header(args)
 
     if args.n_splits > 1:
