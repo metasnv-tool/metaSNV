@@ -90,7 +90,7 @@ def get_header(args):
     args.ctg_len = args.project_dir + '/bed_header'
 
 def compute_summary(args):
-    '''This information is required by metaSNV_post.py'''
+    '''This information is required by metaSNV_Filtering.py'''
 
     project_name = path.basename(args.project_dir)
     cov_dir = path.join(args.project_dir, 'cov')
@@ -222,7 +222,7 @@ def snp_call(args):
 def main():
     parser = argparse.ArgumentParser(description='Compute SNV profiles')
     parser.add_argument('project_dir', metavar='DIR',
-                        help='A metaSNP initialized project directory')
+                        help='The output directory that metaSNV will create e.g. "outputs". Can be a path.')
     parser.add_argument('all_samples', metavar='FILE',
                         help='File with an input list of bam files, one file per line')
     parser.add_argument("ref_db", metavar='REF_DB_FILE',

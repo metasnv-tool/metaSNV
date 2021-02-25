@@ -179,7 +179,7 @@ defineSubpopulations <- function(species, distName = "mann",
   }
 
   # Compute variances and percentage explained by the clustering
-  varExp <- variationExplainedByClusters(clustDf, snvFreqs.filtered, species, filePrefix, majorAllele = F,outDir)
+  #varExp <- variationExplainedByClusters(clustDf, snvFreqs.filtered, species, filePrefix, majorAllele = F,outDir)
 
   # compute subspecies' distinctive SNVs
   flog.info("Identifying distinctive SNVs for clusters in species: %s",species)
