@@ -15,7 +15,7 @@ if(!requireNamespace("cluster", quietly=TRUE)){install.packages("cluster", repos
 if(!requireNamespace("ggrepel", quietly=TRUE)){install.packages("ggrepel", repos="https://cloud.r-project.org/"); library(ggrepel)}
 if(!requireNamespace("data.table", quietly=TRUE)){install.packages("data.table", repos="https://cloud.r-project.org/"); library(data.table)}
 if(!requireNamespace("rmarkdown", quietly=TRUE)){install.packages("rmarkdown", repos="https://cloud.r-project.org/"); library(rmarkdown)}
-if(!requireNamespace("batchtools")){install.packages("batchtools", repos="https://cloud.r-project.org/"); library(batchtools)}
+if(!requireNamespace("batchtools", quietly=TRUE)){install.packages("batchtools", repos="https://cloud.r-project.org/"); library(batchtools)}
 if(!requireNamespace("futile.logger", quietly=TRUE)){install.packages("futile.logger", repos="https://cloud.r-project.org/"); library(futile.logger)}
 if(!requireNamespace("Cairo", quietly=TRUE)){install.packages("Cairo", repos="https://cloud.r-project.org/"); library(Cairo)}
 if(!requireNamespace("reshape2", quietly=TRUE)){install.packages("reshape2", repos="https://cloud.r-project.org/"); library(reshape2)}
