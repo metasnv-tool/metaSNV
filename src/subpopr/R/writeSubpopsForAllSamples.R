@@ -9,10 +9,10 @@ writeSubpopsForAllSamples <- function(species,sampleNames, outDir,
                                       maxPropUncalledSNV = 0.2,
                                       minGenotypeAbundance = 80){
 
-  # use paul_getPlacingRelevantSubset.py to create 537011_2.pos file from
+  # use getGenotypingSNVSubset.py to create 537011_2.pos file from
   # 1. [species]_[cluster]_hap_positions.tab (from writeGenotypeFreqs(...) )
   # 2. SNPs_best_split_[X] from metaSNV output (snpCaller/called_SNPs.best_split_[X])
-  # then use paul_convertSNPtoAllelTable.py to creatse 537011_2.pos.freq file
+  # then use convertSNVtoAlleleFreq.py to creatse 537011_2.pos.freq file
   all_hap <- list.files(path=outDir,paste(species,'_.\\.pos\\.freq$',sep=''),full.names = T)
   if(length(all_hap)==0){
     warning(paste0("Can't find ",species,".*_pos.freq files. ",

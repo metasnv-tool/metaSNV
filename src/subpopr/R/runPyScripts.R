@@ -2,7 +2,7 @@
 
 # works on all results files at once
 pyGetPlacingRelevantSubset <- function(outDir,metaSnvDir,scriptDir){
-  path <- paste0(scriptDir, "/paul_getPlacingRelevantSubset.py")
+  path <- paste0(scriptDir, "/getGenotypingSNVSubset.py")
   if(!file.exists(path)){
     stop("Missing python script, expected: ",path)
   }
@@ -14,7 +14,7 @@ pyGetPlacingRelevantSubset <- function(outDir,metaSnvDir,scriptDir){
 #'@param minDepth (int) if vertical coverage at this position is less than 'x'minDepth' in a sample, then set the SNV frequency to -1 which will be NA later
 pyConvertSNPtoAllelTable <- function(posFile, minDepth = 5, scriptDir){
   if(file.size(posFile) <= 1){ stop(paste("File is empty:",posFile))}
-  path <- paste0(scriptDir, "/paul_convertSNPtoAllelTable.py")
+  path <- paste0(scriptDir, "/convertSNVtoAlleleFreq.py")
   if(!file.exists(path)){
     stop("Missing python script, expected: ",path)
   }

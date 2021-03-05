@@ -5,7 +5,7 @@
 #'   [species].samples for filtering low coverage samples
 
 #' for extension to all samples:
-#' use paul_getPlacingRelevantSubset.py to create 537011_2.pos file from
+#' use getGenotypingSNVSubset.py to create 537011_2.pos file from
 # 1. [species]_[cluster]_hap_positions.tab (from writeGenotypeFreqs(...) )
 # 2. SNPs_best_split_[X] from metaSNV output (snpCaller/called_SNPs.best_split_[X])
 
@@ -208,10 +208,10 @@ useGenotypesToProfileSubpops <- function(species, metaSNVdir, outDir,
   # use the genotype profiles to classify all samples
   # reads in output from writeGenotypeFreqs
 
-  # use paul_getPlacingRelevantSubset.py to create 537011_2.pos file from
+  # use getGenotypingSNVSubset.py to create 537011_2.pos file from
   # 1. [species]_[cluster]_hap_positions.tab (from writeGenotypeFreqs(...) )
   # 2. SNPs_best_split_[X] from metaSNV output (snpCaller/called_SNPs.best_split_[X])
-  # then use paul_convertSNPtoAllelTable.py with 537011_2.pos to create 537011_2.pos.freq file
+  # then use convertSNVtoAlleleFreq.py with 537011_2.pos to create 537011_2.pos.freq file
   # see http://blog.quantitations.com/tutorial/2012/11/17/including-python-code-in-an-r-package/
   # TODO add sample names to python script outputs
 
