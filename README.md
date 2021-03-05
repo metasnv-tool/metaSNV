@@ -158,9 +158,20 @@ Example Tutorial 2 (with subpopulation calling)
 
 # Run all steps of metaSNV2 with the test data
 
+Call SNVs:
+
     ./metaSNV.py output testdata/all_samples testdata/ref/allReferenceGenomes.fasta
+
+Filter SNVs:
+
     ./metaSNV_Filtering.py output
+    
+Calculate distances between samples based on SNV profiles:
+    
     ./metaSNV_DistDiv.py --filt output/filtered/pop --dist
+    
+Detect clusters of samples that correspond to within-species subpopulations:
+
     ./metaSNV_subpopr.R -i output -g testdata/abunds/geneAbundances.tsv -a testdata/abunds/speciesAbundances.tsv
 
 
