@@ -19,9 +19,7 @@ Dependencies
 **SNV calling**:
 
 * [Boost-1.53.0 or above](http://www.boost.org/users/download/)
-
 * [htslib](http://www.htslib.org/)
- 
 * Python-2.7 or above
     * numpy
     * pandas
@@ -73,11 +71,16 @@ Setup & Compilation
 ===================
 
     make
+    
+To test that all files and dependencies have been properly installed, run the following:
+
+    python metaSNV.py --help
+    python metaSNV_Filtering.py --help
+    python metaSNV_DistDiv.py --help
+    Rscript metaSNV_subpopr.R --help
 
 Workflow:
 =========
-
-### To use one of the provided reference databases:
 
 ### Part 0: Input files
 
@@ -85,22 +88,22 @@ Workflow:
 * **'ref\_db'**       = the reference database in fasta format (f.i. multi-sequence fasta) and write permission for its directory
 * **'db\_ann'**       = [optional] a gene annotation file for the reference database (format: ).
 
+**To use one of the provided reference databases**:
+
 The `ref_db` and `db_ann` files can be downloaded from using:
 
     ./getRefDB.sh
 
-We recommend using ProGenomes2.
+We recommend using ProGenomes2 (aka Freeze11).
 
 
-### Part I: Run metaSNV to call SNVs
-
-
+### Part I: Call SNVs
 
     metaSNV.py project_dir/ all_samples ref_db [options]
 
 ### Part II: SNV Post-Processing (Filtering & Analysis)
 
-Note: requires SNP calling (Part I) to be done!
+Note: requires SNV calling (Part I) to be done
 
     metaSNV_Filtering.py project_dir [options]
     
@@ -108,7 +111,7 @@ Note: requires SNP calling (Part I) to be done!
 
 ### Part III: Subpopulation detection
 
-Note: requires SNP calling, filtering, and distance calculations to be done (see below for example)
+Note: requires SNV calling, filtering, and distance calculations to be done (see 'Tutorial 2' below for example)
 
     metaSNV_subpopr.R -i project_dir [options]
 
@@ -148,12 +151,12 @@ Example Tutorial 1 (no subpopulation calling)
 Example Tutorial 2 (with subpopulation calling)
 ===================
 
-## 1. Fetch and unpack test data
+## Fetch and unpack test data
 
     wget http://swifter.embl.de/~ralves/metaSNV_test_data/testdata.tar.xz
     tar xvf testdata.tar.xz && rm -f testdata.tar.gz
 
-# Run all of metaSNV with test data
+# Run all steps of metaSNV2 with the test data
 
     ./metaSNV.py output testdata/all_samples testdata/ref/allReferenceGenomes.fasta
     ./metaSNV_Filtering.py output
