@@ -16,7 +16,7 @@ or [download](https://git.embl.de/metasnv-tool/metaSNV/repository/archive.zip?re
 Dependencies
 ============
 
-SNV calling:
+**SNV calling**:
 
 * [Boost-1.53.0 or above](http://www.boost.org/users/download/)
 
@@ -26,7 +26,7 @@ SNV calling:
     * numpy
     * pandas
 
-Subpopulation calling:
+**Subpopulation calling**:
 
 * R 3.5 or 3.6 [](https://www.r-project.org/)
 * Cairo [](http://cairographics.org/)
@@ -79,23 +79,31 @@ Workflow:
 
 ### To use one of the provided reference databases:
 
-    ./getRefDB.sh
-    
-### Part I: Run metaSNV to call SNVs
-
-Input files: 
+### Part 0: Input files
 
 * **'all\_samples'**  = a list of all BAM files, one /path/2/sample.bam per line (no duplicates)
 * **'ref\_db'**       = the reference database in fasta format (f.i. multi-sequence fasta) and write permission for its directory
-* **'db\_ann'** = [optional] a gene annotation file for the reference database (format: ).
+* **'db\_ann'**       = [optional] a gene annotation file for the reference database (format: ).
+
+The `ref_db` and `db_ann` files can be downloaded from using:
+
+    ./getRefDB.sh
+
+We recommend using ProGenomes2.
+
+
+### Part I: Run metaSNV to call SNVs
+
 
 
     metaSNV.py project_dir/ all_samples ref_db [options]
 
 ### Part II: SNV Post-Processing (Filtering & Analysis)
+
 Note: requires SNP calling (Part I) to be done!
 
     metaSNV_Filtering.py project_dir [options]
+    
     metaSNV_DistDiv.py --filt project_dir/filtered/pop [options]
 
 ### Part III: Subpopulation detection
@@ -103,9 +111,6 @@ Note: requires SNP calling (Part I) to be done!
 Note: requires SNP calling, filtering, and distance calculations to be done (see below for example)
 
     metaSNV_subpopr.R -i project_dir [options]
-
-
-
 
 
 
