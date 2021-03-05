@@ -564,18 +564,19 @@ if(length(allSubstrucSpecies) == 0){
 
 
 
-# Genotype clusters #####################################################
-# Try to determine genotypes for each cluster
-# Use these genotypes to:
+# Profile clusters in all samples using genotyping SNVs ############################
+# Identification of cluster genotyping SNVs was run in defineSubpopulations() above
+# Here we get the abundance of these snvs in all samples
+# Then use these genotyping SNV profiles to:
 # 1) detect clusters in more samples
-# 2) get abundances of these genotypes per sample (~subspecies abundace)
+# 2) get abundances of these genotypes per sample (~subspecies abundance)
 
-print("Genotyping clusters")
+print("Gather genotyping SNV frequencies")
 
 if(useExistingGenotyping){
-  print("Using previously identified genotypes (.pos and .pos.freq files)")
+  print("Using previously gathered genotyping SNV frequencies (.pos and .pos.freq files)")
 }else{
-  print("Identifying genotyping SNVs")
+  print("Gathering genotyping SNV profiles")
   # creates *.pos files
   x <- tryCatch(expr =
                   pyGetPlacingRelevantSubset(outDir=OUT.DIR,
@@ -593,7 +594,7 @@ if(useExistingGenotyping){
   if(length(allPos) == 0){
     warning("Genotyping failed. No *.pos files found. Not genotyping subspecies.")
   }else{
-    print("Compiling genotyping SNVs")
+    print("Calculating genotyping SNVs frequencies")
     #tmp <- foreach(pos=allPos) %dopar% pyConvertSNPtoAllelTable(posFile = pos)
     tmp <- BiocParallel::bptry(
       BiocParallel::bplapply(allPos, BPPARAM = bpParam,

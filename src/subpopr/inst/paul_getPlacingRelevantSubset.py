@@ -6,7 +6,7 @@ hapDir = sys.argv[1] # '../costea2017_data/extra/'  *hap_positions.tab
 metaSNVdir = sys.argv[2] # '../../SNP_calling/SNPs_best_split_?'
 
 print("Getting subspecies genotyping info from: "+hapDir+'/*hap_positions.tab')
-print("Getting SNV for all data from: "+metaSNVdir+'/snpCaller/called_SNPs*')
+print("Getting SNV for all data from raw SNV calls: "+metaSNVdir+'/snpCaller/called_SNPs*')
 
 fileDictionary = dict()
 positionDictionary = dict()

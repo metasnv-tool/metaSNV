@@ -88,7 +88,7 @@ writeSubpopsForAllSamples <- function(species,sampleNames, outDir,
     }
 
     #Compute the frequency for this genotype
-    # old way was just to take the median of the SNV frequencies
+    # just use the median of the SNV frequencies (though I print more info here)
     hap_freq_median <- data.frame(apply(data,2,median,na.rm=T))
     hap_freq_summary <- data.frame(mean=apply(data,2,mean,na.rm=T),
                                    median=apply(data,2,median,na.rm=T),

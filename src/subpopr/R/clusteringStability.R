@@ -221,17 +221,15 @@ getNClusStabScore <- function(nClusStability){
 }
 
 # Cluster membership stability for each cluster
-# both stability measures > 0.9 when using 80% of data? (high acheived)
-
 getClusMembStabScore <- function(clustID,clusMembStability){
   clusMembStabScore <- 1 # 1 = low
   clusMembStability$subsampleProp <- round(clusMembStability$subsampleProp,1)
-  # both stability measures > 0.8 when using 90% of data? (medium acheived)
+  # both stability measures > 0.8 when using 90% of data? (medium achieved)
   clusMembStabScore <- clusMembStabScore +
     (clusMembStability[clusMembStability$subsampleProp==0.9,"clusterStabilityPropRecover"][clustID] > 0.8 &
        clusMembStability[clusMembStability$subsampleProp==0.9,"clusterStabilityJaccardMean"][clustID] > 0.8 )
 
-  # both stability measures > 0.9 when using 70% of data? (high acheived)
+  # both stability measures > 0.9 when using 70% of data? (high achieved)
   clusMembStabScore <- clusMembStabScore +
     (clusMembStability[clusMembStability$subsampleProp==0.7,"clusterStabilityPropRecover"][clustID] > 0.9 &
        clusMembStability[clusMembStability$subsampleProp==0.7,"clusterStabilityJaccardMean"][clustID] > 0.9 )
