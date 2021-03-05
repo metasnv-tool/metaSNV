@@ -75,7 +75,7 @@ if(normalRun){
     make_option(c("-m", "--isMotus"), type="logical",
                 default=TRUE,
                 help="Is the species abundance profile produced by mOTUs2? (TRUE or FALSE). \
-                Default is TRUE. Required only for gene content analysis.",
+                Default is TRUE. Required only for gene content analysis. Default is TRUE.",
                 metavar="logical"),
     make_option(c("-g", "--geneAbundance"), type="character",
                 default="doNotRun",
