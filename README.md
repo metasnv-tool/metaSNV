@@ -16,6 +16,8 @@ or [download](https://git.embl.de/metasnv-tool/metaSNV/repository/archive.zip?re
 Dependencies
 ============
 
+SNV calling:
+
 * [Boost-1.53.0 or above](http://www.boost.org/users/download/)
 
 * [htslib](http://www.htslib.org/)
@@ -23,6 +25,13 @@ Dependencies
 * Python-2.7 or above
     * numpy
     * pandas
+
+Subpopulation calling:
+
+* R 3.5 or 3.6 [](https://www.r-project.org/)
+* Cairo [](http://cairographics.org/)
+* Several R libraries, see [here](src/subpopr/R/installOrLoadPackages.R)
+
 
 #### Installing dependencies on Ubuntu/debian
 
@@ -35,7 +44,7 @@ universe repository before):
     sudo apt-get update
     sudo apt-get install libhts-dev libboost-dev
 
-### Installing dependencies using anaconda
+#### Installing dependencies using anaconda
 
 If you use [anaconda](https://www.anaconda.com/products/individual), you can create an
 environment with all necessary dependencies using the following commands:
@@ -50,11 +59,15 @@ If you do not have a C++ compiler, anaconda can also install G++:
 
     conda create --name metaSNV -c bioconda boost htslib pkg-config numpy pandas
     source activate metaSNV
-    # Add this command:
     conda install gcc_linux-64 gxx_linux-64 
     export CONDA_ENV_PATH=$CONDA_PREFIX
     export CFLAGS=-I$CONDA_ENV_PATH/include
     export LD_LIBRARY_PATH=$CONDA_ENV_PATH/lib:$LD_LIBRARY_PATH
+
+For subpopulation calling, you will also need
+
+    conda install -c r r-essentials
+    conda install -c anaconda cairo
 
 Setup & Compilation
 ===================
@@ -63,31 +76,41 @@ Setup & Compilation
 
 Workflow:
 =========
-## Required Files:
 
-* **'all\_samples'**  = a list of all BAM files, one /path/2/sample.bam per line (no duplicates)
-* **'ref\_db'**       = the reference database in fasta format (f.i. multi-sequence fasta)
-* **'gen\_pos'**      = a list with start and end positions for each sequence in the reference (format: `sequence\_id  start end`)
-
-## Optional Files:
-* **'db\_ann'** = a gene annotation file for the reference database (format: ).
-
-## To use one of the provided reference databases:
+### To use one of the provided reference databases:
 
     ./getRefDB.sh
     
-## 2. Run metaSNV
+### Part I: Run metaSNV to call SNVs
+
+Input files: 
+
+* **'all\_samples'**  = a list of all BAM files, one /path/2/sample.bam per line (no duplicates)
+* **'ref\_db'**       = the reference database in fasta format (f.i. multi-sequence fasta) and write permission for its directory
+* **'db\_ann'** = [optional] a gene annotation file for the reference database (format: ).
+
 
     metaSNV.py project_dir/ all_samples ref_db [options]
 
-## 3. Part II: Post-Processing (Filtering & Analysis)
-Note: requires SNP calling (Part II) to be done!
+### Part II: SNV Post-Processing (Filtering & Analysis)
+Note: requires SNP calling (Part I) to be done!
 
     metaSNV_Filtering.py project_dir [options]
     metaSNV_DistDiv.py --filt project_dir/filtered/pop [options]
 
-Example Tutorial
-================
+### Part III: Subpopulation detection
+
+Note: requires SNP calling, filtering, and distance calculations to be done (see below for example)
+
+    metaSNV_subpopr.R -i project_dir [options]
+
+
+
+
+
+
+Example Tutorial 1 (no subpopulation calling)
+===================
 
 ## 1. Run the setup & compilation steps and download the provided reference database. 
 
@@ -113,6 +136,25 @@ Example Tutorial
     $ python metaSNV_DistDiv.py --filt tutorial/filtered/pop --dist
     
     Voila! Your distances will be in the tutorial/distances folder. Enjoy!
+
+
+
+
+Example Tutorial 2 (with subpopulation calling)
+===================
+
+## 1. Fetch and unpack test data
+
+    wget http://swifter.embl.de/~ralves/metaSNV_test_data/testdata.tar.xz
+    tar xvf testdata.tar.xz && rm -f testdata.tar.gz
+
+# Run all of metaSNV with test data
+
+    ./metaSNV.py output testdata/all_samples testdata/ref/allReferenceGenomes.fasta
+    ./metaSNV_Filtering.py output
+    ./metaSNV_DistDiv.py --filt output/filtered/pop --dist
+    ./metaSNV_subpopr.R -i output -g testdata/abunds/geneAbundances.tsv -a testdata/abunds/speciesAbundances.tsv
+
 
 Advanced usage 
 ==================================
