@@ -125,7 +125,7 @@ if(normalRun){
                 default=FALSE,
                 help="Whether to only do the first step of the pipeline \
                 (just detect the presence/number of subspecies). Default is FALSE. \
-                Only intended for troubleshooting.",
+                Only intended for troubleshooting. Reports will not be generated.",
                 metavar="logical"),
     make_option(c("--useExistingClustering"), type="logical",
                 default=FALSE,
