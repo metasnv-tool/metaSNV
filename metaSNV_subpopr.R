@@ -306,7 +306,7 @@ print("Loading R libraries...")
 
 # REQUIRES CAIRO TO BE INSTALLED, EITHER THROUGH 'install.packages()' OR THROUGH 'conda install -c anaconda cairo'
 # requires pandoc
-#suppressPackageStartupMessages(library(Cairo))
+suppressPackageStartupMessages(library(Cairo))
 suppressPackageStartupMessages(library(fpc))
 suppressPackageStartupMessages(library(ape))
 suppressPackageStartupMessages(library(ggplot2))
@@ -317,11 +317,8 @@ suppressPackageStartupMessages(library(tidyr))
 suppressPackageStartupMessages(library(readr))
 suppressPackageStartupMessages(library(ggrepel))
 suppressPackageStartupMessages(library(data.table))
-#suppressPackageStartupMessages(library(kableExtra)) # to do: remove this from package
 suppressPackageStartupMessages(library(rmarkdown)) # for report rendering
 
-#suppressPackageStartupMessages(library(coin)) # only used in phenotype assoc test part -- remove?
-#suppressPackageStartupMessages(library(questionr)) # only used in phenotype assoc test part -- remove?
 suppressPackageStartupMessages(library(BiocParallel))
 suppressPackageStartupMessages(library(batchtools))
 
