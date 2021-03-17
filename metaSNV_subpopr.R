@@ -11,7 +11,6 @@ rm(list=ls())
 normalRun<-TRUE # use cmd line args
 useExistingClustering<-FALSE
 useExistingGenotyping<-FALSE # genotypes and extensions
-makeReports <- TRUE
 makeGeneReports <- TRUE
 calcSpeciesAbunds<-TRUE
 
@@ -211,6 +210,7 @@ CLUSTERING.PS.CUTOFF <- 0.8
 DIST.METH.REPORTS <- "mann"
 MIN.N.SAMPLES <- opt$minNumSamples
 
+makeReports <- opt$createReports
 onlyDoSubspeciesDetection<-opt$onlyDoSubspeciesDetection
 useExistingClustering <- opt$useExistingClustering
 useExistingGenotyping <- opt$useExistingGenotyping
