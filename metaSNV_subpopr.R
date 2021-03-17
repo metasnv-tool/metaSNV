@@ -9,9 +9,6 @@
 rm(list=ls())
 
 normalRun<-TRUE # use cmd line args
-useExistingClustering<-FALSE
-useExistingGenotyping<-FALSE # genotypes and extensions
-makeGeneReports <- TRUE
 calcSpeciesAbunds<-TRUE
 
 ptm <- proc.time()
@@ -764,7 +761,7 @@ if(!is.null(KEGG.PATH) && file.exists(KEGG.PATH) &&
      printBpError(tmp)
    }
 
-  if(makeGeneReports){ #makeReports){
+  if(makeReports){
 
     print("Compiling gene content reports...")
     tmp <- BiocParallel::bptry(BiocParallel::bplapply(allSubstrucSpecies,
