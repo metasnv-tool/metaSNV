@@ -50,10 +50,10 @@ computeClusters <- function(species, dist, doFilterSamplesByAlleleDist,
                                                        distMatrix = as.matrix(dist),
                                                        minPropHomogSnvAllelesPerSample = minPropHomogSnvAllelesPerSample)
 
-    if(is.null(nrow(as.matrix(distForMedoids))) || nrow(as.matrix(distForMedoids)) < 7 ){
+    if(is.null(nrow(as.matrix(distForMedoids))) || nrow(as.matrix(distForMedoids)) < 6 ){
 
       warning(paste0(filePrefix,": After removing samples that do not have extreme SNV frequencies, ",
-                  "insufficient samples (< 7) remain to pick the number of clusters and cluster medoids. ",
+                  "insufficient samples (< 6) remain to pick the number of clusters and cluster medoids. ",
                   "Cutoff for SNV allele frequency: ", maxPropReadsNonHomog," . ",
                   "Cutoff for proportion of SNV positions passing allele frequency cutoff per sample: ",
                   minPropHomogSnvAllelesPerSample,". ",
@@ -62,7 +62,7 @@ computeClusters <- function(species, dist, doFilterSamplesByAlleleDist,
 
       write.table(snvFreqPropManyThresh,paste(getClustMedoidDefnFailedDir(outDir),species,'_freq_composition.tab',sep=''),sep='\t',quote=F)
       return(paste0("After removing samples that do not have extreme SNV frequencies, ",
-             "insufficient samples (< 7) remain to pick the number of clusters and cluster medoids. (n samples = ",
+             "insufficient samples (< 6) remain to pick the number of clusters and cluster medoids. (n samples = ",
              nrow(as.matrix(distForMedoids)),")" ))
     }
     if( length(unique(unlist(distForMedoids))) <= 1 ){
@@ -78,9 +78,9 @@ computeClusters <- function(species, dist, doFilterSamplesByAlleleDist,
     distForMedoids <- dist
   }
   
-  if(!is.null(nrow(as.matrix(dist))) && nrow(as.matrix(dist)) < 100){
+  if(!is.null(nrow(as.matrix(distForMedoids))) && nrow(as.matrix(distForMedoids)) < 100){
     warning(paste0(filePrefix,": fewer than 100 samples being used in determining number of clusters. Results may not be robust. ",
-                   "Number of samples: ",nrow(as.matrix(dist))))
+                   "Number of samples used: ",nrow(as.matrix(distForMedoids))))
   }
 
   # identify number of clusters and their medoids and assign samples to clusters
@@ -354,28 +354,30 @@ getClusteringResult <- function(distDistinct, filePrefix, outDir, randomSeed,
 
   # Assess stability of clustering result
   nSamples <- length(labels(distDistinct))
-  minSamplesToUse <- 10
-  lowProp <- max(0.3, ceiling(10/nSamples*10)/10)
-  # assess clustering stability
-  subsampleProportions<-as.list(seq(from=lowProp,to=1,by=0.1))
-  clusNumStabilityIter <- 10 # increases time a lot so 10 is enough
-  # assess clustering stability for the number of clusters
-  clusNumStability <- getClusNumStability(subsampleProportions = subsampleProportions,
-                                          nIterClusStability = clusNumStabilityIter,
-                                          distObj=distDistinct)
-  clusNumStabilityPlots <- getClusNumStabilityPlots(clusNumStability)
-  # and assess clustering stability for the cluster membership
-  clusMembStability <- getClusMembStability(subsampleProportions = subsampleProportions,
-                                            numClusters = numClusters,
+  if(nSamples >= 10){ # need at least 10 samples to do this
+    minSamplesToUse <- 10
+    lowProp <- max(0.3, ceiling(10/nSamples*10)/10)
+    # assess clustering stability
+    subsampleProportions<-as.list(seq(from=lowProp,to=1,by=0.1))
+    clusNumStabilityIter <- 10 # increases time a lot so 10 is enough
+    # assess clustering stability for the number of clusters
+    clusNumStability <- getClusNumStability(subsampleProportions = subsampleProportions,
+                                            nIterClusStability = clusNumStabilityIter,
                                             distObj=distDistinct)
-  clusMembStabilityPlots <- getClusMembStabPlots(clusMembStability)
-  clusteringStabilityAssessment <- summariseClusteringStability(nClusStability = clusNumStability,
-                                                                clusMembStability = clusMembStability,
-                                                                numClusters = numClusters)
-  clusteringStabilityAssessment$species <- filePrefix
-
-  clustering$stabilityAssessment <- clusteringStabilityAssessment
-
+    clusNumStabilityPlots <- getClusNumStabilityPlots(clusNumStability)
+    # and assess clustering stability for the cluster membership
+    clusMembStability <- getClusMembStability(subsampleProportions = subsampleProportions,
+                                              numClusters = numClusters,
+                                              distObj=distDistinct)
+    clusMembStabilityPlots <- getClusMembStabPlots(clusMembStability)
+    clusteringStabilityAssessment <- summariseClusteringStability(nClusStability = clusNumStability,
+                                                                  clusMembStability = clusMembStability,
+                                                                  numClusters = numClusters)
+    clusteringStabilityAssessment$species <- filePrefix
+  
+    clustering$stabilityAssessment <- clusteringStabilityAssessment
+  }
+  
   # don't count clusters that are too small, they're not useful for us
   clusterSizes <- table(clustering$clustering)
   if(min(table(clustering$clustering)) < minClusterSize){
@@ -415,8 +417,10 @@ getClusteringResult <- function(distDistinct, filePrefix, outDir, randomSeed,
 
   write.table(res[["mean.pred"]],paste(outDir,filePrefix,'_PS_values.tab',sep=''),sep='\t',quote=F)
 
-  saveClustStabilityPlots(outDir, filePrefix, clusNumStabilityPlots, clusMembStabilityPlots)
-
+  if(exists("clusNumStabilityPlots") & exists("clusMembStabilityPlots")){
+    saveClustStabilityPlots(outDir, filePrefix, clusNumStabilityPlots, clusMembStabilityPlots)
+  }
+  
   return(clustering)
 }
 
