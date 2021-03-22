@@ -77,7 +77,7 @@ computeClusters <- function(species, dist, doFilterSamplesByAlleleDist,
   }else{
     distForMedoids <- dist
   }
-  
+
   if(!is.null(nrow(as.matrix(dist))) && nrow(as.matrix(dist)) < 100){
     warning(paste0(filePrefix,": fewer than 100 samples being used in determining number of clusters. Results may not be robust. ",
                    "Number of samples: ",nrow(as.matrix(dist))))
@@ -362,7 +362,7 @@ getClusteringResult <- function(distDistinct, filePrefix, outDir, randomSeed,
   # assess clustering stability for the number of clusters
   clusNumStability <- getClusNumStability(subsampleProportions = subsampleProportions,
                                           nIterClusStability = clusNumStabilityIter,
-                                          distObj=distDistinct)
+                                          distObj=distDistinct, psCut = psCut)
   clusNumStabilityPlots <- getClusNumStabilityPlots(clusNumStability)
   # and assess clustering stability for the cluster membership
   clusMembStability <- getClusMembStability(subsampleProportions = subsampleProportions,
