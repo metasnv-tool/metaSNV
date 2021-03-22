@@ -7,6 +7,7 @@ import argparse
 import glob
 from multiprocessing import Pool
 from functools import partial
+from datetime import datetime
 
 try:
     import numpy as np
@@ -335,8 +336,12 @@ if __name__ == "__main__":
 
     #####################
 
+    print("Starting computations: ",datetime.now())
+
     if args.dist:
         computeAllDist(args)
 
     if args.div or args.divNS:
         computeAllDiv(args)
+
+    print("Computations complete: ",datetime.now())
