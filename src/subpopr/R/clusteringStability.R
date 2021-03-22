@@ -3,10 +3,10 @@
 # Assess cluster number stability ----------------------
 
 
-getClusNumStability <- function(subsampleProportions, nIterClusStability = 10, distObj) {
+getClusNumStability <- function(subsampleProportions, nIterClusStability = 10, distObj,psCut) {
 
   subsampIters <- sort(unlist(rep(subsampleProportions,nIterClusStability)))
-  subsampNClusters <- sapply(subsampIters, nClusWithSubsample, distObj=distObj) # this is slow
+  subsampNClusters <- sapply(subsampIters, nClusWithSubsample, distObj=distObj,psCut=psCut) # this is slow
 
   names(subsampNClusters) <- subsampIters
   nClusStability <- cbind.data.frame(propSamples = subsampIters,numClusters = subsampNClusters)
@@ -14,11 +14,11 @@ getClusNumStability <- function(subsampleProportions, nIterClusStability = 10, d
   return(nClusStability)
 }
 
-nClusWithSubsample <- function(distObj, subsampleProp){
+nClusWithSubsample <- function(distObj,subsampleProp,psCut){
   nSamples <- length(labels(distObj))
   indx <- sample(x = 1:nSamples,size = floor(nSamples*subsampleProp),replace = F)
   distDistinctSub <-as.dist(as.matrix(distObj)[indx,indx])
-  res <- getClusPredStrengthResult(distDistinctSub, warn = FALSE)
+  res <- getClusPredStrengthResult(distDistinctSub,psCut=psCut, warn = FALSE)
   numClusters <- res[["optimalk"]]
   return(numClusters)
 }

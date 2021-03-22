@@ -354,6 +354,7 @@ getClusteringResult <- function(distDistinct, filePrefix, outDir, randomSeed,
 
   # Assess stability of clustering result
   nSamples <- length(labels(distDistinct))
+
   if(nSamples >= 10){ # need at least 10 samples to do this
     minSamplesToUse <- 10
     lowProp <- max(0.3, ceiling(10/nSamples*10)/10)
@@ -363,7 +364,7 @@ getClusteringResult <- function(distDistinct, filePrefix, outDir, randomSeed,
     # assess clustering stability for the number of clusters
     clusNumStability <- getClusNumStability(subsampleProportions = subsampleProportions,
                                             nIterClusStability = clusNumStabilityIter,
-                                            distObj=distDistinct)
+                                          distObj=distDistinct, psCut = psCut)
     clusNumStabilityPlots <- getClusNumStabilityPlots(clusNumStability)
     # and assess clustering stability for the cluster membership
     clusMembStability <- getClusMembStability(subsampleProportions = subsampleProportions,
