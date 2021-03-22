@@ -121,6 +121,10 @@ if(normalRun){
                 within the cluster by this many percentage points (as decimal <= 1). \
                 (gs) Default 0.8",
                 metavar="numeric"),
+    make_option(c("--clusterPSThreshold"), type="numeric",
+            default=0.8,
+            help="Threshold to call clusters based on Prediction Strength. Default = 0.8",
+            metavar="numeric"),
     make_option(c("-q", "--onlyDoSubspeciesDetection"), type="logical",
                 default=FALSE,
                 help="Whether to only do the first step of the pipeline \
@@ -203,7 +207,7 @@ METADATA.COL.ID <- NULL #opt$metadataSampleIDCol
 MAX.PROP.READS.NON.HOMOG <- opt$fixReadThreshold
 MIN.PROP.SNV.HOMOG <- opt$fixSnvThreshold
 SNV.SUBSPEC.UNIQ.CUTOFF <- opt$genotypingThreshold
-CLUSTERING.PS.CUTOFF <- 0.8
+CLUSTERING.PS.CUTOFF <- opt$clusterPSThreshold
 DIST.METH.REPORTS <- "mann"
 MIN.N.SAMPLES <- opt$minNumSamples
 
@@ -237,6 +241,8 @@ assert0to1<-function(x,nameOfParam){
 assert0to1(opt$fixReadThreshold,"fixReadThreshold")
 assert0to1(opt$fixSnvThreshold,"fixSnvThreshold")
 assert0to1(opt$genotypingThreshold,"genotypingThreshold")
+assert0to1(opt$clusterPSThreshold,"clusterPSThreshold")
+
 
 #source(paste0(scriptDir,"/src/subpopr/inst/metaSNV_subpopr_SETTINGS.R"))
 DIST.METH.REPORTS="mann" # what method to use for generating reports: either "mann" or "allele"
