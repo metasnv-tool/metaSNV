@@ -44,7 +44,7 @@ writeGenotypeFreqs <- function(clustDf,snvFreqs,species,outputDir,uniqSubpopSnvF
     # (1) the frequency of a cluster's genotype in the sample and
     # (2) the cluster number of the genotype
     # res[[1]] has the freq of the cluster based on mean abundance of SNVs
-    # res[[1]] has the freq of the cluster based on median abundance of SNVs
+    # res[[2]] has the freq of the cluster based on median abundance of SNVs
     freq_data_mean <- res[[1]]
     freq_data_median <- res[[2]]
     clusterID_1 <- clustIDs[1]
@@ -71,18 +71,18 @@ writeGenotypeFreqs <- function(clustDf,snvFreqs,species,outputDir,uniqSubpopSnvF
     # number of samples that don't nicely fit into one of the defined clusters
     badSamples <- which(rowSums(coll) > 120 | rowSums(coll) < 80)
     nBadSamples <- length(badSamples)
-    if (nBadSamples > 0.1*nrow(coll)) { # more than 10% bad samples
+    if (nBadSamples > 0.15*nrow(coll)) { # more than 10% bad samples
       warning(paste0('Genotype-specific SNV frequency cutoff is bad for species ',species,
                      ". See details in file ",paste0(outputDir,species,'_hap_out.txt')))
       write(x = 'Cutoff is bad',file = paste(outputDir,species,'_hap_out.txt',sep=''),append = T )
-      write(x = paste('length(which(rowSums(coll) > 120 | rowSums(coll) < 80))',
-                         length(which(rowSums(coll) > 120 | rowSums(coll) < 80))),
+      write(x = paste('In ',nBadSamples,' out of ',nrow(coll),' samples, ',
+                      'the summed abundance of all clusters per sample is >120% or < 80%,',
+                      ' based on the frequencies of the genotyping SNVs.'),
             file = paste(outputDir,species,'_hap_out.txt',sep=''),append = T )
-      write(x = paste('In x samples, the summed abundance of clusters in sample is >120% or < 80%. x = ',
-                      nBadSamples,' out of ',nrow(coll), " total."),
-            file = paste(outputDir,species,'_hap_out.txt',sep=''),append = T )
-      write(x = badSamples,
-            file = paste(outputDir,species,'_hap_out.txt',sep=''),append = T )
+
+      # this prints the index of the sample, not the name of the sample
+      #write(x = badSamples,
+      #      file = paste(outputDir,species,'_hap_out.txt',sep=''),append = T )
 
       return()
     }
