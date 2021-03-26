@@ -77,7 +77,7 @@ computeClusters <- function(species, dist, doFilterSamplesByAlleleDist,
   }else{
     distForMedoids <- dist
   }
-  
+
   if(!is.null(nrow(as.matrix(distForMedoids))) && nrow(as.matrix(distForMedoids)) < 100){
     warning(paste0(filePrefix,": fewer than 100 samples being used in determining number of clusters. Results may not be robust. ",
                    "Number of samples used: ",nrow(as.matrix(distForMedoids))))
@@ -296,7 +296,8 @@ getClusteringResult <- function(distDistinct, filePrefix, outDir, randomSeed,
   res <- getClusPredStrengthResult(distDistinct, warn = TRUE, psCut = psCut,
                                    minClusterSize = minClusterSize,
                                    filePrefix = filePrefix,
-                                   usePackagePredStrength = usePackagePredStrength)
+                                   usePackagePredStrength = usePackagePredStrength,
+                                   defaultMaxNumClusters = 15)
 
   # we used a reduced data set to get the optimal number of clusters
   # next we use that info to actually cluster the data
@@ -375,10 +376,10 @@ getClusteringResult <- function(distDistinct, filePrefix, outDir, randomSeed,
                                                                   clusMembStability = clusMembStability,
                                                                   numClusters = numClusters)
     clusteringStabilityAssessment$species <- filePrefix
-  
+
     clustering$stabilityAssessment <- clusteringStabilityAssessment
   }
-  
+
   # don't count clusters that are too small, they're not useful for us
   clusterSizes <- table(clustering$clustering)
   if(min(table(clustering$clustering)) < minClusterSize){
@@ -421,7 +422,7 @@ getClusteringResult <- function(distDistinct, filePrefix, outDir, randomSeed,
   if(exists("clusNumStabilityPlots") & exists("clusMembStabilityPlots")){
     saveClustStabilityPlots(outDir, filePrefix, clusNumStabilityPlots, clusMembStabilityPlots)
   }
-  
+
   return(clustering)
 }
 
