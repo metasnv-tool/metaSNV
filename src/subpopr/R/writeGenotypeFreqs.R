@@ -112,8 +112,19 @@ computeUniquePos = function(uniqThreshold=80, snvFreqs_sub, clustDf_sub, species
     clusterSamples <- clustDf_sub[clustDf_sub$clust==i,"sampleName"]
     nonClusterSamples <- clustDf_sub[clustDf_sub$clust!=i,"sampleName"]
 
+    # remove SNVs that have NA in >20% of cluster samples
+    snvFreqs_sub_inClus <- snvFreqs_sub[,clusterSamples]
+    propNA_inCluster <- rowSums(is.na(snvFreqs_sub_inClus))/ncol(snvFreqs_sub_inClus)
+    snvFreqs_sub <- snvFreqs_sub[propNA_inCluster<0.2,]
+
+    # in non-cluster samples, no coverage (NA) is same as not present (freq=0)
+    df2 <- snvFreqs_sub[,nonClusterSamples]
+    df2[is.na(df2)] <- 0
+    snvFreqs_sub[,nonClusterSamples] <- df2
+
     # get difference in mean frequency of SNV in samples within cluster vs not in cluster
-    fDist <- (abs( rowMeans(snvFreqs_sub[,clusterSamples]) - rowMeans(snvFreqs_sub[,nonClusterSamples]) ) )
+    fDist <- (abs( rowMeans(snvFreqs_sub[,clusterSamples],na.rm = T) -
+                     rowMeans(snvFreqs_sub[,nonClusterSamples],na.rm = T) ) )
 
     #x<-summary(fDist)
     fDist[is.na(fDist)] <- 0
