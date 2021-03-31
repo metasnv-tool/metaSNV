@@ -122,6 +122,16 @@ computeUniquePos = function(uniqThreshold=80, snvFreqs_sub, clustDf_sub, species
     df2[is.na(df2)] <- 0
     snvFreqs_sub[,nonClusterSamples] <- df2
 
+    # if you have a lot of non-cluster samples, the mean can hide many with e.g. freq=100
+    meanAbundInCluster <- mean(rowMeans(snvFreqs_sub[,clusterSamples],na.rm = T),na.rm = T)
+    df2 <- snvFreqs_sub[,nonClusterSamples]
+    # how many non cluster samples have the same-ish freq as within the cluster
+    propMatch <- rowSums(df2<=(meanAbundInCluster+5) & df2>=(meanAbundInCluster-5)) / ncol(df2)
+    # remove SNVs where >=20% of non-cluster samples have a cluster-like abundance
+    df2 <- df2[propMatch<0.2,]
+    snvFreqs_sub[,nonClusterSamples] <- df2
+
+
     # get difference in mean frequency of SNV in samples within cluster vs not in cluster
     fDist <- (abs( rowMeans(snvFreqs_sub[,clusterSamples],na.rm = T) -
                      rowMeans(snvFreqs_sub[,nonClusterSamples],na.rm = T) ) )
