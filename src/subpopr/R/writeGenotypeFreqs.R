@@ -32,7 +32,7 @@ writeGenotypeFreqs <- function(clustDf,snvFreqs,species,outputDir,uniqSubpopSnvF
     # }
     # d = 80% is reported in costea2017 paper
     # d = cutoff mean SNV frequency difference between samples within cluster vs all other samples
-    res <- computeUniquePos(uniqThreshold=uniqSubpopSnvFreqThreshold*100, snvFreqs_sub,clustDf_sub,species,outputDir)
+    res <- computeUniquePosPerCluster(uniqThreshold=uniqSubpopSnvFreqThreshold*100, snvFreqs_sub,clustDf_sub,species,outputDir)
     #res <- computeDifferentialSNVs(snvFreqs_sub,clustDf_sub,species,outputDir)
     if(is.null(unlist(res))){
       write(x = paste("No genotyping positions for ",species),
@@ -107,11 +107,12 @@ computeUniquePos = function(uniqThreshold=80, snvFreqs_sub, clustDf_sub, species
   if(max(clustDf_sub$clust) < 1){
     return(NULL)
   }
-
+  snvFreqs_sub_orig <- snvFreqs_sub
   for (i in unique(clustDf_sub$clust)) {
     clusterSamples <- clustDf_sub[clustDf_sub$clust==i,"sampleName"]
     nonClusterSamples <- clustDf_sub[clustDf_sub$clust!=i,"sampleName"]
-
+    snvFreqs_sub <- snvFreqs_sub_orig
+    
     # remove SNVs that have NA in >20% of cluster samples
     snvFreqs_sub_inClus <- snvFreqs_sub[,clusterSamples]
     propNA_inCluster <- rowSums(is.na(snvFreqs_sub_inClus))/ncol(snvFreqs_sub_inClus)
@@ -123,13 +124,14 @@ computeUniquePos = function(uniqThreshold=80, snvFreqs_sub, clustDf_sub, species
     snvFreqs_sub[,nonClusterSamples] <- df2
 
     # if you have a lot of non-cluster samples, the mean can hide many with e.g. freq=100
-    meanAbundInCluster <- mean(rowMeans(snvFreqs_sub[,clusterSamples],na.rm = T),na.rm = T)
+    meanAbundsInCluster <- rowMeans(snvFreqs_sub[,clusterSamples],na.rm = T)
     df2 <- snvFreqs_sub[,nonClusterSamples]
     # how many non cluster samples have the same-ish freq as within the cluster
-    propMatch <- rowSums(df2<=(meanAbundInCluster+5) & df2>=(meanAbundInCluster-5)) / ncol(df2)
+    propMatch <- rowSums(df2<=(meanAbundsInCluster+5) & df2>=(meanAbundsInCluster-5)) / ncol(df2)
     # remove SNVs where >=20% of non-cluster samples have a cluster-like abundance
     df2 <- df2[propMatch<0.2,]
-    snvFreqs_sub[,nonClusterSamples] <- df2
+    snvsOk <- rownames(df2)
+    snvFreqs_sub <- snvFreqs_sub[snvsOk,] 
 
 
     # get difference in mean frequency of SNV in samples within cluster vs not in cluster
@@ -153,12 +155,11 @@ computeUniquePos = function(uniqThreshold=80, snvFreqs_sub, clustDf_sub, species
       next()
     }
 
-    fDist_data <- snvFreqs_sub[oList,] #data[oList,]
-    #print(dim(fDist_data))
+    fDist_data <- snvFreqs_sub[oList,]
 
-    # for each SNV/sample pair, get whether the sample has the major allele (1) or not (0)
+    # for each SNV, get whether most cluster samples have the major allele (1) or not (0)
     # the major allele has frequency >=50
-    spec_snp <- which(majorAllel(snvFreqs_sub[oList,clusterSamples]) == 0)
+    spec_snp <- which(majorAllel(fDist_data[,clusterSamples]) == 0)
     # for those samples that have the minor allele, change the frequency from e.g. 3 -> 97
     # don't alter frequencies for major allele or those with value == -1
     if (length(spec_snp) > 0) {
@@ -174,6 +175,84 @@ computeUniquePos = function(uniqThreshold=80, snvFreqs_sub, clustDf_sub, species
 
   return(list(freq_data_mean,freq_data_median))
 
+}
+
+
+
+computeUniquePosPerCluster = function(uniqThreshold=80, snvFreqs_sub, clustDf_sub, species, outputDir) {
+  freq_data_mean <- NULL
+  freq_data_median <- NULL
+  pos_df <- NULL
+  
+  if(max(clustDf_sub$clust) < 1){
+    return(NULL)
+  }
+  snvFreqs_sub_orig <- snvFreqs_sub
+  for (i in unique(clustDf_sub$clust)) {
+    clusterSamples <- clustDf_sub[clustDf_sub$clust==i,"sampleName"]
+    nonClusterSamples <- clustDf_sub[clustDf_sub$clust!=i,"sampleName"]
+    snvFreqs_sub <- snvFreqs_sub_orig
+    
+    # remove SNVs that have NA in >20% of cluster samples
+    snvFreqs_sub_inClus <- snvFreqs_sub[,clusterSamples]
+    propNA_inCluster <- rowSums(is.na(snvFreqs_sub_inClus))/ncol(snvFreqs_sub_inClus)
+    snvFreqs_sub <- snvFreqs_sub[propNA_inCluster<0.2,]
+
+    # in non-cluster samples, no coverage (NA) is same as not present (freq=0)
+    df2 <- snvFreqs_sub[,nonClusterSamples]
+    df2[is.na(df2)] <- 0
+    snvFreqs_sub[,nonClusterSamples] <- df2
+
+
+    gSNVCandidates <- list()
+    # check the abundance difference for each SNV for each cluster pair
+    for (j in unique(clustDf_sub$clust)){
+      if(i!=j){
+        nonClusterSamples_j <- clustDf_sub[clustDf_sub$clust==j,"sampleName"]
+        fDist <- (abs( rowMeans(snvFreqs_sub[,clusterSamples],na.rm = T) -
+                         rowMeans(snvFreqs_sub[,nonClusterSamples_j],na.rm = T) ) )  
+        print(paste(i,"vs",j,":"))  
+        print(summary(fDist))
+        fDist[is.na(fDist)] <- 0
+        fDist[is.nan(fDist)] <- 0
+        # get those SNPs where its mean frequency within the cluster is higher||lower than
+        # mean frequency outside the cluster by at least 'd' percentage points
+        gSNVCandidates[[as.character(j)]] <- names(fDist[fDist>uniqThreshold])
+      }
+    }    
+    # get the SNVs that are distinct across all cluster pairs
+    oList <- Reduce(intersect, gSNVCandidates)
+    
+    if (length(oList) == 0) {
+      status <- paste('No unique genotyping positions for species',species,"cluster",i,
+                      "(species has",length(unique(clustDf_sub$clust)),"total clusters)")
+      warning(status)
+      write(status, paste(outputDir,species,'_hap_out.txt',sep=''),append = T)
+      #write(paste(paste(names(x),x,sep="="),collapse=","), paste(outputDir,species,'_hap_out.txt',sep=''),append = T)
+      #write(paste(fDist,collapse = ", "), paste(outputDir,species,'_hap_out.txt',sep=''),append = T)
+      next()
+    }
+    
+    fDist_data <- snvFreqs_sub[oList,]
+    
+    # for each SNV, get whether most cluster samples have the major allele (1) or not (0)
+    # the major allele has frequency >=50
+    spec_snp <- which(majorAllel(fDist_data[,clusterSamples]) == 0)
+    # for those samples that have the minor allele, change the frequency from e.g. 3 -> 97
+    # don't alter frequencies for major allele or those with value == -1
+    if (length(spec_snp) > 0) {
+      fDist_data[spec_snp,] <- 100-fDist_data[spec_snp,]
+    }
+    hap_positions <- data.frame(posId = rownames(fDist_data), flip = FALSE)
+    hap_positions$flip[spec_snp] <- TRUE
+    write.table(hap_positions,paste(outputDir,species,'_',i,'_hap_positions.tab',sep=''),sep='\t',quote=F)
+    
+    freq_data_mean <- rbind(freq_data_mean,cbind(apply(fDist_data,2,mean,na.rm=T),i))
+    freq_data_median <- rbind(freq_data_median,cbind(apply(fDist_data,2,median,na.rm=T),i))
+  }
+  
+  return(list(freq_data_mean,freq_data_median))
+  
 }
 
 
