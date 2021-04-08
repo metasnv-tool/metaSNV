@@ -13,7 +13,7 @@ writeSubpopsForAllSamples <- function(species,sampleNames, outDir,
   # 1. [species]_[cluster]_hap_positions.tab (from writeGenotypeFreqs(...) )
   # 2. SNPs_best_split_[X] from metaSNV output (snpCaller/called_SNPs.best_split_[X])
   # then use convertSNVtoAlleleFreq.py to creatse 537011_2.pos.freq file
-  all_hap <- list.files(path=outDir,paste(species,'_.\\.pos\\.freq$',sep=''),full.names = T)
+  all_hap <- list.files(path=outDir,paste(species,'_.*\\.pos\\.freq$',sep=''),full.names = T)
   if(length(all_hap)==0){
     warning(paste0("Can't find ",species,".*_pos.freq files. ",
                    "Did you run pyGetPlacingRelevantSubset(...) &",
@@ -70,39 +70,42 @@ writeSubpopsForAllSamples <- function(species,sampleNames, outDir,
     data <- fullData[hap_info$posId,]
 
     #Flip relevant positions
-    if (sum(hap_info[["flip"]]) > 0) {
+    if (sum(hap_info[["flip"]]) > 0) { #if any flips
       flipSNVs <- hap_info[hap_info$flip==TRUE,"posId"]
       data[flipSNVs,] <- 100-data[flipSNVs,]
     }
-
 
     # get the columns (samples) where less than 20% of values are NA
     data <- data[,which(apply(data,2,function(x) {sum(!is.na(x))}) >= maxPropUncalledSNV * nrow(data))]
 
     if( is.null(dim(data)) ){
-      #warning(paste("Insufficient data for",species, "cluster",cluster))
+      warning(paste("Insufficient data for",species, "cluster",cluster))
       next()
     } else if(is.null(data) || ncol(data) == 0 || nrow(data) == 0){
-      #warning(paste("No data for",species, "cluster",cluster))
+      warning(paste("No data for",species, "cluster",cluster))
       next()
     }
 
     #Compute the frequency for this genotype
     # just use the median of the SNV frequencies (though I print more info here)
     hap_freq_median <- data.frame(apply(data,2,median,na.rm=T))
-    hap_freq_summary <- data.frame(mean=apply(data,2,mean,na.rm=T),
+    hap_freq_summary <- data.frame(Sample = colnames(data),
+                                   Cluster = cluster,
+                                   mean=apply(data,2,mean,na.rm=T),
                                    median=apply(data,2,median,na.rm=T),
                                    standardDeviation=apply(data,2,sd,na.rm=T),
                                    prevalence=apply(data,2,function(x){x<-x[!is.na(x)]; sum(x>0)/length(x)}),
-                                   prevalenceGte5=apply(data,2,function(x){x<-x[!is.na(x)]; sum(x>=5)/length(x)}))
+                                   prevalenceGte5=apply(data,2,function(x){x<-x[!is.na(x)]; sum(x>=5)/length(x)}),
+                                   n0 = apply(data,2,function(x){x<-x[!is.na(x)]; sum(x==0)}),
+                                   n100 = apply(data,2,function(x){x<-x[!is.na(x)]; sum(x==100)}),
+                                   nNoCoverage=apply(data,2,function(x){sum(is.na(x))}))
 
     colnames(hap_freq_median) <- 'freq' # dataframe with 1 column and samples as row names
     hap_freq_median$Cluster <- cluster
     hap_freq_median$Sample <- rownames(hap_freq_median)
     all_freq <- rbind(all_freq,hap_freq_median)
 
-    hap_freq_summary$Cluster <- cluster
-    hap_freq_summary$Sample <- rownames(hap_freq_summary)
+
     all_freq_summary <- rbind(all_freq_summary,hap_freq_summary)
 
   }
@@ -113,7 +116,7 @@ writeSubpopsForAllSamples <- function(species,sampleNames, outDir,
     return(NULL)
   }
 
-  write.table(hap_freq_summary,row.names = F,
+  write.table(all_freq_summary,row.names = F,
               paste(outDir,species,'_extended_clustering_abundanceSummaryStats.tsv',sep=''),
               sep='\t',quote=F)
 
@@ -163,14 +166,14 @@ writeSubpopsForAllSamples <- function(species,sampleNames, outDir,
 
   # remove samples that have high abundance but low prevalence of genotyping SNVs
   # these are likely not well characterised by the original dataset
-  # if the subspecies has over 30% abundance, then 80% of its genotyping SNV positions should be covered
-  badSamples <- unique(all_freq_summary[all_freq_summary$median>30 & all_freq_summary$prevalence<0.80,"Sample"])
+  # if the subspecies has over 30% abundance, then 75% of its genotyping SNV positions should be covered
+  badSamples <- unique(all_freq_summary[all_freq_summary$median>30 & all_freq_summary$prevalence<0.75,"Sample"])
   if( length(badSamples) > 0){
     write(file=paste(outDir,species,'_extended_clustering_stat.txt',sep=''),
           x = paste0("Species ",species, ": ",
                      length(badSamples),' out of ', nrow(filtered) ,
                      ' samples rejected due to extreme mismatch between ',
-                     'median abundance of genotyping SNVs (>30%) and prevalence of genotyping SNVs (<80%).')
+                     'median abundance of genotyping SNVs (>30%) and prevalence of genotyping SNVs (<75%).')
           ,append = T)
     filtered <- filtered[!row.names(filtered) %in% badSamples,]
   }
