@@ -45,7 +45,9 @@ defineSubpopulations <- function(species, distName = "mann",
                                  psCut = 0.8,
                                  uniqSubpopSnvFreqThreshold=0.8,
                                  bamFileNamesToUsePath = NULL,
-                                 usePackagePredStrength = FALSE){
+                                 usePackagePredStrength = FALSE,
+                                 useExistingClusters = FALSE,
+                                 plotSnvFrequencies = TRUE){
 
   #randomSeed <- ifelse(!is.null(randomSeed),yes = randomSeed,no = sample(x = 4124:4613646,size = 1))
 
@@ -75,6 +77,7 @@ defineSubpopulations <- function(species, distName = "mann",
   flog.info("Loading SNV frequencies for species: %s",species)
   snvFreqs.filtered <- read.table(freqCompFile,header=T,row.names=1,check.names=F,strip.white = F,sep="\t")
 
+  flog.info("Checking data for species: %s",species)
   # sometimes there are blanks in the metaSNV distance output due to too many -1s
   # remove those here
   distMa <- rmNAfromDistMatrix(distMa)
@@ -146,16 +149,36 @@ defineSubpopulations <- function(species, distName = "mann",
   snvFreqs.filtered[snvFreqs.filtered!=-1] <- snvFreqs.filtered[snvFreqs.filtered!=-1]*100
 
 
+  if(plotSnvFrequencies){
   flog.info("Plotting SNV frequencies for species: %s",species)
   snvFreqPlot(species,snvFreqs.filtered,
               outDir = getSnvFreqPlotDir(outDir),
               minPropHomogSnvAllelesPerSample,
               maxPropReadsNonHomog = maxPropReadsNonHomog)
+  }
 
   filePrefix=paste0(species,"_",distName)
 
-  flog.info("Computing clustering for species: %s",species)
+  clustDfFile1 <- paste0(outDir,filePrefix,'_clustering.tab')
+  clustDfFile2 <- paste0(outDir,"/noClustering/",filePrefix,'_clustering.tab')
+  if(useExistingClusters & 
+     !(file.exists(clustDfFile1) | file.exists(clustDfFile2) ) ){
+    flog.info("Parameters specified to use exsiting clusters, but expected required file (",
+              paste0(filePrefix,'_clustering.tab'),") does not exist. Recalculating clusters.")
+    useExistingClusters<-FALSE
+  }
+  
+  if(useExistingClusters){
+    if(file.exists(clustDfFile1)){
+      flog.info("Using existing clustering for species: %s",species, "(",clustDfFile1,")")  
+      clustDf <- read.table(clustDfFile1,sep='\t') 
+    }else{
+      flog.info("Using existing clustering for species: %s",species, "(",clustDfFile2,")")  
+      clustDf <- read.table(clustDfFile2,sep='\t') 
+    }
+  }else{
   # identify clusters from subset of data
+  flog.info("Computing clustering for species: %s",species)
   clustDf <- computeClusters(dist=distMa,
                                species = species,
                                doFilterSamplesByAlleleDist =  doFilterSamplesByAlleleDist,
@@ -167,7 +190,8 @@ defineSubpopulations <- function(species, distName = "mann",
                                maxPropReadsNonHomog = maxPropReadsNonHomog,
                                psCut = psCut,
                                usePackagePredStrength = usePackagePredStrength)
-
+  }
+  
   if(is.null(clustDf) || is.character(clustDf) ){
     return(clustDf)
   }

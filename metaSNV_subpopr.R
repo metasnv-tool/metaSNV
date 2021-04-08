@@ -160,18 +160,20 @@ if(normalRun){
   # scriptDir <- "/Users/rossum/Dropbox/PostDocBork/subspecies/toolDevelopment/metaSNV/"
    scriptDir <- "/g/scb2/bork/rossum/metaSNV2/metaSNV/"
   # workDir <- "/Volumes/KESU/scb2/metagenomes/human/subspecGeoValidation/all_v3/"
-   workDir <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/"
+   workDir <- "/g/scb2/bork/rossum/metagenomes/mock/inSilico/subpopr/posCtrl/v2_ecoli/genomesSet2"
+   #workDir <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/"
   setwd(paste0(workDir,"/subpopr"))
   opt$metadata <- paste0(workDir,"/sampleSelection/metadataForSubspeciesAnalysis.csv")
   opt$metaSnvResultsDir <- paste0(workDir,"/metaSNV/outputs/")
-  opt$speciesAbundance <- paste0(workDir,"/motus20/motusForSelectedSamples.tsv") #"doNotRun"
+  opt$speciesAbundance <- paste0(workDir,"/motus20/motusAbunds.tsv") #"doNotRun"
   opt$geneAbundance <- paste0(workDir,"/geneContent/mapToPanGenomes/outputs/counts_unique_norm_sumByNogBySpecies.tsv")
   opt$sampleSuffix <- ".subspec71.unique.sorted.bam"
+  opt$sampleSuffix <- ".fr11Repv2UL71.unique.sorted.bam"
 
-  opt$procs <- 2
+  opt$procs <- 1
   opt$isMotus <- T
   opt$metadataSampleIDCol <- "sampleID"
-  opt$outputDir <- "results_md_s257745"
+  opt$outputDir <- "results4"
 
   # scriptDir <- "/g/scb2/bork/rossum/metaSNV2/metaSNV/"
   # workDir <- "/g/scb2/bork/rossum/subspecies/testingSubpopr/githubWorkflow/"
@@ -190,6 +192,7 @@ if(normalRun){
   opt$fixReadThreshold <- 0.1
   opt$fixSnvThreshold <- 0.8
   opt$genotypingThreshold <- 0.8
+  opt$clusterPSThreshold <- 0.8
 
   opt$onlyDoSubspeciesDetection<-FALSE
   opt$useExistingClustering <- FALSE
@@ -445,7 +448,8 @@ runDefine <- function(spec){
                        uniqSubpopSnvFreqThreshold = SNV.SUBSPEC.UNIQ.CUTOFF,
                        bamFileNamesToUsePath = BAMS.TO.USE,
                        usePackagePredStrength = USE.PACKAGE.PREDICTION.STRENGTH,
-                       minNumberOfSamplesToStart=MIN.N.SAMPLES)
+                       minNumberOfSamplesToStart=MIN.N.SAMPLES,
+                       useExistingClusters = useExistingClustering)
 }
 
 if(!useExistingClustering){
@@ -542,6 +546,14 @@ if(!useExistingClustering){
     }
   }
 }else{
+  # need to re-run to get new gSNVs
+  print("Using previously computed clustering...")
+  print("Identifying genotyping SNVs...")
+  resultsPerSpecies <- BiocParallel::bptry(
+    BiocParallel::bplapply(species, runDefine, BPPARAM = bpParam))
+  names(resultsPerSpecies) <- species
+  printBpError(resultsPerSpecies)
+  
   allSubstruc <- list.files(path=OUT.DIR,
                             pattern = '_hap_out\\.txt$',full.names = T)
   allSubstrucSpecies <- unique(sub(basename(allSubstruc) ,
@@ -590,7 +602,7 @@ if(useExistingGenotyping){
 
 
   # get all posFiles
-  allPos <- list.files(path=OUT.DIR,pattern = '.*_.\\.pos$',full.names = T)
+  allPos <- list.files(path=OUT.DIR,pattern = '.*_.*\\.pos$',full.names = T)
   if(length(allPos) == 0){
     warning("Genotyping failed. No *.pos files found. Not genotyping subspecies.")
   }else{
