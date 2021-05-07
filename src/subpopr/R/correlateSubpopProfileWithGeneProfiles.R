@@ -87,7 +87,7 @@ correlateSubpopProfileWithGeneProfiles <- function(species,outDir,geneAbundanceP
     # only keep the samples (columns) that have this species
     x <- x[,colnames(x) %in% c(colnames(x)[1],geneAbundColNamesToUse) ] 
     # only keep genes that are present
-    filter(x,rowSums(x[,-1])>0)
+    filter(x,rowSums(x[,-1],na.rm = T)>0)
   }
   geneFamilyProfiles <- read_tsv_chunked(file = geneAbundancePath,
                                                  comment = "#",trim_ws = T,
