@@ -68,8 +68,11 @@ writeGenotypeFreqs <- function(clustDf,snvFreqs,species,outputDir,uniqSubpopSnvF
     # if the unique snvs were not or could not be well chosen, then the sample may look like it belongs to > 1 cluster
     # or it could look like it belongs to zero clusters
 
+    # NA for classification, due to low coverage of gSNVs
+    samplesWithoutClassification <- rownames(coll[is.na(rowSums(coll)),])
+    
     # number of samples that don't nicely fit into one of the defined clusters
-    badSamples <- which(rowSums(coll) > 120 | rowSums(coll) < 80)
+    badSamples <- names(which(!is.na(rowSums(coll)) & (rowSums(coll) > 120 | rowSums(coll) < 80)))
     nBadSamples <- length(badSamples)
     if (nBadSamples > 0.15*nrow(coll)) { # more than 10% bad samples
       warning(paste0('Genotype-specific SNV frequency cutoff is bad for species ',species,
@@ -80,15 +83,25 @@ writeGenotypeFreqs <- function(clustDf,snvFreqs,species,outputDir,uniqSubpopSnvF
                       ' based on the frequencies of the genotyping SNVs.'),
             file = paste(outputDir,species,'_hap_out.txt',sep=''),append = T )
 
-      # this prints the index of the sample, not the name of the sample
-      #write(x = badSamples,
-      #      file = paste(outputDir,species,'_hap_out.txt',sep=''),append = T )
+      write(x = "Samples with incoherent cluster abundance measured based on genotyping SNVs: ",
+            file = paste(outputDir,species,'_hap_out.txt',sep=''),append = T )
+      write(x = badSamples,
+            file = paste(outputDir,species,'_hap_out.txt',sep=''),append = T )
 
       return()
     }
 
-    write(x = paste('Completed',length(which(rowSums(coll) <= 120 & rowSums(coll) >= 80)),'of ',nrow(coll),
-                       '. Correct max assignment',sum((apply(coll,1,which.max)==clustAssignments))),
+    # coherent, non NA cluster assignments
+    goodSamples <- rownames(coll)[!rownames(coll) %in% c(badSamples,samplesWithoutClassification)]
+    
+    # correct assignments
+    nCorrAssign <- sum(clustDf_sub[goodSamples,"clust"] == apply(coll[goodSamples,],1,which.max))
+    
+    write(x = paste0('Genotyping-based assignment of discovery samples to clusters was correct for ',nCorrAssign,' samples. ',
+                    'Determined any cluster assignment from genotyping SNVs for ',
+                    length(goodSamples),' out of ',nrow(coll),' samples. Of those samples without assignments: ',
+                    length(badSamples) ,'  had incoherect cluster assignments and ',
+                    length(samplesWithoutClassification) ,' lacked coverage of genotyping SNVs.'),
           file = paste(outputDir,species,'_hap_out.txt',sep=''),append = T )
 
     write.table(freq_data_mean,paste(outputDir,species,'_hap_freq_mean.tab',sep=''),sep='\t',quote=F)
@@ -198,10 +211,20 @@ computeUniquePosPerCluster = function(uniqThreshold=80, snvFreqs_sub, clustDf_su
     propNA_inCluster <- rowSums(is.na(snvFreqs_sub_inClus))/ncol(snvFreqs_sub_inClus)
     snvFreqs_sub <- snvFreqs_sub[propNA_inCluster<0.2,]
 
-    # in non-cluster samples, no coverage (NA) is same as not present (freq=0)
-    df2 <- snvFreqs_sub[,nonClusterSamples]
-    df2[is.na(df2)] <- 0
-    snvFreqs_sub[,nonClusterSamples] <- df2
+    # NA means vertical coverage of this position was < 5 in this sample
+    # this could be due to the position not existing in this subspecies, or the species being at low abundance in the sample
+    # if position is NA in most (>80%) non-cluster samples, then unlikely due to abundance
+    # in that case, in non-cluster samples, no coverage (NA) is same as opposite allele, here coded as -101 so that the difference to 0 and to 100 are both > 100
+    # snvsToReplace <- rowSums(is.na(snvFreqs_sub[,nonClusterSamples]))/ncol(snvFreqs_sub[,nonClusterSamples]) > 0.8
+    # if(sum(snvsToReplace)>0){
+    #   df2 <- snvFreqs_sub[snvsToReplace,nonClusterSamples]
+    #   df2[is.na(df2)] <- -101
+    #   snvFreqs_sub[snvsToReplace,nonClusterSamples] <- df2
+    # }
+    # remove SNVs that have NA in >20% of non-cluster samples
+    snvFreqs_sub_nonClus <- snvFreqs_sub[,nonClusterSamples]
+    propNA_nonCluster <- rowSums(is.na(snvFreqs_sub_nonClus))/ncol(snvFreqs_sub_nonClus)
+    snvFreqs_sub <- snvFreqs_sub[propNA_nonCluster<0.2,]
 
 
     gSNVCandidates <- list()
@@ -211,8 +234,6 @@ computeUniquePosPerCluster = function(uniqThreshold=80, snvFreqs_sub, clustDf_su
         nonClusterSamples_j <- clustDf_sub[clustDf_sub$clust==j,"sampleName"]
         fDist <- (abs( rowMeans(snvFreqs_sub[,clusterSamples],na.rm = T) -
                          rowMeans(snvFreqs_sub[,nonClusterSamples_j],na.rm = T) ) )  
-        print(paste(i,"vs",j,":"))  
-        print(summary(fDist))
         fDist[is.na(fDist)] <- 0
         fDist[is.nan(fDist)] <- 0
         # get those SNPs where its mean frequency within the cluster is higher||lower than
