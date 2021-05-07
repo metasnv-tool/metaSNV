@@ -276,7 +276,12 @@ useGenotypesToProfileSubpops <- function(species, metaSNVdir, outDir,
 #'get subspecies abundance using species abundance and relative abundance of subspecies
 useSpeciesAbundToCalcSubspeciesAbund <- function(species, speciesAbundanceProfileFilePath, outDir,speciesProfileIsMotus){
 
-  extendedClusteringFreqs <- read.table(paste(outDir,species,'_extended_clustering_wFreq.tab',sep=''),sep='\t')
+  extClusFile <- paste(outDir,species,'_extended_clustering_wFreq.tab',sep='')
+  if(!file.exists(extClusFile)){
+    warning(paste0("Species ",species," does not have cluster frequencies. File does not exist: ",extClusFile))
+    return(NULL)    
+  }
+  extendedClusteringFreqs <- read.table(extClusFile,sep='\t')
 
   if(is.null(extendedClusteringFreqs) || nrow(extendedClusteringFreqs) == 0){
     warning(paste0("Species does not have cluster frequencies. Species: ",species))
