@@ -546,13 +546,17 @@ if(!useExistingClustering){
     }
   }
 }else{
-  # need to re-run to get new gSNVs
-  print("Using previously computed clustering...")
-  print("Identifying genotyping SNVs...")
-  resultsPerSpecies <- BiocParallel::bptry(
-    BiocParallel::bplapply(species, runDefine, BPPARAM = bpParam))
-  names(resultsPerSpecies) <- species
-  printBpError(resultsPerSpecies)
+  print("Using previously computed clustering.")
+  if(useExistingGenotyping){
+    print("Using previously computed genotyping SNVs.")
+  }else{
+    # need to re-run to get new gSNVs
+    print("Identifying genotyping SNVs...")
+    resultsPerSpecies <- BiocParallel::bptry(
+      BiocParallel::bplapply(species, runDefine, BPPARAM = bpParam))
+    names(resultsPerSpecies) <- species
+    printBpError(resultsPerSpecies)
+  }
   
   allSubstruc <- list.files(path=OUT.DIR,
                             pattern = '_hap_out\\.txt$',full.names = T)
