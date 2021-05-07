@@ -159,7 +159,7 @@ def execute_snp_call(args, snpCaller, ifile, ofile, split):
                 '-b', args.all_samples]
     snpcaller_cmd = [
                 snpCaller, '-f', args.ref_db] + db_ann_args + [
-                '-i', ifile]
+                '-i', ifile, '-c', str(args.min_pos_cov), '-t', str(args.min_pos_snvs)]
     if args.print_commands:
         print(" ".join(samtools_cmd + ['|'] + snpcaller_cmd + ['>', ofile]))
     else:
@@ -237,7 +237,11 @@ def main():
                         help='Number of bins to split ref into')
     parser.add_argument('--use_prev_cov', default=False, action="store_true",
                         help='Use "cov/" and "outputs.all_cov.tab" and "outputs.all_perc.tab" data produced by previous metaSNV run')
-
+    parser.add_argument('--min_pos_cov', metavar='INT',default=4,type=int,
+                        help='minimum coverage (mapped reads) per position for snpCall.')
+    parser.add_argument('--min_pos_snvs', metavar='INT',default=4,type=int,
+                        help='minimum number of non-reference nucleotides per position for snpCall.')
+                        
     args = parser.parse_args()
     args.project_dir = args.project_dir.rstrip('/')
     if not path.isfile(args.ref_db):
