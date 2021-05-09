@@ -1,20 +1,20 @@
-# Run as: 
-# Rscript profileSamplesUsingGenotypes.R 
+# Run as:
+# Rscript profileSamplesUsingGenotypes.R
 
 library("optparse")
 
 option_list = list(
-  make_option(c("-e", "--metaSnvSrcDir"), type="character", default=NULL, 
+  make_option(c("-e", "--metaSnvSrcDir"), type="character", default=NULL,
               help="Path to directory containing metaSNV executables. Required.", metavar="character"),
-  make_option(c("-m", "--metaSNVResultsDir"), type="character", default=NULL, 
+  make_option(c("-m", "--metaSNVResultsDir"), type="character", default=NULL,
               help="Path to directory containing results from metaSNV.py run (e.g. contains folder called snpCaller). Required.", metavar="character"),
-  make_option(c("-s", "--subpoprResultsDir"), type="character", default=NULL, 
+  make_option(c("-s", "--subpoprResultsDir"), type="character", default=NULL,
               help="Path to directory containing results from metaSNV_subpopr.py run. Required.", metavar="character"),
-  make_option(c("-i", "--speciesID"), type="character", default=NULL, 
+  make_option(c("-i", "--speciesID"), type="character", default=NULL,
               help="ID of species to use (e.g. 155864). Required.", metavar="character"),
-  make_option(c("-o", "--outDir"), type="character", default="results", 
+  make_option(c("-o", "--outDir"), type="character", default="results",
               help="directory to create for results output [default= %default]", metavar="character")
-); 
+);
 
 opt_parser = OptionParser(option_list=option_list);
 opt = parse_args(opt_parser);
@@ -55,10 +55,10 @@ outDir=opt$outDir
 
 print("Getting required files...")
 
-posPaths = list.files(path =subpoprResultsDir, 
+posPaths = list.files(path =subpoprResultsDir,
                       pattern = paste0(speciesID,"_.*hap_po.*\\..*"),
                       full.names = T)
-hapMedPaths = list.files(path =subpoprResultsDir, 
+hapMedPaths = list.files(path =subpoprResultsDir,
                       pattern = paste0(speciesID,"_.*hap.*median.*\\..*"),
                       full.names = T)
 if(!all(file.exists(posPaths))){
@@ -75,7 +75,7 @@ if(!dir.exists(outDir)){
 
 resCopy <- sapply(c(posPaths,hapMedPaths),file.copy,to=outDir)
 
-newPosPaths = list.files(path =outDir, 
+newPosPaths = list.files(path =outDir,
                       pattern = paste0(speciesID,"_.*hap_po.*\\..*"),
                       full.names = T)
 if(!all(file.exists(newPosPaths))){
@@ -92,13 +92,13 @@ pyGetPlacingRelevantSubset(outDir = outDir,
                            metaSnvDir = metaSNVResultsDir,
                            scriptDir = paste0(metaSnvSrcDir,"/src/subpopr/inst/"))
 
-posPaths2 = list.files(path =outDir, 
+posPaths2 = list.files(path =outDir,
                       pattern = paste0(speciesID,"_[[:digit:]]+.pos$"),
                       full.names = T)
 
 print("Compiling genotyping allele frequencies for all samples...")
-sapply(X = posPaths2,
-       FUN = pyConvertSNPtoAllelTable, 
+tmp <- sapply(X = posPaths2,
+       FUN = pyConvertSNPtoAllelTable,
        minDepth = minDepth,
        scriptDir = paste0(metaSnvSrcDir,"/src/subpopr/inst/"))
 
@@ -108,7 +108,8 @@ source(paste0(metaSnvSrcDir,"/src/subpopr/R/writeSubpopsForAllSamples.R"))
 source(paste0(metaSnvSrcDir,"/src/subpopr/R/profileSubpops.R"))
 
 print("Compiling subspecies profiles for all samples...")
-useGenotypesToProfileSubpops(species=speciesID, 
-                             metaSNVdir=paste0(metaSNVResultsDir,"/"), 
+tmp <- useGenotypesToProfileSubpops(species=speciesID,
+                             metaSNVdir=paste0(metaSNVResultsDir,"/"),
                              outDir=paste0(outDir,"/"))
 
+print("Complete.")
