@@ -3,8 +3,9 @@
 
 metaSNV supports variant (SNV) calling on metagenomic data and population genetic analysis, including subspecies identification and profiling. Input is metagenomic reads mapped against reference genomes (bam files).
 
-metaSNV v1 paper: https://doi.org/10.1371/journal.pone.0182392
-metaSNV v2 paper: coming soon
+- metaSNV v2 paper: coming soon
+- metaSNV v1 paper: https://doi.org/10.1371/journal.pone.0182392
+
 
 See the full documentation for more details and a tutorial on this page.
 
@@ -160,7 +161,7 @@ Example Tutorial 2 (with subspecies identification)
     wget http://swifter.embl.de/~ralves/metaSNV_test_data/testdata.tar.xz
     tar xvf testdata.tar.xz && rm -f testdata.tar.gz
 
-# Run all steps of metaSNV v2 with the test data
+## Run all steps of metaSNV v2 with the test data
 
 Call SNVs:
 
