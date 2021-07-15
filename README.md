@@ -1,8 +1,12 @@
 # MetaSNV, a metagenomic SNV calling pipeline
 
 
-The metaSNV pipeline performs variant calling on aligned metagenomic samples.
+metaSNV supports variant (SNV) calling on metagenomic data and population genetic analysis, including subspecies identification and profiling. Input is metagenomic reads mapped against reference genomes (bam files).
 
+metaSNV v1 paper: https://doi.org/10.1371/journal.pone.0182392
+metaSNV v2 paper: coming soon
+
+See the full documentation for more details and a tutorial on this page.
 
 Download
 ========
@@ -84,9 +88,9 @@ Workflow:
 
 ### Part 0: Input files
 
-* **'all\_samples'**  = a list of all BAM files, one /path/2/sample.bam per line (no duplicates)
-* **'ref\_db'**       = the reference database in fasta format (f.i. multi-sequence fasta) and write permission for its directory
-* **'db\_ann'**       = [optional] a gene annotation file for the reference database (format: ).
+* **'all\_samples'**  = a list of all BAM files, one /path/to/sample.bam per line (no duplicates, no empty mappings)
+* **'ref\_db'**       = the reference database in fasta format (i.e. multi-sequence fasta) and write permission for its directory
+* **'db\_ann'**       = [optional] a gene annotation file for the reference database (see documentation for custom files).
 
 **To use one of the provided reference databases**:
 
@@ -94,30 +98,30 @@ The `ref_db` and `db_ann` files can be downloaded from using:
 
     ./getRefDB.sh
 
-We recommend using ProGenomes2 (aka Freeze11).
+We recommend using ProGenomes2 (aka Freeze11). The version provided here has one representative genome per species.
 
 
 ### Part I: Call SNVs
 
-    metaSNV.py project_dir/ all_samples ref_db [options]
+    metaSNV.py output_dir/ all_samples ref_db [options]
 
 ### Part II: SNV Post-Processing (Filtering & Analysis)
 
 Note: requires SNV calling (Part I) to be done
 
-    metaSNV_Filtering.py project_dir [options]
+    metaSNV_Filtering.py output_dir [options]
     
-    metaSNV_DistDiv.py --filt project_dir/filtered/pop [options]
+    metaSNV_DistDiv.py --filt output_dir/filtered/pop [options]
 
 ### Part III: Subpopulation detection
 
-Note: requires SNV calling, filtering, and distance calculations to be done (see 'Tutorial 2' below for example)
+Note: requires SNV calling, filtering, and distance calculations to be done (Parts I & II)
 
-    metaSNV_subpopr.R -i project_dir [options]
+    metaSNV_subpopr.R -i output_dir [options]
 
 
 
-Example Tutorial 1 (no subpopulation calling)
+Example Tutorial 1 (no subspecies identification)
 ===================
 
 ## 1. Run the setup & compilation steps and download the provided reference database. 
@@ -148,7 +152,7 @@ Example Tutorial 1 (no subpopulation calling)
 
 
 
-Example Tutorial 2 (with subpopulation calling)
+Example Tutorial 2 (with subspecies identification)
 ===================
 
 ## Fetch and unpack test data
@@ -156,7 +160,7 @@ Example Tutorial 2 (with subpopulation calling)
     wget http://swifter.embl.de/~ralves/metaSNV_test_data/testdata.tar.xz
     tar xvf testdata.tar.xz && rm -f testdata.tar.gz
 
-# Run all steps of metaSNV2 with the test data
+# Run all steps of metaSNV v2 with the test data
 
 Call SNVs:
 
@@ -175,26 +179,4 @@ Detect clusters of samples that correspond to within-species subpopulations:
     ./metaSNV_subpopr.R -i output -g testdata/abunds/geneAbundances.tsv -a testdata/abunds/speciesAbundances.tsv
 
 
-Advanced usage 
-==================================
-
-If you want to run a lot of samples and would like to use the power of your cluster, we will print out the commands you need to
-run and you can decide on how to schedule and manage them.
-
-## 1. Get the first set of commands
-    
-    $ python metaSNV.py tutorial sample_list db/freeze9.genomes.RepGenomesv9.fna --n_splits 8 --print-commands
-    
-    Note the addition of the "--print-commands". This will print out one-liners that you need to run. When done, run same again.
-
-## 2. Get the second set of commands
- 
-    $ python metaSNV.py tutorial sample_list db/freeze9.genomes.RepGenomesv9.fna --n_splits 8 --print-commands
-    
-    This will calculate the "load balancing" and give you the commands for running the SNV calling.
-    
-## 3. Run post-processing as usual
-
-    $ python metaSNV_Filtering.py tutorial 
-    $ python metaSNV_DistDiv.py --filt tutorial/filtered/pop --dist
-
+See the full documentation for details on parameters, inputs, outputs, and the method.
