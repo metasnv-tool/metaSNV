@@ -90,7 +90,10 @@ We recommend using genomes from ProGenomes2. The version provided here is a subs
 
 To download the species genome reference fasta file (`ref_db`) and the gene annotation file (`db_ann`), run the following:
 
-***** TO ADD ********
+```
+wget http://swifter.embl.de/~ralves/metaSNV_reference_data/progenomes2_speciesReps_genomes.fna
+wget http://swifter.embl.de/~ralves/metaSNV_reference_data/progenomes2_speciesReps_annotations.txt
+```
 
 These files will take approx. 25 GB of space.
 
