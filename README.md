@@ -83,9 +83,21 @@ To test that all files and dependencies have been properly installed, run the fo
     python metaSNV_Filtering.py --help
     python metaSNV_DistDiv.py --help
     Rscript metaSNV_subpopr.R --help
+    
+**To use one of the provided reference databases**:
+
+We recommend using genomes from ProGenomes2. The version provided here is a subset with one representative genome per species.
+
+To download the species genome reference fasta file (`ref_db`) and the gene annotation file (`db_ann`), run the following:
+
+***** TO ADD ********
+
+These files will take approx. 25 GB of space.
 
 Workflow:
 =========
+
+This summarises the general workflow. See the full documentation for details.
 
 ### Part 0: Input files
 
@@ -93,20 +105,11 @@ Workflow:
 * **'ref\_db'**       = the reference database in fasta format (i.e. multi-sequence fasta) and write permission for its directory
 * **'db\_ann'**       = [optional] a gene annotation file for the reference database (see documentation for custom files).
 
-**To use one of the provided reference databases**:
-
-The `ref_db` and `db_ann` files can be downloaded from using:
-
-    ./getRefDB.sh
-
-We recommend using ProGenomes2 (aka Freeze11). The version provided here has one representative genome per species.
-
-
 ### Part I: Call SNVs
 
     metaSNV.py output_dir/ all_samples ref_db [options]
 
-### Part II: SNV Post-Processing (Filtering & Analysis)
+### Part II: SNV Post-Processing: Filtering & Analysis
 
 Note: requires SNV calling (Part I) to be done
 
@@ -120,64 +123,80 @@ Note: requires SNV calling, filtering, and distance calculations to be done (Par
 
     metaSNV_subpopr.R -i output_dir [options]
 
-
+To determine abundances of subspecies relative to the whole community, you will also need to provide species abundance profiles. To determine subspecies-associated gene content, you will need to provide per-metagenome gene abundance profiles. See the full documentation for details.
 
 Example Tutorial 1 (no subspecies identification)
 ===================
 
-## 1. Run the setup & compilation steps and download the provided reference database. 
+1. Run the setup & compilation steps and download the provided reference database. 
 
-    $ ./getRefDB.sh
-    Select freeze9, as the tutorial files have been mapped against this freeze. 
+2. Go to the EXAMPLE directory and download the samples using the getExp.sh script
 
-## 2. Go to the EXAMPLE directory and download the samples with the getExp.sh
+```
+cd EXAMPLE
+./getExp.sh
+```
 
-    $ cd EXAMPLE
-    $ ./getExp.sh
+3. Make sample list
 
-## 3. Make sample list
+```
+find `pwd`/EXAMPLE/samples -name "*.bam" > sample_list
+```
 
-    $ find `pwd`/EXAMPLE/samples -name "*.bam" > sample_list
+4. Run the SNV calling step
 
-## 4. Run the SNV calling step
+```
+python metaSNV.py tutorial sample_list db/freeze9.genomes.RepGenomesv9.fna --threads 8
+```
 
-    $ python metaSNV.py tutorial sample_list db/freeze9.genomes.RepGenomesv9.fna --threads 8
+5. Run filtering and post processing
 
-## 5. Run filtering and post processing
+```
+python metaSNV_Filtering.py tutorial 
+python metaSNV_DistDiv.py --filt tutorial/filtered/pop --dist
+``` 
 
-    $ python metaSNV_Filtering.py tutorial 
-    $ python metaSNV_DistDiv.py --filt tutorial/filtered/pop --dist
-    
-    Voila! Your distances will be in the tutorial/distances folder. Enjoy!
-
-
+Voila! Your distances will be in the tutorial/distances folder. Enjoy!
 
 
 Example Tutorial 2 (with subspecies identification)
 ===================
 
-## Fetch and unpack test data
+This test example uses in silico generated data and will take more space and time to complete than the previous one due to the larger number of samples required for subspecies identification.
 
-    wget http://swifter.embl.de/~ralves/metaSNV_test_data/testdata.tar.xz
-    tar xvf testdata.tar.xz && rm -f testdata.tar.gz
+1. Fetch and unpack test data
 
-## Run all steps of metaSNV v2 with the test data
+```
+wget http://swifter.embl.de/~ralves/metaSNV_test_data/testdata.tar.xz
+tar xvf testdata.tar.xz && rm -f testdata.tar.gz
+```
 
-Call SNVs:
+This will need 344M.
 
-    ./metaSNV.py output testdata/all_samples testdata/ref/allReferenceGenomes.fasta
+**Run all steps of metaSNV v2 with the test data:**
 
-Filter SNVs:
+2. Call SNVs:
 
-    ./metaSNV_Filtering.py output
-    
-Calculate distances between samples based on SNV profiles:
-    
-    ./metaSNV_DistDiv.py --filt output/filtered/pop --dist
-    
-Detect clusters of samples that correspond to within-species subpopulations:
+```
+python metaSNV.py output testdata/all_samples testdata/ref/allReferenceGenomes.fasta
+```
 
-    ./metaSNV_subpopr.R -i output -g testdata/abunds/geneAbundances.tsv -a testdata/abunds/speciesAbundances.tsv
+3. Filter SNVs:
 
+```
+python metaSNV_Filtering.py output
+```
+
+4. Calculate distances between samples based on SNV profiles:
+
+```
+python metaSNV_DistDiv.py --filt output/filtered/pop --dist
+```
+
+5. Detect clusters of samples that correspond to within-species subpopulations:
+
+```
+Rscript metaSNV_subpopr.R -i output -g testdata/abunds/geneAbundances.tsv -a testdata/abunds/speciesAbundances.tsv
+```
 
 See the full documentation for details on parameters, inputs, outputs, and the method.
