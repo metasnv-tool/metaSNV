@@ -125,41 +125,7 @@ Note: requires SNV calling, filtering, and distance calculations to be done (Par
 
 To determine abundances of subspecies relative to the whole community, you will also need to provide species abundance profiles. To determine subspecies-associated gene content, you will need to provide per-metagenome gene abundance profiles. See the full documentation for details.
 
-Example Tutorial 1 (no subspecies identification)
-===================
-
-1. Run the setup & compilation steps and download the provided reference database. 
-
-2. Go to the EXAMPLE directory and download the samples using the getExp.sh script
-
-```
-cd EXAMPLE
-./getExp.sh
-```
-
-3. Make sample list
-
-```
-find `pwd`/EXAMPLE/samples -name "*.bam" > sample_list
-```
-
-4. Run the SNV calling step
-
-```
-python metaSNV.py tutorial sample_list db/freeze9.genomes.RepGenomesv9.fna --threads 8
-```
-
-5. Run filtering and post processing
-
-```
-python metaSNV_Filtering.py tutorial 
-python metaSNV_DistDiv.py --filt tutorial/filtered/pop --dist
-``` 
-
-Voila! Your distances will be in the tutorial/distances folder. Enjoy!
-
-
-Example Tutorial 2 (with subspecies identification)
+Example Tutorial 
 ===================
 
 This test example uses in silico generated data and will take more space and time to complete than the previous one due to the larger number of samples required for subspecies identification.
@@ -171,7 +137,7 @@ wget http://swifter.embl.de/~ralves/metaSNV_test_data/testdata.tar.xz
 tar xvf testdata.tar.xz && rm -f testdata.tar.gz
 ```
 
-This will need 344M.
+This will need 400M of space and should take less than 10 minutes to run in total.
 
 **Run all steps of metaSNV v2 with the test data:**
 
