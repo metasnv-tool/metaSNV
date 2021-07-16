@@ -7,7 +7,7 @@ metaSNV supports variant (SNV) calling on metagenomic data and population geneti
 - metaSNV v1 paper: https://doi.org/10.1371/journal.pone.0182392
 
 
-See the full documentation for more details and a tutorial on this page.
+See the full [documentation](https://github.com/metasnv-tool/metaSNV/tree/master/documentation) for more details and an test example on this page below.
 
 Download
 ========
@@ -165,4 +165,4 @@ python metaSNV_DistDiv.py --filt output/filtered/pop --dist
 Rscript metaSNV_subpopr.R -i output -g testdata/abunds/geneAbundances.tsv -a testdata/abunds/speciesAbundances.tsv
 ```
 
-See the full documentation for details on parameters, inputs, outputs, and the method.
+See the full [documentation](https://github.com/metasnv-tool/metaSNV/tree/master/documentation) for details on parameters, inputs, outputs, and the method.
