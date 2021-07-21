@@ -182,9 +182,17 @@ This command calculated pairwise dissimilarities between samples based on filter
 Rscript metaSNV_subpopr.R --procs 3 -i output -g testdata/abunds/geneAbundances.tsv -a testdata/abunds/speciesAbundances.tsv
 ```
 
-This command detected subspecies. The results are in the `results/params.hr10.hs80.ps80.gs80/output/` folder. See the manual for a description of all the files produced. A summary of the results is provided in `results/params.hr10.hs80.ps80.gs80/output/resultsSummary.html` and `results/params.hr10.hs80.ps80.gs80/output/summary_allResults.csv` an overview of the results per species is provided in the files named with pattern: `refGenome*clus_detailedSpeciesReport.html`. 
+This command detected subspecies. The results are in the `results/params.hr10.hs80.ps80.gs80/output/` folder. See the manual for a description of all the files produced. 
 
-This will include PCoA plots illustrating the clustering and tables with the number of distinctive genes. 
+A summary of the results is provided in `results/params.hr10.hs80.ps80.gs80/output/resultsSummary.html` and `results/params.hr10.hs80.ps80.gs80/output/summary_allResults.csv`.
+
+![image](https://user-images.githubusercontent.com/6667809/126518980-b8521bbd-0cb8-4433-b16d-1abb4e5bf1ed.png)
+
+
+An overview of the results per species is provided in the files named with pattern: `refGenome*clus_detailedSpeciesReport.html`. 
+
+This will include PCA plots illustrating the clustering and tables with the number of distinctive genes. For example, for in silico "species" "refGenome3clus":
+
 <img src="https://user-images.githubusercontent.com/6667809/126517961-d86d2c60-809c-4815-821a-8a76b1f4f3d5.png" alt="plot.png" width="50%"/>
 
 
