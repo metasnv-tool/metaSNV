@@ -131,7 +131,9 @@ To determine abundances of subspecies relative to the whole community, you will 
 Example Tutorial 
 ===================
 
-This test example uses in silico generated data and will take more space and time to complete than the previous one due to the larger number of samples required for subspecies identification.
+This test example uses in silico generated data so that results compute quickly. There are 160 metagenomic samples with abundance of 3 species. The 'species' are called "refGenome1clus", "refGenome2clus", and "refGenome3clus", with 1, 2, and 3 subspecies, respectively. See the manual for details on the formats of the output files.
+
+This will need 450M of disk space and, after the downloads are complete, should take approximately 5 minutes to run with 3 processors/threads or 15 minutes unparallelised.
 
 1. Fetch and unpack test data
 
@@ -140,32 +142,50 @@ wget http://swifter.embl.de/~ralves/metaSNV_test_data/testdata.tar.xz
 tar xvf testdata.tar.xz && rm -f testdata.tar.gz
 ```
 
-This will need 400M of space and should take less than 10 minutes to run in total.
-
 **Run all steps of metaSNV v2 with the test data:**
 
 2. Call SNVs:
 
 ```
-python metaSNV.py output testdata/all_samples testdata/ref/allReferenceGenomes.fasta
+python metaSNV.py --threads 3 output testdata/all_samples testdata/ref/allReferenceGenomes.fasta
 ```
+
+Your SNVs are now in `output/snpCaller/called_SNPs`. You should have 6238 SNVs in this file, one per line.
 
 3. Filter SNVs:
 
 ```
-python metaSNV_Filtering.py output
+python metaSNV_Filtering.py --n_threads 3 output
 ```
+
+This command filtered your SNVs (with default paramters) and calculated allele frequencies. Your filtered SNV allele frequencies are now in the `output/filtered/pop/` folder. Each species has its own file.
+
+The number of SNVs expected per file are:
+|# SNVs|File|
+|-|-|
+|1023|output/filtered/pop/refGenome1clus.filtered.freq|
+|2075|output/filtered/pop/refGenome2clus.filtered.freq|
+|3061|output/filtered/pop/refGenome3clus.filtered.freq|
+
 
 4. Calculate distances between samples based on SNV profiles:
 
 ```
-python metaSNV_DistDiv.py --filt output/filtered/pop --dist
+python metaSNV_DistDiv.py --n_threads 3 --filt output/filtered/pop --dist
 ```
+
+This command calculated pairwise dissimilarities between samples based on filtered SNV allele frequencies. Your filtered SNV allele frequencies are now in the `output/distances` folder. Each species has its own file with 160 samples (161 lines with the header).
 
 5. Detect clusters of samples that correspond to within-species subpopulations:
 
 ```
-Rscript metaSNV_subpopr.R -i output -g testdata/abunds/geneAbundances.tsv -a testdata/abunds/speciesAbundances.tsv
+Rscript metaSNV_subpopr.R --procs 3 -i output -g testdata/abunds/geneAbundances.tsv -a testdata/abunds/speciesAbundances.tsv
 ```
+
+This command detected subspecies. The results are in the `results/params.hr10.hs80.ps80.gs80/output/` folder. See the manual for a description of all the files produced. A summary of the results is provided in `results/params.hr10.hs80.ps80.gs80/output/resultsSummary.html` and `results/params.hr10.hs80.ps80.gs80/output/summary_allResults.csv` an overview of the results per species is provided in the files named with pattern: `refGenome*clus_detailedSpeciesReport.html`. 
+
+This will include PCoA plots illustrating the clustering and tables with the number of distinctive genes. 
+<img src="https://user-images.githubusercontent.com/6667809/126517961-d86d2c60-809c-4815-821a-8a76b1f4f3d5.png" alt="plot.png" width="50%"/>
+
 
 See the full [documentation](https://github.com/metasnv-tool/metaSNV/tree/master/documentation) for details on parameters, inputs, outputs, and the method.
