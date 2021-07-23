@@ -135,7 +135,7 @@ This test example uses in silico generated data so that results compute quickly.
 
 This will need 450M of disk space and, after the downloads are complete, should take approximately 5 minutes to run with 3 processors/threads or 15 minutes unparallelised.
 
-1. Fetch and unpack test data
+## 1. Fetch and unpack test data
 
 ```
 wget http://swifter.embl.de/~ralves/metaSNV_test_data/testdata.tar.xz
@@ -144,15 +144,18 @@ tar xvf testdata.tar.xz && rm -f testdata.tar.gz
 
 **Run all steps of metaSNV v2 with the test data:**
 
-2. Call SNVs:
+## 2. Call SNVs:
 
 ```
 python metaSNV.py --threads 3 output testdata/all_samples testdata/ref/allReferenceGenomes.fasta
 ```
 
-Your SNVs are now in `output/snpCaller/called_SNPs`. You should have 6238 SNVs in this file, one per line.
+Your SNVs are now in `output/snpCaller/`. 
 
-3. Filter SNVs:
+- If you ran with >1 thread: Your SNVs are now in files named with the pattern: `output/snpCaller/called_SNPs.best_split_*`. If you ran with 3 threads, then each species will have it's own file and you should have 1080, 2094, and 3064 SNVs per file, one per line.  
+- If you ran with 1 thread: Your SNVs are now in `output/snpCaller/called_SNPs`. You should have 6238 SNVs in this file, one per line.
+
+## 3. Filter SNVs:
 
 ```
 python metaSNV_Filtering.py --n_threads 3 output
@@ -168,7 +171,7 @@ The number of SNVs expected per file are:
 |3061|output/filtered/pop/refGenome3clus.filtered.freq|
 
 
-4. Calculate distances between samples based on SNV profiles:
+## 4. Calculate distances between samples based on SNV profiles:
 
 ```
 python metaSNV_DistDiv.py --n_threads 3 --filt output/filtered/pop --dist
@@ -176,7 +179,7 @@ python metaSNV_DistDiv.py --n_threads 3 --filt output/filtered/pop --dist
 
 This command calculated pairwise dissimilarities between samples based on filtered SNV allele frequencies. Your filtered SNV allele frequencies are now in the `output/distances` folder. Each species has its own file with 160 samples (161 lines with the header).
 
-5. Detect clusters of samples that correspond to within-species subpopulations:
+## 5. Detect clusters of samples that correspond to within-species subpopulations:
 
 ```
 Rscript metaSNV_subpopr.R --procs 3 -i output -g testdata/abunds/geneAbundances.tsv -a testdata/abunds/speciesAbundances.tsv
