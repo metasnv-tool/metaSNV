@@ -70,6 +70,7 @@ geneFamilyType <- params$geneFamilyType
 # Settings
 
 ```{r}
+
 do.call(rbind,params) %>% data.frame(stringsAsFactors = F) %>% DT::datatable()
 ```
 
