@@ -535,13 +535,14 @@ plotPCoAs <- function(pcoa,clustDf,filePrefix,freq_data_sample,outDir, minPropHo
   minFrq <- round(min(pcoa_df$propFreqHomog,na.rm = T),2)
   nClusters <- length(levels(as.factor(pcoa_df$clust)))
   png(paste0(outDir,filePrefix,'_clustering.png'),res = 300,width = 12,height = 18,units = "cm")
+  speciesName <- sub(filePrefix,pattern = "_mann",replacement = "")
   gridExtra::grid.arrange(
 
     ggplot2::ggplot(pcoa_df,ggplot2::aes(x=Axis.1,y=Axis.2)) +
       ggplot2::geom_point(ggplot2::aes(fill=as.factor(clust)),alpha=0.5,
                           colour="black", # for point outlines
                           shape = 21) + # shapes >= 21 have black outlines
-      ggplot2::ggtitle(filePrefix)+
+      ggplot2::ggtitle(speciesName)+
       scale_fill_brewer(name="Subspecies",palette = "Dark2")+#palette = 3,type = "qual")+
       #scale_fill_viridis_d("Subspecies dominant",alpha=0.7)+
       ggplot2::xlab(sprintf("PC1: %3.1f%%",eig[1])) +
@@ -551,7 +552,8 @@ plotPCoAs <- function(pcoa,clustDf,filePrefix,freq_data_sample,outDir, minPropHo
     ggplot(pcoa_df,aes(x=Axis.1,y=Axis.2)) +
       geom_point(aes(fill=round(propFreqHomog,2),
                      shape = as.factor(clust)),size=2,alpha=0.7, colour="black") +
-      ggplot2::ggtitle(paste0(filePrefix, " (range:",minFrq,"-",maxFrq ,")")) +
+      #ggplot2::ggtitle(paste0(speciesName, " (range:",minFrq,"-",maxFrq ,")")) +
+      ggplot2::ggtitle(speciesName)+
       scale_shape_manual(name="Subspecies dominant",
                          values = rep(c(22,23,24,25),times=ceiling(nClusters/4)),
                          na.translate=T,na.value=21) +
