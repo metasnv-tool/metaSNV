@@ -1,5 +1,5 @@
 ---
-title: "MetaSNV2 Detailed Species Report"
+title: "MetaSNV v2 Detailed Species Report"
 date: "`r Sys.Date()`"
 output:
   html_document:
@@ -8,7 +8,6 @@ output:
     smart: no
     toc: yes
     df_print: paged
-    toc_float: yes
 params:
   distMethod:
     value: mann
@@ -75,9 +74,21 @@ theme_set(theme_bw())
 # bamSuffix <- ".fr11v2UL_subspec71.unique.sorted.bam"
 # doGenoPos <- F
 # psCut <- 0.8
+
+
+speciesID <- "refGenome2clus"# "155864"
+subpopOutDir <- "~/Dropbox/PostDocBork/subspecies/toolDevelopment/tutorial/v2_tutorial/results/params.hr10.hs80.ps80.gs80/output/"
+metasnvOutDir <- "~/Dropbox/PostDocBork/subspecies/toolDevelopment/tutorial/v2_tutorial/output/"
+distMethod <- "mann"
+#bamSuffix <- ".fr11v2UL_subspec71.unique.sorted.bam"
+doGenoPos <- T
+psCut <- 0.8
+source("../../R/getSpeciesTaxonomy.R")
+source("../../R/utils.R")
+TAXA.NCBI.MOTU.MAP <- readRDS("../../data/TAXA.NCBI.MOTU.MAP.Rds")
 ```
 
-# Species `r as.character(speciesID)`
+<font size="14">**Species: "`r as.character(speciesID)`"**</font>
 
 ```{r}
 
@@ -101,14 +112,15 @@ if(length(speciesFiles)==0){
 }
 ```
 
-## Taxonomic classification
+# Taxonomic classification
 
 ```{r}
 taxaDf <- getSpeciesTaxonomy(speciesID)
 if(is.null(taxaDf)){
   print(paste("Taxonomy unknown for ",speciesID))
+}else{
+  taxaDf
 }
-taxaDf
 ```
 
 # Full starting data
@@ -132,25 +144,29 @@ if(max(nasPerSample)>0){
   head(nasPerSample,n=5)
 }
 
-```
-
-
-```{r}
 naSamp <- names(nasPerSample[nasPerSample == dim(distMatrixRaw)[1]])
 if(length(naSamp)>0){
   print("Some samples were removed because all their values from metaSNV were NA: ")
   naSamp  
 }
+naSampDots <- gsub(naSamp,pattern = "-",replacement = ".",fixed = T)
 ```
 
+The heatmap below shows the dissimilarities between all samples based on their SNV profiles. Samples are shown if they had sufficent abundance of this species. The clustering method used is "`r hclustMethodForHeatmaps` clustering", which is not the same as used to identify subspecies. This is for illustration purposes only.
 
 ```{r}
-naSampDots <- gsub(naSamp,pattern = "-",replacement = ".",fixed = T)
 x <- distMatrixRaw[! gsub(rownames(distMatrixRaw),pattern = "-",
                          replacement = ".",fixed = T) %in% c(naSamp,naSampDots),
               !colnames(distMatrixRaw) %in% c(naSamp,naSampDots)]
 heatmap(x,distfun = as.dist,scale="none",
         hclustfun = function(x){hclust(x,method=hclustMethodForHeatmaps)})
+
+legend(x="bottomleft", cex = 0.75, bg='white',
+       legend=c(paste0("min: ",round(min(x,na.rm = T),2)), 
+                             #paste0("mid: ",round((max(x,na.rm = T)-min(x,na.rm = T))/2,2)) , 
+                             paste0("max: ",round(max(x,na.rm = T),2))) ,
+       fill=c("#FFFFC8",#"orange",
+              "brown4"))
 ```
 
 ```{r}
@@ -174,9 +190,13 @@ if(!is.null(clustering$outliersRemoved) & length(clustering$outliersRemoved) > 0
 ```
 
 
-# Identifying ideal number of clusters and picking medoids
+# Determining the number of subspecies (clusters) and identifying medoids
 
-## Samples filtered by proportion of SNVs with nearly homogenous alleles
+## Selecting samples for subspecies discovery
+
+For each species, a “discovery subset” of metagenomes is selected wherein the species is abundant and its population likely contains a single subspecies. The latter criterium is satisfied if a metagenome contains minimal internal allele variation relative to the SNV variation across all sampled metagenomes (e.g. at least 80% of the dataset-wide species SNVs have the same allele in over 90% of reads in a metagenome). Requiring each subspecies to make up nearly the entire observed population in several metagenomes has been previously used (Costea, Coelho, et al., 2017), and since conceptualised as “quasi-phaseability” (Garud et al., 2019). The default parameters target subspecies but can be altered to detect subpopulations defined in a more stringent or lenient way (i.e. with varying levels of diversity between and within them) (discussed in Suppl. Info 2). If no metagenomes meet the discovery subset criteria for a species, then subspecies cannot be detected.
+
+These plots show how the parameter cut off values affect the sample choice. The dotted lines are the paramter values used. Each line is a sample. Samples that are above the horizontal dotted line at the vertical dotted line are accepted into the "discovery subset".
 
 ```{r snvFreq plots, error=T,comment=NA}
 
@@ -210,11 +230,7 @@ if(file.exists(f1)){
 
 ```
 
-## Samples used for medeoid definition
-
-Samples that have mostly homogenous alleles in most of their SNV positions
-
-Black side bar indicates the samples that were used in deciding the number of clusters
+Now we look at the distances again, but with a top annotation bar which highlights the samples that passed the discovery subset criteria (in black). These samples will be used in determining the number of subspecies (clusters). 
 
 ```{r heat1}
 inClusDist <- rownames(distMatrixPostBasicQC) %in% rownames(distMatrixUsedForClus)
@@ -226,12 +242,25 @@ heatmap(symm = T,scale = "none",x = distMatrixToPlot,distfun = as.dist,
         hclustfun = function(x){hclust(x,method=hclustMethodForHeatmaps)}, 
         ColSideColors = c("white","black")[as.numeric(inClusDist)+1])
 
+legend(x="bottomleft", cex = 0.75,bg='white',
+       fill=c("#FFFFC8","brown4"), 
+       legend=c(paste0("min: ",round(min(distMatrixToPlot,na.rm = T),2)), 
+                             paste0("max: ",round(max(distMatrixToPlot,na.rm = T),2))) )
 ```
 
 
+
+## Determining clusters
+
+Now we look at the distances again, but now only considering the samples that passed the criteria to be included in the "discovery subset". These are samples that have mostly homogeneous alleles in most of their SNV positions.
+
+The samples below comprise the subspecies "discovery subset". These are the samples that passed the "hr" & "hs" parameter thresholds.
+
+These are the samples that are used to determine the number of clusters seen for this species and from which the cluster mediods will be determined.
+
 Number of samples used for clustering  (for medoid identification): `r dim(distMatrixUsedForClus)[1]`
 
-Heatmap re-drawn only with samples used for medoid identification:
+Heatmap re-drawn only with "discovery subset" samples:
 
 ```{r heat2}
 distMatrixToPlot <- distMatrixUsedForClus
@@ -239,12 +268,19 @@ rownames(distMatrixToPlot) <- sub(rownames(distMatrixToPlot),pattern = bamSuffix
 colnames(distMatrixToPlot) <- sub(colnames(distMatrixToPlot),pattern = bamSuffix,replacement = "",fixed = T)
 heatmap(symm = T,scale = "none",x = distMatrixToPlot,distfun = as.dist,
         hclustfun = function(x){hclust(x,method="complete")})
-
+legend(x="bottomleft", cex = 0.75,bg='white',
+       fill=c("#FFFFC8","brown4"), 
+       legend=c(paste0("min: ",round(min(distMatrixToPlot,na.rm = T),2)), 
+                             paste0("max: ",round(max(distMatrixToPlot,na.rm = T),2))) )
 ```
 
-## Picking ideal number of clusters
+## Determinng the ideal number of subspecies (clusters)
 
-### Confidence (PS) values
+This discovery subset of metagenomes is then tested for robust clustering based on their SNV-profile dissimilarities. Clustering confidence is assessed using repeated subsampling and the Prediction Strength algorithm (Tibshirani and Walther, 2005), which yield confidence scores for both the number of clusters and their compositions.
+
+### Confidence scores (Prediction Strength algorithm values)
+
+The Prediction Strength algorithm yields 50 values per tested number of clusters (black dots). If the mean value (red asterix) is above the threshold (horizontal dotted line), then this number of clusters is supported. The final number of clusters is the largest number to have a mean value above the threshold. 
 
 ```{r}
 psFile <- paste0(subpopOutDir,"/",speciesID,"_",distMethod,"_PS_values.tab")
@@ -259,16 +295,7 @@ psVals <- read_tsv(file = psFile,skip = 1,col_names = c("nClus","confidence"),co
   nClus = col_integer(),
   confidence = col_double()
 ) ) 
-psVals %>%
-ggplot(aes(x=as.factor(nClus),y=confidence))+
-  geom_bar(stat="identity")+
-  geom_hline(yintercept = psCut,linetype=2)+
-  geom_text(aes(label=round(confidence,2)),nudge_y = -0.05,color="white")+
-  xlab("Number of clusters")+theme_bw()+ylab("Prediction Strength")
-```
 
-
-```{r}
 if(!is.null(clustering)){
   # prediction for nclusters == 1 is 1
   clustering$psValsAll[[1]] <- rep(1,length(clustering$psValsAll[[2]]))
@@ -286,7 +313,9 @@ if(!is.null(clustering)){
 }
 ```
 
-### Cluster stability
+### Subspecies (cluster) stability
+
+The results in the plots below give a reading of whether the number of samples used in the study was high enough relative to the diversity within the (sub)populations. The minimal number of samples that are required will vary based on the populations and the species being considered.
 
 #### Summary 
 
@@ -298,15 +327,26 @@ Confidence in each cluster's _composition_:  **`r paste(clustering$stabilityAsse
 
 See plots below for detailed information.
 
-#### Number of clusters
+#### Number of clusters (rarefaction analysis)
+
+In order to assess whether the number of metagenomes (samples) is sufficient for a stable subspecies (cluster) estimate, the Prediction Strength algorithm is repeated for random subsets of the data. The metagenomes are subsampled randomly 10 times to create datasets that are 90%, 80%, 70% etc of the original size. The Prediction Strength algorithm is then run for each of these datasets. The plot below illustrates the result of this analysis. 
 
 ```{r clustNumStabPlotBoxHeat,error=TRUE}
 f<- paste0(subpopOutDir,"/",speciesID,"_",distMethod,"_clusNumStability-heatmap.png")
 if(file.exists(f)){try(knitr::include_graphics(f))}else{print(paste0("Can't find file: ",f))}
 ```
 
+Classification in the confidence in the number of clusters is derived based on these results. 
+
+-	High confidence: same number of clusters predicted in every iteration when using 100% & 90% & 80% of data
+-	Medium confidence: same number of clusters predicted in every iteration when using 100% of data
+-	Low confidence: number of clusters predicted is unstable
+
+Here, confidence in the _number_ of clusters is: **`r clustering$stabilityAssessment$numClusStabScore`**
 
 #### Confidence in each cluster's composition
+
+The stability of the cluster membership is also assessed using the clusterboot method from the fpc package, using the “subset” bootstrapping method. This results in Jaccard subset mean data and the subset recovery index (subsetrecover/subsetbrd = [clusterwise number of times a cluster has been successfully recovered] / [clusterwise number of times a cluster has been dissolved]). 
 
 ```{r}
 if(clustering$numClusters == 1){
@@ -329,33 +369,16 @@ if(clustering$numClusters > 1){
 }
 ```
 
+Cluster membership stability is also scored, per cluster:
 
-```{r}
-# if(clustering$numClusters == 1){
-#   print(paste0("No clusters detected for this species."))
-#   knit_exit()
-# }
-```
+-	High: both stability measures > 0.9 when using >=70% of data
+-	Medium: both stability measures > 0.9 when using >=90% of data
+-	Low: does not meet criteria above
 
-
-```{r fuzzClustRes,eval=F,echo=F}
-### Fuzzy clustering result 
-
-# fuzzyClusterResult <-  clustering$fuzzyClusterResult
-# if(!is.null(fuzzyClusterResult)){
-# nClus <- ncol(fuzzyClusterResult$membership)
-# c10 <- viridisLite::plasma(n=nClus)# colorspace::qualitative_hcl(4, palette = "Set 2")
-# plot(fuzzyClusterResult,which=1,main = "Fuzzy clustering result",
-#      dist=clustering$dist)
-# toPlot <- fuzzyClusterResult$membership[names(sort(fuzzyClusterResult$clustering)),]
-# heatmap(toPlot,
-#           scale = "none",Rowv = NA,
-#           RowSideColors = c10[fuzzyClusterResult$clustering[rownames(toPlot)]])
-# }
-```
+Confidence in each cluster's _composition_:  **`r paste(clustering$stabilityAssessment$clusMembStabScores,collapse=",")`**
 
 
-## Initial cluster assignments
+# Cluster assignments
 
 
 ```{r}
@@ -366,10 +389,13 @@ if(!file.exists(clustFile)){
 }
 ```
 
-Clusters are made using fpc::claraCBI. 
-Heatmap here is only for illustration; it uses centroid clustering overall (i.e. a different method from actualy clustering algorithm)
+Based on the above determined number of clusters, clusters are composed using fpc::claraCBI. 
 
-Clusters that are too small have been discarded here
+Now we look at the between-sample distances again. Here again we have the top annotation bar which highlights the samples that passed the discovery subset criteria (in black). Now on the left, we also have the cluster membership.
+
+The heatmap here is again only for illustration; it uses a different method from the actual clustering algorithm (here using  "`r hclustMethodForHeatmaps`" clustering)
+
+Clusters that did not pass the size filter (were too small) are not displayed here.
 
 ```{r heat3}
 clusterAssignments_init <- read_tsv(clustFile,skip = 1,col_names = c("sampleID","cluster"),
@@ -378,7 +404,8 @@ clusterAssignments_init <- read_tsv(clustFile,skip = 1,col_names = c("sampleID",
   cluster = col_factor(levels = NULL)
 ))
 
-clustAssign <-  data.frame(sampleID=rownames(distMatrixPostBasicQC),stringsAsFactors = F) %>% left_join(clusterAssignments_init,by = "sampleID")
+clustAssign <-  data.frame(sampleID=rownames(distMatrixPostBasicQC),stringsAsFactors = F) %>% 
+  left_join(clusterAssignments_init,by = "sampleID")
 
 distMatrixToPlot <- distMatrixPostBasicQC
 rownames(distMatrixToPlot) <- sub(rownames(distMatrixToPlot),pattern = bamSuffix,replacement = "",fixed = T) 
@@ -387,18 +414,33 @@ colnames(distMatrixToPlot) <- sub(colnames(distMatrixToPlot),pattern = bamSuffix
 inClusDist <- rownames(distMatrixPostBasicQC) %in% rownames(distMatrixUsedForClus)
 nClus <- length(unique(as.numeric(clustAssign$cluster)))
 
-```
 
-The coloured side bar indicates cluster sample belongs to, the black and white top bar indicates whether sample was used to define cluster medioids.
+x <- scale_fill_brewer(name="Subspecies",palette = "Dark2")
 
-```{r heat4}
+
 heatmap(symm = T,scale = "none",x = distMatrixToPlot,distfun = as.dist,
         hclustfun = function(x){hclust(x,method=hclustMethodForHeatmaps)},
-        RowSideColors = c("grey80",viridisLite::viridis(n=nClus))[as.numeric(clustAssign$cluster)+1],
-        ColSideColors = c("white","black")[as.numeric(inClusDist)+1],
-        main = "Cluster construction")
+        RowSideColors = c("grey80",x$palette(n=nClus))[as.numeric(clustAssign$cluster)+1],
+        ColSideColors = c("white","black")[as.numeric(inClusDist)+1])
+
+cc <- unique(c("grey80",x$palette(n=nClus))[as.numeric(clustAssign$cluster)+1])
+cc <- cc[!is.na(cc)]
+x <- unique(as.numeric(clustAssign$cluster))
+names(cc) <- x[!is.na(x)]
+
+legend(x="topleft", cex = 0.75,
+       fill=cc, bg='white',
+       legend=1:length(cc) )
+
+legend(x="bottomleft", cex = 0.75,bg='white',
+       fill=c("#FFFFC8","brown4"), 
+       legend=c(paste0("min: ",round(min(distMatrixToPlot,na.rm = T),2)), 
+                             paste0("max: ",round(max(distMatrixToPlot,na.rm = T),2))) )
 ```
 
+These distances and cluster memberships can also be visualised as a PCoA plot. Here computed using `ape::pcoa()`. 
+
+First the metagenomes (samples, points) are coloured by subspecies (cluster) membership. No colouring means the sample was not included in the discovery set, likely because it was not purely made up of one subspecies.
 
 ```{r clustering pca,error=TRUE}
 
@@ -411,12 +453,22 @@ if(file.exists(f)){try(knitr::include_graphics(f))}else{print(paste0("Can't find
 # if only one cluster, stop here
 if( length(unique(clusterAssignments_init$cluster)) == 1 ){
   print("No substructure detected. Stopping.")
+}
+
+if( length(unique(clusterAssignments_init$cluster)) == 1 ){
+  print(sessionInfo())
   knit_exit()
 }
 ```
 
+# Subspecies genotyping
 
-# Subspecies genotyping positions
+If subspecies were detected for a species, then SNVs are identified that are distinctive to each subspecies (cluster). These SNVs are called “genotyping SNVs” or “gSNVs”. These SNVs will be used to detect the presence and abundance of each subspecies across all the samples in the study (in the raw SNV results). They can also be used for any sample (see manual).
+
+The mean abundance of each SNV across samples is compared between samples within a cluster versus those in another cluster (pairwise). The intersection of these pairwise comparisons is taken, so that each genotyping SNV is specifically distinctive of each cluster. A SNV is considered a genotyping SNV if an allele’s mean abundance within the cluster is more than 80 percentage points higher than the mean abundance in all other clusters. This threshold can be altered using the `genotypingThreshold` parameter. Positions with insufficient depth of coverage were removed prior to calculation of means. A SNV is only considered as a possible genotyping SNV if it has sufficient coverage in at least 80% of samples within each cluster. Sufficient coverage is determined by the filtering parameters used in metaSNV_Filtering.py
+
+The median abundance of the genotyping SNVs is then calculated for each sample in each cluster. If the relative abundance of the clusters within a sample sum to greater than 120% or to less than 80% then the sample is rejected as not being well classified. If more than 15% of samples are rejected then the genotyping is considered to have failed and genotyping SNVs are not produced for this species. 
+
 
 ```{r}
 
@@ -450,20 +502,23 @@ genoPos <- purrr::map_df(genotypingPositionFiles,
 Number of distinctive SNVs per genotype:
 
 ```{r}
-count(genoPos,cluster,name = "numberSNVPositions")
+count(genoPos,cluster,name = "Number of SNV Positions") %>% rename(Subspecies=cluster)
 
 ```
 
+Here the position of each genotyping SNV, relative to the reference species genome, is shown.
 
 ```{r, eval=doGenoPos}
 if(doGenoPos){
-ggplot(genoPos, aes(x=position,fill=majorAllele))+geom_histogram(bins = 30)+
+ggplot(genoPos, aes(x=position))+geom_histogram(bins = 30)+
   #+xlim(c(min(genoPos$refStart),max(genoPos$refEnd)))
   facet_grid(.~cluster)
 }
 ```
 
-# Genotype frequency in samples used to define genotype
+## Genotype frequency in samples used to define genotype
+
+These plots provide a sanity check view to assess the abundance of the genotyping SNVs in the discovery subset samples.
 
 ```{r}
 hfmedianFile <- paste0(subpopOutDir,"/",speciesID,"_hap_freq_median.tab")
@@ -505,20 +560,26 @@ hap_freq$sampleIDtoPlot <- sub(hap_freq$sampleID,pattern = bamSuffix,replacement
 
 ```
 
-Number of samples:
+Number of samples with data:
 ```{r}
 hap_freq$sampleID %>% unique() %>% length()
 ```
 
+Frequency of genotyping SNV alleles within each sample (rows), separated into plot sections based on the subspecies each sample belongs to. Mean and median frequency of the genotyping SNVs are shown (subplot columns). The 
+median value was used in genotyping SNV selection.
 
 ```{r}
-
 ggplot(hap_freq,aes(y=sampleIDtoPlot,x=freq))+
   geom_point(alpha=0.2)+
   facet_grid(cluster~averagingMethod,switch = "both")+theme(panel.grid = element_blank())+
   ylab("Samples")+xlab("Average frequency of genotyping SNV alleles within sample")+
   theme(axis.text.y = element_blank(), axis.ticks.y = element_blank())
+```
 
+Same data as above, but plotted as a histogram with the frequency of genotyping SNV alleles within each sample on the x axis and the number of samples on the y axis. Mean and median frequency of the genotyping SNVs are shown (subplot columns). The median value was used in genotyping SNV selection.
+
+
+```{r}
 ggplot(hap_freq,aes(x=freq))+
   geom_histogram(binwidth = 5)+
   facet_grid(cluster~averagingMethod,switch = "both")+
@@ -526,6 +587,7 @@ ggplot(hap_freq,aes(x=freq))+
 
 ```
 
+Abundance of each subspecies per sample as calculated based on the genotyping SNVs. 
 
 ```{r}
 hap_freq <- hap_freq %>% 
@@ -539,34 +601,53 @@ hap_freq <- hap_freq %>%
   mutate(sampleID = factor(sampleID)) %>% 
   mutate(sampleID = forcats::fct_reorder(sampleID,freqClus1)) %>% 
   ungroup() %>% 
-  mutate(majorCluster = paste("Samples that defined subspecies",majorCluster)) %>% 
-  mutate(cluster = as.factor(sub(x = cluster, pattern = "^X",replacement = "subspecies genotype "))) 
-
-hap_freq %>% 
-ggplot(aes(fill=cluster,x=sampleID,y=freq))+
-  geom_bar(stat = "identity")+
-  coord_flip()+
-  facet_grid(majorCluster~averagingMethod,scales="free_y",space="free_y",switch = "both")+
-  ylab("Average frequency (percent abundance) of subspecies' genotype")+
-  xlab("Samples")+
-  #scale_fill_discrete(name="Subspecies")
-  scale_fill_viridis_d("Subspecies")
-
+  mutate(majorClusterL = paste("Samples that defined \nsubspecies",majorCluster)) %>% 
+  mutate(majorClusterS = paste("Subspecies",majorCluster)) %>% 
+  mutate(cluster = as.factor(sub(x = cluster, pattern = "^X",replacement = "subspecies genotype ")))
 ```
+
+
+This plot summarises the abundance of each subspecies based on its genotyping SNVs. Abundances are separated out into groups (column subplots) based on the subspecies each sample belongs to.
 
 ```{r}
 hap_freq %>% 
 ggplot(aes(x=cluster,y=freq))+
   geom_boxplot()+
   geom_violin(alpha=0.1)+#geom_dotplot(binaxis = "y",binwidth = 2)+
-  facet_grid(.~majorCluster,scales="free_y")+
+  facet_grid(.~majorClusterL,scales="free_y")+
   ylab("Abundance of cluster's genotype \n in samples assigned to each cluster")+
   xlab("Genotype")
 
 ```
 
+Here, every row is a sample, with the abundance of each subspecies (based on genotyping SNVs) coloured by subspecies. 
 
-# Extended clustering
+```{r}
+hap_freq %>% 
+ggplot(aes(fill=cluster,x=sampleID,y=freq))+
+  geom_bar(stat = "identity")+
+  coord_flip()+
+  facet_grid(majorClusterS~averagingMethod,scales="free_y",space="free_y",switch = "both")+
+  ylab("Average frequency (percent abundance) of subspecies' genotype")+
+  xlab("Samples grouped into the clusters they composed")+
+  scale_fill_manual(values = cc,name="Subspecies")+
+  #scale_fill_viridis_d("Subspecies")+
+  theme(axis.text.y = element_blank())
+
+```
+
+
+## Extended clustering
+
+The genotyping SNVs are also profiled in the full set of samples provided (any that had SNV calls from the metaSNV.py script). The resultant subspecies abundances are show below. 
+
+This is called extended clustering because samples will be assigned to each cluster based on their most abundant subspecies.
+
+The plots below:
+
+1) summarise the abundance of each subspecies based on its genotyping SNVs. Abundances are separated out into groups (column subplots) based on the subspecies each sample belongs to.
+2) show every sample as a row, with the abundance of each subspecies (based on genotyping SNVs) coloured by subspecies 
+
 
 ```{r}
 extClus <- paste0(subpopOutDir,"/",speciesID,"_extended_clustering_wFreq.tab") 
@@ -586,14 +667,6 @@ if(file.exists(extClus)){
   
   print(paste0("Number of samples in extended clustering: ", length(unique(subSpecFreqDf$sampleID))))
   
-  p <- subSpecFreqDf %>% 
-  ggplot(aes(fill=cluster,x=sampleID,y=freq))+
-    geom_bar(stat = "identity")+coord_flip()+
-    facet_grid(majorCluster~.,scales="free_y",space="free_y")+
-    scale_fill_viridis_d("Subspecies")#scale_fill_brewer(palette = 3,type = "qual")
-
-  print(p)
-  
   # this one is a little confusing
   p2 <- subSpecFreqDf %>%
   ggplot(aes(x=cluster,y=freq))+
@@ -603,16 +676,30 @@ if(file.exists(extClus)){
   ylab("Abundance of cluster's genotype in sample")+
   xlab("Genotype")
 
+  
+  cc2 <- cc
+  names(cc2) <- paste0("Genotype ",names(cc))
   print(p2)
+  p <- subSpecFreqDf %>% 
+  ggplot(aes(fill=cluster,x=sampleID,y=freq))+
+    geom_bar(stat = "identity")+coord_flip()+
+    facet_grid(majorCluster~.,scales="free_y",space="free_y",switch = "both")+
+  ylab("Average frequency (percent abundance) of subspecies' genotype")+
+  xlab("Samples grouped into the clusters they composed")+
+  scale_fill_manual(values = cc2,name="Subspecies")+
+  #scale_fill_viridis_d("Subspecies")+
+  theme(axis.text.y = element_blank())
+
+  print(p)
   
-  subSpecFreqDf %>% select(majorCluster,sampleID) %>% 
-    distinct() %>% 
-    arrange(majorCluster,sampleID) %>% as_tibble()
-  
-  for(mjclus in unique(subSpecFreqDf$majorCluster)){
-    print(mjclus)
-    print(unique(as.character(subSpecFreqDf[subSpecFreqDf$majorCluster==mjclus,"sampleID",drop=T])))
-  }
+  # subSpecFreqDf %>% select(majorCluster,sampleID) %>% 
+  #   distinct() %>% 
+  #   arrange(majorCluster,sampleID) %>% as_tibble()
+  # 
+  # for(mjclus in unique(subSpecFreqDf$majorCluster)){
+  #   print(mjclus)
+  #   print(unique(as.character(subSpecFreqDf[subSpecFreqDf$majorCluster==mjclus,"sampleID",drop=T])))
+  # }
   
 }else{
   print(paste0("Extended clustering results non-existant. File does not exist: ",extClus))
@@ -620,7 +707,9 @@ if(file.exists(extClus)){
 ```
 
 
-# Relevant files produced by subpopr
+# Files produced by subpopr
+
+See the manual for a full description of all output files.
 
 Files for this species in: 
 
