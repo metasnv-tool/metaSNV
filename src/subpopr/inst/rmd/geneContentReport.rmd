@@ -1,5 +1,5 @@
 ---
-title: "MetaSNV2 Gene Content Report"
+title: "MetaSNV v2 Gene Content Report"
 date: "`r Sys.Date()`"
 output:
   html_document:
@@ -8,7 +8,7 @@ output:
     smart: no
     toc: yes
     df_print: paged
-    toc_float: yes
+    toc_float: no
 params:
   corrPcutOff_default:
     value: 0.8
@@ -65,6 +65,8 @@ bamSuffix <- params$bamSuffix
 geneFamilyType <- params$geneFamilyType
 ```
 
+<font size="14">**Species: "`r as.character(speciesID)`"**</font>
+
 # Settings
 
 ```{r}
@@ -82,21 +84,27 @@ geneFamilyType <- params$geneFamilyType
  # bamSuffix	<- ".subspec71.unique.sorted.bam"
 
 
+speciesID <- "refGenome3clus"# "155864"
+geneFamilyAbundancesFile <- "~/Dropbox/PostDocBork/subspecies/toolDevelopment/tutorial/v2_tutorial/testdata/abunds/geneAbundances.tsv"
+subpopOutDir <- "~/Dropbox/PostDocBork/subspecies/toolDevelopment/tutorial/v2_tutorial/results/params.hr10.hs80.ps80.gs80/output/"
+geneFamilyType<-"Genes"
+source("../../R/getSpeciesTaxonomy.R")
+source("../../R/utils.R")
+TAXA.NCBI.MOTU.MAP <- readRDS("../../data/TAXA.NCBI.MOTU.MAP.Rds")
+
 
 do.call(rbind,params) %>% data.frame(stringsAsFactors = F) %>% DT::datatable()
 ```
 
-# Species: `r as.character(speciesID)`
-
-## Taxonomic classification
+**Taxonomic classification**
 
 ```{r}
-#accomodate package and non-package
 taxaDf <- getSpeciesTaxonomy(speciesID)
 if(is.null(taxaDf)){
   print(paste("Taxonomy unknown for ",speciesID))
+}else{
+  taxaDf
 }
-taxaDf
 ```
 
 
@@ -111,20 +119,6 @@ pathCorrS <- paste0(subpopOutDir,"/",speciesID,"_corr",geneFamilyType,"-spearman
 pathClusterGenesDf <- paste0(subpopOutDir,"/",speciesID,"_corr",geneFamilyType,"-clusterSpecificGenes.tsv")
 pathSpeciesGenesDf <- paste0(subpopOutDir,"/",speciesID,"_corr",geneFamilyType,"-speciesSpecificGenes.tsv")
 pathClusterGenesAbundancesDf <-  paste0(subpopOutDir,"/",speciesID,"_corr",geneFamilyType,"-clusterSpecificGeneAbundances.tsv")
-
-
-# pathClusterGenesDf <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/subpopr/results_md_s257745/params.hr10.hs80.ps80.gs80/outputs/216816_corrGenes-clusterSpecificGenes.tsv"
-# pathClusterGenesAbundancesDf <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/subpopr/results_md_s257745/params.hr10.hs80.ps80.gs80/outputs/216816_corrGenes-clusterSpecificGeneAbundances.tsv"
-# pathCorrP <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/subpopr/results_md_s257745/params.hr10.hs80.ps80.gs80/outputs/216816_corrGenes-pearson.tsv"
-# pathCorrS <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/subpopr/results_md_s257745/params.hr10.hs80.ps80.gs80/outputs/216816_corrGenes-spearman.tsv"
-
-# pathClusterGenesDf <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/subpopr/results_md_s257745/params.hr10.hs80.ps80.gs80/outputs/216816_corrTMP5-clusterSpecificGenes.tsv"
-# pathSpeciesGenesDf <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/subpopr/results_md_s257745/params.hr10.hs80.ps80.gs80/outputs/216816_corrTMP5-speciesSpecificGenes.tsv"
-# pathClusterGenesAbundancesDf <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/subpopr/results_md_s257745/params.hr10.hs80.ps80.gs80/outputs/216816_corrTMP5-clusterSpecificGeneAbundances.tsv"
-# pathCorrP <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/subpopr/results_md_s257745/params.hr10.hs80.ps80.gs80/outputs/216816_corrTMP5-pearson.tsv"
-# pathCorrS <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/subpopr/results_md_s257745/params.hr10.hs80.ps80.gs80/outputs/216816_corrTMP5-spearman.tsv"
-
-
 
 if(!file.exists(pathCorrP)){
   print(paste0("Aborting due to missing file: ",pathCorrP))
@@ -269,7 +263,7 @@ corr <- rbind(corrP,corrS) %>%
 nClus <- n_distinct(corr$cluster)
 ```
 
-## Comparison of Pearson and Spearman correlation results
+# Comparison of Pearson and Spearman correlation results
 
 ```{r test for both cols}
 haveBothSP <- all( c("pearson","spearman") %in% unique(as.character(corr$method)) ) 
@@ -279,7 +273,7 @@ haveBothSP <- all( c("pearson","spearman") %in% unique(as.character(corr$method)
 print("Results not found for both methods.")
 ```
 
-Yellow box highlights correlations with high values in both methods
+Top right box highlights correlations with high values in both methods
 
 ```{r}
 corrW <- corr %>% 
@@ -294,6 +288,8 @@ y <- nrow(corrW)
 
 Only plotting correlations that are statistically significant (q < 0.05).
 Not plotting `r x` out of `r y` data points due to value not being present for both Pearson and Spearman correlations. 
+
+Correlation thresholds illustrated with dotted lines.
 
 
 ```{r, eval=haveBothSP}
@@ -319,7 +315,7 @@ corrW %>%
 ```
 
 
-## Focus on cluster-specific gene correlations
+# Focus on cluster-specific gene correlations
 
 
 Here we consider a gene correlated with a cluster if it has: 
@@ -333,10 +329,6 @@ Additionally, genes must be:
 - correlated with >= 1 subspecies
 - correlation R statistic for at least one subspecies must be < 0.2 for both Spearman and Pearson
 - either strongly correlated or strongly not correlated for every subspecies
-
-### Table of cluster-specific genes
-
-Printing up to first 1000 genes of file `r pathClusterGenesDf`
 
 ```{r}
 if(nrow(clusterGenesDf) == 0){
@@ -362,8 +354,19 @@ corr %>%
   filter(geneIsCorrelated == "Correlated") %>% 
   group_by(cluster)  %>% 
   count(geneIsCorrelated,name = "Number of genes correlated")%>% 
-  select(-geneIsCorrelated)
+  select(-geneIsCorrelated) %>% 
+  rename(Subspecies = cluster)
+```
 
+## Table of cluster-specific genes
+
+Printing up to first 1000 genes of file:
+
+```{r}
+print(pathClusterGenesDf)
+```
+
+```{r}
 df <- clusterGenesDf %>% 
   mutate(cluster = paste("Cluster ",cluster)) %>% 
   mutate(geneIsCorrelated = case_when( geneIsCorrelated & !geneIsNotCorrelated ~ "Correlated",
@@ -391,7 +394,7 @@ corrSubspeciesSpecific %>%
 ```
 
 
-### Example plots of strong subspecies-specific correlations
+## Example plots of strong subspecies-specific correlations
 
 ```{r}
 if(!file.exists(pathClusterGenesAbundancesDf)){
@@ -426,27 +429,35 @@ x<-abundancesToPlot$geneFamAbund
 pseudocount <- min(x[x>0],na.rm = T)/1000
 
 plotFamCorr <- function(geneFam) {
-  print(geneFam)
-  corr %>% filter(geneFamily == geneFam)%>% 
+  print(paste("Gene:",geneFam))
+  corr %>% 
+    filter(cluster != "-1") %>% 
+    filter(geneFamily == geneFam)%>% 
     select(geneFamily, cluster, method, correlationR, q.valueBH, statSigLgl) %>%
-    arrange(cluster) %>% rename(Subspecies = cluster) %>%  print()
+    arrange(cluster) %>% rename(Subspecies = cluster) %>%  
+    as.data.frame() %>% 
+    print()
 # 
 # corrsToPlot %>% filter(geneFamily == geneFam,.preserve = T) %>% head() %>% print()
 # corrsToPlot %>% filter(geneFamily == geneFam,.preserve = T) %>% tail() %>% print()
 
   
+  geneFam <- sigGeneFamsTop[1]
   p <- abundancesToPlot %>% 
     filter(geneFamily == geneFam,.preserve = T) %>%
     # remove samples that don't have any of the clusters
     group_by(sampleName) %>% 
-    filter(any(clustAbund != 0)) %>% 
+#    filter(any(clustAbund != 0)) %>% 
     mutate(geneFamAbund = geneFamAbund + pseudocount) %>% # for log10
+    mutate(cluster = paste0("Subspecies ",cluster)) %>% 
     ggplot(aes(x= geneFamAbund, y=clustAbund)) + 
     geom_point()+
     facet_grid(.~cluster)+
     ggtitle(paste0("Species: ",speciesID,", linear scale\nGene family: ",geneFam))+
     xlab("Abundance of gene family")+
-    ylab("Abundance of subspecies")
+    ylab(paste0("Abundance of subspecies \n(plus pseudocount",format(pseudocount,digits = 2),")"))+
+    coord_cartesian(ylim = c(pseudocount,max(1,max(abundancesToPlot$clustAbund,na.rm = T),na.rm = T)))
+    #ylim(0,max(1,max(abundancesToPlot$clustAbund,na.rm = T),na.rm = T))
   print(p)
 
   print(p+scale_x_log10()+scale_y_log10()+
@@ -496,6 +507,7 @@ if(tooManyToPlot){
 }
 ```
 
+# Session Info
 
 ```{r}
 sessionInfo()
