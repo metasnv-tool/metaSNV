@@ -194,7 +194,7 @@ A summary of the results is provided in `results/params.hr10.hs80.ps80.gs80/outp
 
 An overview of the results per species is provided in the files named with pattern: `refGenome*clus_detailedSpeciesReport.html`. 
 
-This will include PCA plots illustrating the clustering and tables with the number of distinctive genes. For example, for in silico "species" "refGenome3clus":
+This will include PCoA plots illustrating the clustering and tables with the number of distinctive genes. For example, for in silico "species" "refGenome3clus":
 
 <img src="https://user-images.githubusercontent.com/6667809/126517961-d86d2c60-809c-4815-821a-8a76b1f4f3d5.png" alt="plot.png" width="50%"/>
 
