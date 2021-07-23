@@ -65,28 +65,6 @@ theme_set(theme_bw())
 
 ```
 
-```{r}
-# speciesID <- "742765"# "155864"
-# subpopOutDir <- "/Volumes/KESU/scb2/metagenomes/human/subspecGeoValidation/all_v2/subpopr_Jun4/fr11v2UL-human71/params.hr10.hs80.ps80_oneSamplePerSubj/subspec/"
-# # subpopOutDir <- "/Volumes/KESU/scb2/metagenomes/human/subspecGeoValidation/all_v2/subpopr_v2/results_md_s14665/params.hr10.hs80.ps80.gs80/outputs_subspec/"
-# metasnvOutDir <- "/Volumes/KESU/scb2/metagenomes/human/subspecGeoValidation/all_v2/metaSNV/outputs_subspec/"
-# distMethod <- "mann"
-# bamSuffix <- ".fr11v2UL_subspec71.unique.sorted.bam"
-# doGenoPos <- F
-# psCut <- 0.8
-
-
-speciesID <- "refGenome2clus"# "155864"
-subpopOutDir <- "~/Dropbox/PostDocBork/subspecies/toolDevelopment/tutorial/v2_tutorial/results/params.hr10.hs80.ps80.gs80/output/"
-metasnvOutDir <- "~/Dropbox/PostDocBork/subspecies/toolDevelopment/tutorial/v2_tutorial/output/"
-distMethod <- "mann"
-#bamSuffix <- ".fr11v2UL_subspec71.unique.sorted.bam"
-doGenoPos <- T
-psCut <- 0.8
-source("../../R/getSpeciesTaxonomy.R")
-source("../../R/utils.R")
-TAXA.NCBI.MOTU.MAP <- readRDS("../../data/TAXA.NCBI.MOTU.MAP.Rds")
-```
 
 <font size="14">**Species: "`r as.character(speciesID)`"**</font>
 
