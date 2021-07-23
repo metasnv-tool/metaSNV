@@ -18,7 +18,7 @@ params:
   subpopOutDir:
     value: ''
   bamSuffix:
-    value: '.bam'
+    value: ".bam"
   doGenoPos:
     value: TRUE
   psCut:
@@ -37,6 +37,8 @@ distMethod <- params$distMethod
 bamSuffix <- params$bamSuffix
 doGenoPos <- params$doGenoPos
 psCut <- params$psCut
+
+if(is.null(bamSuffix) | length(bamSuffix)==0 | is.na(bamSuffix) | bamSuffix == ""){bamSuffix<-".bam"}
 
 library(knitr,warn.conflicts = FALSE)
 library(Cairo,warn.conflicts = FALSE)
@@ -67,6 +69,7 @@ theme_set(theme_bw())
 
 
 <font size="14">**Species: "`r as.character(speciesID)`"**</font>
+
 
 ```{r}
 
