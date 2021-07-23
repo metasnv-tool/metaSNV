@@ -18,7 +18,7 @@ params:
   subpopOutDir:
     value: ''
   bamSuffix:
-    value: '.RepGenomesv11UL.unique.sorted.bam'
+    value: '.bam'
   doGenoPos:
     value: TRUE
   psCut:
