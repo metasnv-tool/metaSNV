@@ -262,6 +262,14 @@ ERROR:  No binaries found
 SOLUTION: make\n\n'''.format(basedir))
         exit(1)
 
+    if not shutil.which("samtools"):
+        stderr.write('''
+ERROR:  Samtools is not installed or couldn't be found.
+
+SOLUTION: Install samtools or add it to $PATH\n\n'''.format(basedir))
+        exit(1)
+
+
     if args.threads > 1 and args.n_splits==1:
         args.n_splits=args.threads
 
