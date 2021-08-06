@@ -6,6 +6,7 @@ from sys import stderr, exit
 from os import path
 from glob import glob
 import os
+import sys
 import shutil
 import subprocess
 import multiprocessing
@@ -103,7 +104,7 @@ def compute_summary(args):
             stderr.write("Coverage files not found.\nFinish running the commands printed above and then run this command again.\n")
         exit(1)
     for f in cov_files:
-        cmd = ['python',
+        cmd = [sys.executable,
                 path.join(basedir, 'src/computeGenomeCoverage.py'),
                 f,
                 f + '.detail',
@@ -113,7 +114,7 @@ def compute_summary(args):
     print("	Average vertical genome coverage: '{}/{}.all_cov.tab'".format(args.project_dir, project_name))
     print("	Horizontal genome coverage (1X): '{}/{}.all_perc.tab'".format(args.project_dir, project_name))
     print("")
-    cmd = ['python',
+    cmd = [sys.executable,
             '{}/src/collapse_coverages.py'.format(basedir),
             args.project_dir]
     subprocess.call(cmd)
@@ -134,7 +135,7 @@ def split_opt(args):
 
     print("\nCalculating best database split:")
     # usage createOptimumSplit.sh <all_cov.tab> <all_perc.tab> <geneDefinitions> <INT_NrSplits> <.outfile>
-    cmd = ['python',
+    cmd = [sys.executable,
             '{}/src/createOptimumSplit.py'.format(basedir),
             "{}/{}.all_cov.tab".format(args.project_dir, project_name),
             "{}/{}.all_perc.tab".format(args.project_dir, project_name),
