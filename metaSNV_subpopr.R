@@ -330,6 +330,9 @@ suppressPackageStartupMessages(library(rmarkdown)) # for report rendering
 
 suppressPackageStartupMessages(library(BiocParallel))
 suppressPackageStartupMessages(library(batchtools))
+suppressPackageStartupMessages(library(reshape2))
+suppressPackageStartupMessages(library(DT))
+suppressPackageStartupMessages(library(cluster))
 
 #Error: pandoc version 1.12.3 or higher is required and was not found (see the help page ?rmarkdown::pandoc_available).
 # throw and error if the required version of pandoc is not found
