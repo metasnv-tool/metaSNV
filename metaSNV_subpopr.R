@@ -352,8 +352,8 @@ installOrLoadPackages(doInstall=FALSE, doSuppressPackageStartupMessages=TRUE)
 
 #Error: pandoc version 1.12.3 or higher is required and was not found (see the help page ?rmarkdown::pandoc_available).
 # throw and error if the required version of pandoc is not found
-if(makeReports & !rmarkdown::pandoc_available(version = "1.12.3",error = F)){
-  warning("Reports will not be generated because software 'pandoc' version 1.12.3 or higher",
+if(makeReports & !rmarkdown::pandoc_available(version = "2.1.0",error = F)){
+  warning("Reports will not be generated because software 'pandoc' version 2.1.0 or higher",
           " is required and was not found. Recommended action: abort now, install/update pandoc",
           " https://pandoc.org/ ",
           " and restart script.")
