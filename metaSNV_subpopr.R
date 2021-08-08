@@ -1,44 +1,63 @@
 #!/usr/bin/env Rscript
 
-# qlogin -pe smp 12 -l h_vmem=10G # 10G memory per core is plenty
+# e.g.
+# qlogin -pe smp 12 -l h_vmem=2G # 2G memory per core is plenty
 # REQUIRES PYTHON 3
 # Rscript metaSNV_supopr.R -h
 
-# clear the environment
 
-rm(list=ls())
+# check that the environment is clear
+if(length(ls())!=0){
+  warning("Your R environment isn't clear, this might cause unexpected results. ",
+       "Please abort now and clear your environment before running. ",
+       "You can use command: rm(list=ls()) ")
+}
+#rm(list=ls())
 
-normalRun<-TRUE # use cmd line args
-calcSpeciesAbunds<-TRUE
+# Get location of this script ----------------------------
 
+# Expectation is that this script will sit in the metaSNV directory,
+# which will include a directory ./src/subpopr
+
+# try to set the current working directory to the location of this file
+# works if this file is sourced() or has been called from cmd line (e.g. Rscript metaSNV_subpop.R [...])
+thisFile <- function() {
+  cmdArgs <- commandArgs(trailingOnly = FALSE)
+  needle <- "--file="
+  match <- grep(needle, cmdArgs)
+  if (length(match) > 0) {
+    # Rscript
+    return(normalizePath(sub(needle, "", cmdArgs[match])))
+  } else {
+    # 'source'd via R console
+    return(normalizePath(sys.frames()[[1]]$ofile))
+  }
+}
+
+scriptDir <- dirname(thisFile())
+SUBPOPR.DIR<-paste0(scriptDir,"/src/subpopr/")
+
+# Check that required packages are installed --------------------
+
+# get the list of required packages and the funcions to test them
+source(paste0(scriptDir,"/src/subpopr/R/installOrLoadPackages.R"))
+
+# check for required packages
+missingPackages <- getMissingPackages()
+if(!is.null(missingPackages)){
+  stop("Required R packages are missing: ",paste(missingPackages,collapse = ", "))
+}
+
+# Set up logging ---------------------------------------------------------
 ptm <- proc.time()
 suppressPackageStartupMessages(library(futile.logger))
 tmp <- flog.threshold(INFO) # assign to tmp to avoid NULL being returned and printed
 
+
+# Parse params -------------------------------------------------------------
+
+normalRun<-TRUE # use cmd line args
 if(normalRun){
-  # Expectation is that this script will sit in the metaSNV directory,
-  # which will include a directory ./src/subpopr
-
-  # try to set the current working directory to the location of this file
-  # works if this file is sourced() or has been called from cmd line (e.g. Rscript metaSNV_subpop.R [...])
-  thisFile <- function() {
-    cmdArgs <- commandArgs(trailingOnly = FALSE)
-    needle <- "--file="
-    match <- grep(needle, cmdArgs)
-    if (length(match) > 0) {
-      # Rscript
-      return(normalizePath(sub(needle, "", cmdArgs[match])))
-    } else {
-      # 'source'd via R console
-      return(normalizePath(sys.frames()[[1]]$ofile))
-    }
-  }
-
-  scriptDir <- dirname(thisFile())
-
-
-  # Parse params -------------------------------------------------------------
-
   suppressPackageStartupMessages(library(getopt))
   suppressPackageStartupMessages(library(optparse))
 
@@ -200,6 +219,8 @@ if(normalRun){
 
 }
 
+# transfer opt object (params) to variables ---------------------------------------
+
 N.CORES <- opt$procs
 SPECIES.ABUNDANCE.PROFILE<-opt$speciesAbundance
 SPECIES.ABUND.PROFILE.IS.MOTUS<-opt$isMotus
@@ -211,7 +232,6 @@ MAX.PROP.READS.NON.HOMOG <- opt$fixReadThreshold
 MIN.PROP.SNV.HOMOG <- opt$fixSnvThreshold
 SNV.SUBSPEC.UNIQ.CUTOFF <- opt$genotypingThreshold
 CLUSTERING.PS.CUTOFF <- opt$clusterPSThreshold
-DIST.METH.REPORTS <- "mann"
 MIN.N.SAMPLES <- opt$minNumSamples
 
 makeReports <- opt$createReports
@@ -221,8 +241,20 @@ useExistingGenotyping <- opt$useExistingGenotyping
 
 SAMPLE.ID.SUFFIX <- opt$sampleSuffix
 
+
+# hard coded settings ---------------------------------------
+
 toScreen <- TRUE # if TRUE, lots gets printed to screen, if FALSE, only goes to log file
 printProgressBar <- TRUE
+calcSubspeciesAbunds<-TRUE
+
+DIST.METH.REPORTS="mann" # what method to use for generating reports: either "mann" or "allele"
+BAMS.TO.USE = NULL #"/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v2/oneSamplePerSubject_bamNames.txt" #NULL # default = NULL
+ANALYSE.ALLELE.DISTANCES = F
+USE.PACKAGE.PREDICTION.STRENGTH = FALSE # default = FALSE
+
+
+# Check required params are given ---------------------------------------
 
 if(is.null(opt$metaSnvResultsDir)){
   print_help(opt_parser)
@@ -235,6 +267,8 @@ if (is.null(opt$outputDir)){
 }
 OUT.DIR.BASE <- opt$outputDir
 
+# Check numeric params are valid numbers ---------------------------------------
+
 assert0to1<-function(x,nameOfParam){
   if(!is.numeric(x) | x < 0 | x > 1){
     stop("Param \"",nameOfParam ,"\"must be numeric and must be between 0 and 1")
@@ -246,25 +280,7 @@ assert0to1(opt$fixSnvThreshold,"fixSnvThreshold")
 assert0to1(opt$genotypingThreshold,"genotypingThreshold")
 assert0to1(opt$clusterPSThreshold,"clusterPSThreshold")
 
-
-#source(paste0(scriptDir,"/src/subpopr/inst/metaSNV_subpopr_SETTINGS.R"))
-DIST.METH.REPORTS="mann" # what method to use for generating reports: either "mann" or "allele"
-BAMS.TO.USE = NULL #"/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v2/oneSamplePerSubject_bamNames.txt" #NULL # default = NULL
-ANALYSE.ALLELE.DISTANCES = F
-USE.PACKAGE.PREDICTION.STRENGTH = FALSE # default = FALSE
-
-
-SUBPOPR.DIR<-paste0(scriptDir,"/src/subpopr/")
-
-SUBPOPR_RESULTS_DIR=paste0(OUT.DIR.BASE,"/params",
-                           ".hr",MAX.PROP.READS.NON.HOMOG*100,
-                           ".hs",MIN.PROP.SNV.HOMOG*100,
-                           ".ps",CLUSTERING.PS.CUTOFF*100,
-                           ".gs",SNV.SUBSPEC.UNIQ.CUTOFF*100,"/")
-OUT.DIR=paste0(SUBPOPR_RESULTS_DIR,"/",basename(METASNV.DIR),"/")
-dir.create(OUT.DIR, recursive = T, showWarnings = FALSE)
-
-# Check input file existances ---------------------------------------
+# Check input file existences ---------------------------------------
 
 checkFile <- function(path, fileTypeName){
   if(!is.null(path) && !is.na(path) &&
@@ -282,6 +298,15 @@ checkFile(KEGG.PATH, "Gene family abundance")
 checkFile(METASNV.DIR, "MetaSNV output directory")
 
 # Logging set up -----------------------------------------------------
+
+# make output folder where log will be stored
+SUBPOPR_RESULTS_DIR=paste0(OUT.DIR.BASE,"/params",
+                           ".hr",MAX.PROP.READS.NON.HOMOG*100,
+                           ".hs",MIN.PROP.SNV.HOMOG*100,
+                           ".ps",CLUSTERING.PS.CUTOFF*100,
+                           ".gs",SNV.SUBSPEC.UNIQ.CUTOFF*100,"/")
+OUT.DIR=paste0(SUBPOPR_RESULTS_DIR,"/",basename(METASNV.DIR),"/")
+dir.create(OUT.DIR, recursive = T, showWarnings = FALSE)
 
 logFile <- paste0(OUT.DIR,"/log.txt")
 print(paste("Logging to:",logFile))
@@ -303,8 +328,6 @@ sink(file = logFile, append = TRUE,
      type = c("output", "message"), split = toScreen)
 
 
-
-
 # Load library dependencies -------------------------------------------
 print("Loading R libraries...")
 
@@ -313,26 +336,11 @@ print("Loading R libraries...")
 #  print(paste0("Using R library directories:",paste(.libPaths(),collapse=" : ")))
 #}
 
+# required, but called above already: source(paste0(scriptDir,"/src/subpopr/R/installOrLoadPackages.R"))
+installOrLoadPackages(doInstall=FALSE, doSuppressPackageStartupMessages=TRUE)
+
 # REQUIRES CAIRO TO BE INSTALLED, EITHER THROUGH 'install.packages()' OR THROUGH 'conda install -c anaconda cairo'
 # requires pandoc
-suppressPackageStartupMessages(library(Cairo))
-suppressPackageStartupMessages(library(fpc))
-suppressPackageStartupMessages(library(ape))
-suppressPackageStartupMessages(library(ggplot2))
-suppressPackageStartupMessages(library(gridExtra))
-suppressPackageStartupMessages(library(cluster))
-suppressPackageStartupMessages(library(dplyr))
-suppressPackageStartupMessages(library(tidyr))
-suppressPackageStartupMessages(library(readr))
-suppressPackageStartupMessages(library(ggrepel))
-suppressPackageStartupMessages(library(data.table))
-suppressPackageStartupMessages(library(rmarkdown)) # for report rendering
-
-suppressPackageStartupMessages(library(BiocParallel))
-suppressPackageStartupMessages(library(batchtools))
-suppressPackageStartupMessages(library(reshape2))
-suppressPackageStartupMessages(library(DT))
-suppressPackageStartupMessages(library(cluster))
 
 #Error: pandoc version 1.12.3 or higher is required and was not found (see the help page ?rmarkdown::pandoc_available).
 # throw and error if the required version of pandoc is not found
@@ -560,7 +568,7 @@ if(!useExistingClustering){
     names(resultsPerSpecies) <- species
     printBpError(resultsPerSpecies)
   }
-  
+
   allSubstruc <- list.files(path=OUT.DIR,
                             pattern = '_hap_out\\.txt$',full.names = T)
   allSubstrucSpecies <- unique(sub(basename(allSubstruc) ,
@@ -684,7 +692,7 @@ if(length(speciesToAssess)>0){
 
 # Get subspecies abundances relative to whole community ---------------------------------------
 
-if(calcSpeciesAbunds && !is.null(SPECIES.ABUNDANCE.PROFILE) &&
+if(calcSubspeciesAbunds && !is.null(SPECIES.ABUNDANCE.PROFILE) &&
    SPECIES.ABUNDANCE.PROFILE != "doNotRun" &&
    file.exists(SPECIES.ABUNDANCE.PROFILE)){
   print("Calculating cluster abundances using species abundances...")

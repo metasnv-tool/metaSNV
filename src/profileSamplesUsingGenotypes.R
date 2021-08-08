@@ -48,6 +48,12 @@ outDir=opt$outDir
 
 print("Loading required R packages...")
 
+# check for required packages
+missingPackages <- getMissingPackages()
+if(!is.null(missingPackages)){
+  warning("This script still might work, but some subpopr R packages dependencies are missing: ",paste(missingPackages,collapse = ", "))
+}
+
 source(paste0(metaSnvSrcDir,"/src/subpopr/R/installOrLoadPackages.R"))
 installOrLoadPackages(doInstall = F)
 
