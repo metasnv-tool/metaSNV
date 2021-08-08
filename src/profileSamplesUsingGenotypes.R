@@ -46,11 +46,10 @@ subpoprResultsDir=opt$subpoprResultsDir
 speciesID=opt$speciesID
 outDir=opt$outDir
 
- # metaSnvSrcDir="/g/scb2/bork/rossum/metaSNV2/metaSNV"
- # metaSNVResultsDir="/g/scb2/bork/rossum/metagenomes/mock/inSilico/subpopr/posCtrl/v2_ecoli/realv1_x20/metaSNV/outputs"
- # subpoprResultsDir="/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v4/subpopr/results_mimicCostea_408121/params.hr10.hs80.ps80.gs80/outputs/"
- # outDir="/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v4/subpopr/results_mimicCostea_408121/params.hr10.hs80.ps80.gs80/placing/ecoli/composedSamples/results1/"
- # speciesID="155864"
+print("Loading required R packages...")
+
+source(paste0(metaSnvSrcDir,"/src/subpopr/R/installOrLoadPackages.R"))
+installOrLoadPackages(doInstall = F)
 
 
 print("Getting required files...")
@@ -102,7 +101,6 @@ tmp <- sapply(X = posPaths2,
        minDepth = minDepth,
        scriptDir = paste0(metaSnvSrcDir,"/src/subpopr/inst/"))
 
-source(paste0(metaSnvSrcDir,"/src/subpopr/R/installOrLoadPackages.R"))
 source(paste0(metaSnvSrcDir,"/src/subpopr/R/utils.R"))
 source(paste0(metaSnvSrcDir,"/src/subpopr/R/writeSubpopsForAllSamples.R"))
 source(paste0(metaSnvSrcDir,"/src/subpopr/R/profileSubpops.R"))

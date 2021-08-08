@@ -37,6 +37,7 @@ jobs:
       run: |
         sudo R --vanilla <<EOF
         source("src/subpopr/R/installOrLoadPackages.R")
+        installOrLoadPackages(doInstall=TRUE)
         sessionInfo()
         q()
         EOF
