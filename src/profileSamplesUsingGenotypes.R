@@ -57,6 +57,9 @@ if(!is.null(missingPackages)){
 source(paste0(metaSnvSrcDir,"/src/subpopr/R/installOrLoadPackages.R"))
 installOrLoadPackages(doInstall = F)
 
+print("Checking python3 requirement...")
+source(paste0(metaSnvSrcDir,"/src/subpopr/R/runPyScripts.R"))
+x <- getPython3Path() # runs checks for python3
 
 print("Getting required files...")
 

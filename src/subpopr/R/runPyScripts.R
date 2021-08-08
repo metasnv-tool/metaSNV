@@ -1,4 +1,27 @@
 
+# checks for python3 in the system path and returns the path to the executable
+getPython3Path <- function(){
+  py3Path <- Sys.which("python3")
+  if(py3Path==""){ #not in path
+    py3Path <- Sys.which("python")
+  }
+
+  if(py3Path==""){ #python and python3 not in path
+    stop("Python ('python' or 'python3') is not in the system path. Aborting.")
+  }
+
+  #check that python is version 3
+  pyV <- system2(py3Path,"-V",stdout = T,stderr = T)
+  # should return e.g. "Python 2.7.16" or "Python 3.8.2"
+  pyV <- sub(pattern = "Python ",replacement = "",x = pyV)
+
+  if(pyV < 3){
+    stop("Python is not version 3 or greater. Using ",py3Path," which is version ",pyV,". ",
+         "Please update python or make python3 available on your system path. Aborting.")
+  }
+  return(py3Path)
+}
+
 
 # works on all results files at once
 pyGetPlacingRelevantSubset <- function(outDir,metaSnvDir,scriptDir){
@@ -6,7 +29,8 @@ pyGetPlacingRelevantSubset <- function(outDir,metaSnvDir,scriptDir){
   if(!file.exists(path)){
     stop("Missing python script, expected: ",path)
   }
-  system(paste("python",path,outDir,metaSnvDir,sep=" ")) # write results to outDir
+  py3Path <- getPython3Path()
+  system(paste(py3Path,path,outDir,metaSnvDir,sep=" ")) # write results to outDir
 }
 
 
@@ -18,6 +42,6 @@ pyConvertSNPtoAllelTable <- function(posFile, minDepth = 5, scriptDir){
   if(!file.exists(path)){
     stop("Missing python script, expected: ",path)
   }
-  system(paste("python",path,posFile,minDepth,sep=" "))
-  #print(paste("python",path,posFile,minDepth,sep=" "))
+  py3Path <- getPython3Path()
+  system(paste(py3Path,path,posFile,minDepth,sep=" "))
 }

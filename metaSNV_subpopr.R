@@ -48,6 +48,14 @@ if(!is.null(missingPackages)){
   stop("Required R packages are missing: ",paste(missingPackages,collapse = ", "))
 }
 
+
+# Check that python3 is in the path -------------------------------------
+
+source(paste0(metaSnvSrcDir,"/src/subpopr/R/runPyScripts.R"))
+py3Path <- getPython3Path()
+print(paste0("Will use python executable: ",py3Path))
+
+
 # Set up logging ---------------------------------------------------------
 ptm <- proc.time()
 suppressPackageStartupMessages(library(futile.logger))
