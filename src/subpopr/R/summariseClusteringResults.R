@@ -64,7 +64,7 @@ summariseClusteringResultsForAll <- function(resultsDir,distMeth="mann"){
   # readr::write_tsv(x = df,path = paste0(resultsDir,"/summary_clustering.tsv"))
 }
 
-# return a list of strings with: (1) species ID, 
+# return a list of strings with: (1) species ID,
 # (2) whether the extension worked, (3) new cluster sizes
 # (4) number of SNVs used in genotyping
 summariseClusteringExtensionResults <- function(resultsDir,speciesID){
@@ -107,7 +107,7 @@ getSnvGenotypingCount <- function(resultsDir,speciesID){
   genotypingPositionFiles <- list.files(path = resultsDir,
                                         pattern = paste0(speciesID,"_.*_hap_positions.tab"),
                                         full.names = T )
-  
+
   nSNVs<- sapply(genotypingPositionFiles, function(x){
     con <- file(x, "r")
     n<-length(readLines(con))-1 # -1 for header
@@ -175,8 +175,6 @@ summariseMetadataAssocResultsForAll <- function(resultsDir,distMeth="mann"){
 
 # return a list of strings with: (1) species ID, (2) whether the metadata was tested (3) if any sig assocs were found (4) the html report file
 summariseGeneFamilyCorrelationResults <- function(resultsDir,speciesID,geneFamilyType){
-  #resultsDir <- "/Volumes/KESU/scb2/bork/rossum/subspecies/testingSubpopr/inSilicoMock/mine/smallerTestSet/smallGenomes/04_subpopr_nonPack/params.hr5.hs80.ps80/defaults/"
-  #speciesID <- "refGenome2clus"
 
   suffixes <- c(paste0("_corr",geneFamilyType,"-spearman.tsv"),
                 paste0("_corr",geneFamilyType,"-pearson.tsv"))
@@ -207,12 +205,12 @@ summariseGeneFamilyCorrelationResults <- function(resultsDir,speciesID,geneFamil
 }
 
 fileExistsAndHasRows <- function(filePath){
-  if(is.null(filePath) || 
-     length(filePath) == 0 || 
+  if(is.null(filePath) ||
+     length(filePath) == 0 ||
      !file.exists(filePath)){return(FALSE)}
   df <- read.table(filePath,header = T,nrows = 10)
   return(nrow(df) > 0)
-} 
+}
 
 summariseGeneFamilyCorrelationResultsForAll <- function(resultsDir,distMeth="mann",geneFamilyType){
   allSpeciesRDSs <- getAllClusteringRdsPaths(resultsDir,distMeth="mann")

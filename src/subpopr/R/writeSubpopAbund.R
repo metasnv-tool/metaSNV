@@ -28,7 +28,7 @@ writeSubpopAbundMotusProfile <- function(species, clusterFreqs, outDir,motuProfi
   if(is.na(motuID) && species %in% motuProfile$mOTU){
     motuID <- species
   }
-  
+
   if( ! motuID %in% motuProfile$mOTU){
     stop(paste0("Species not found in mOTU profile. Species: ",species,"; mOTU id: ",motuID))
   }
@@ -97,9 +97,6 @@ writeSubpopAbundMotusProfile <- function(species, clusterFreqs, outDir,motuProfi
 #' 1st columns must have names that match the names of the species used in the
 #' reference database the samples were mapped against for SNV calling
 writeSubpopAbundSpeciesAbund <- function(species, clusterFreqs, outDir,speciesProfileFilePath){
-
-  #profileFilePath <- "/Volumes/KESU/scb2/bork/rossum/subspecies/testingSubpopr/inSilicoMock/mine/smallerTestSet/smallGenomes/01_createData/outputs/speciesAbundances.tsv"
-  #clusterFreqs <- read.table("/Volumes/KESU/scb2/bork/rossum/subspecies/testingSubpopr/inSilicoMock/mine/smallerTestSet/smallGenomes/04_subpopr_nonPack/params.hr5.hs80.ps80/defaults/refGenome2clus_extended_clustering_wFreq.tab")
   #Read the  abundance table
   #columns are samples, rows are species, values are abundance
   rawProfile <- read.delim(comment.char = "#",

@@ -64,8 +64,6 @@ tmp <- flog.threshold(INFO) # assign to tmp to avoid NULL being returned and pri
 
 # Parse params -------------------------------------------------------------
 
-normalRun<-TRUE # use cmd line args
-if(normalRun){
   suppressPackageStartupMessages(library(getopt))
   suppressPackageStartupMessages(library(optparse))
 
@@ -174,59 +172,6 @@ if(normalRun){
   opt = parse_args(opt_parser);
 
 
-}else{
-  # TO RUN FROM WITHIN R WITHOUT OPTS ----------
-  opt <- list()
-  # scriptDir <- "/g/bork3/home/rossum/software/metaSNV2/metaSNV/"
-  # setwd("/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/subpopr")
-  # opt$metadata <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/sampleSelection/metadataForSubspeciesAnalysis.csv"
-  # opt$metaSnvResultsDir <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/metaSNV/outputs/"
-  # opt$speciesAbundance <- "doNotRun"
-  # opt$geneAbundance <- "doNotRun"
-
-  # scriptDir <- "/Users/rossum/Dropbox/PostDocBork/subspecies/toolDevelopment/metaSNV/"
-   scriptDir <- "/g/scb2/bork/rossum/metaSNV2/metaSNV/"
-  # workDir <- "/Volumes/KESU/scb2/metagenomes/human/subspecGeoValidation/all_v3/"
-   workDir <- "/g/scb2/bork/rossum/metagenomes/mock/inSilico/subpopr/posCtrl/v2_ecoli/genomesSet2"
-   #workDir <- "/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v3/"
-  setwd(paste0(workDir,"/subpopr"))
-  opt$metadata <- paste0(workDir,"/sampleSelection/metadataForSubspeciesAnalysis.csv")
-  opt$metaSnvResultsDir <- paste0(workDir,"/metaSNV/outputs/")
-  opt$speciesAbundance <- paste0(workDir,"/motus20/motusAbunds.tsv") #"doNotRun"
-  opt$geneAbundance <- paste0(workDir,"/geneContent/mapToPanGenomes/outputs/counts_unique_norm_sumByNogBySpecies.tsv")
-  opt$sampleSuffix <- ".subspec71.unique.sorted.bam"
-  opt$sampleSuffix <- ".fr11Repv2UL71.unique.sorted.bam"
-
-  opt$procs <- 1
-  opt$isMotus <- T
-  opt$metadataSampleIDCol <- "sampleID"
-  opt$outputDir <- "results4"
-
-  # scriptDir <- "/g/scb2/bork/rossum/metaSNV2/metaSNV/"
-  # workDir <- "/g/scb2/bork/rossum/subspecies/testingSubpopr/githubWorkflow/"
-  # #setwd(paste0(workDir,"/subpopr"))
-  # opt$metadata <- "doNotRun"
-  # opt$metaSnvResultsDir <- paste0(workDir,"/output/")
-  # opt$speciesAbundance <- paste0(workDir,"testdata/abunds/speciesAbundances.tsv") #"doNotRun"
-  # opt$geneAbundance <- paste0(workDir,"testdata/abunds/geneAbundances.tsv")
-  # opt$sampleSuffix <- ".bam"
-  # opt$procs <- 1
-  # opt$isMotus <- T
-  # opt$metadataSampleIDCol <- NA
-  # opt$outputDir <- paste0(workDir,"/results/")
-
-  opt$fixReadThreshold <- 0.2
-  opt$fixReadThreshold <- 0.1
-  opt$fixSnvThreshold <- 0.8
-  opt$genotypingThreshold <- 0.8
-  opt$clusterPSThreshold <- 0.8
-
-  opt$onlyDoSubspeciesDetection<-FALSE
-  opt$useExistingClustering <- FALSE
-  opt$useExistingGenotyping <- FALSE
-
-}
-
 # transfer opt object (params) to variables ---------------------------------------
 
 N.CORES <- opt$procs
@@ -257,7 +202,7 @@ printProgressBar <- TRUE
 calcSubspeciesAbunds<-TRUE
 
 DIST.METH.REPORTS="mann" # what method to use for generating reports: either "mann" or "allele"
-BAMS.TO.USE = NULL #"/g/scb2/bork/rossum/metagenomes/human/subspecGeoValidation/all_v2/oneSamplePerSubject_bamNames.txt" #NULL # default = NULL
+BAMS.TO.USE = NULL
 ANALYSE.ALLELE.DISTANCES = F
 USE.PACKAGE.PREDICTION.STRENGTH = FALSE # default = FALSE
 
@@ -406,9 +351,6 @@ if(length(specDist) == 0){
   stop(paste0("No appropriate files found in ", METASNV.DIR))
 }
 
-#species <- 657318 #537011 #"657317"
-
-
 # Set up parallel processing ----------------------------------------
 
 ncoresUsing <- min(N.CORES,length(species))
@@ -478,14 +420,6 @@ if(!useExistingClustering){
   names(resultsPerSpecies) <- species
   printBpError(resultsPerSpecies)
 
-  # this is error prone and output is not used anyway
-  # resultsPerSpeciesFixed <- resultsPerSpecies
-  # if(any(!bpok(resultsPerSpeciesFixed))){
-  #   resultsPerSpeciesFixed[[which(!bpok(resultsPerSpeciesFixed))]] <- "Error"
-  # }
-  # resultsPerSpeciesDF <- cbind.data.frame(SpeciesID=species,
-  #                                         ClusteringResult=unlist(resultsPerSpeciesFixed))
-  # write.csv(x = resultsPerSpeciesDF,file = paste0(OUT.DIR,"/log_clusteringSummaryPerSpecies.csv"))
   saveRDS(resultsPerSpecies, file = paste0(OUT.DIR,"/log_clusteringSummaryPerSpecies.rds"))
   try({
     resultsPerSpeciesDF <- stack(resultsPerSpecies)

@@ -94,8 +94,8 @@ minDepth=1
 
 print("Getting genotyping positions for all samples...")
 
-source("/g/scb2/bork/rossum/metaSNV2/metaSNV/src/subpopr/R/runPyScripts.R")
-#python $metaSnvSrcDir/src/subpopr/inst/getGenotypingSNVSubset.py  outDir $metaSNVResultsDir
+# required but run already above
+#source(paste0(metaSnvSrcDir,"/src/subpopr/R/runPyScripts.R"))
 pyGetPlacingRelevantSubset(outDir = outDir,
                            metaSnvDir = metaSNVResultsDir,
                            scriptDir = paste0(metaSnvSrcDir,"/src/subpopr/inst/"))

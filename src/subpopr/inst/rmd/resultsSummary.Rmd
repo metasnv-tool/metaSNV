@@ -16,8 +16,7 @@ params:
 
 
 ```{r setup}
-resultsDir <- params$resultsDir
-#resultsDir <- "/Volumes/KESU/scb2/metagenomes/human/subspecGeoValidation/all_v2/subpopr/fr11v2UL-human71/params.hr10.hs80.ps80_oneSamplePerSubj/subspec/"
+resultsDir <- params$resultsDir # e.g. params.hr10.hs80.ps80.gs90/outputs/"
 
 knitr::opts_chunk$set(
   echo=TRUE,
