@@ -51,7 +51,7 @@ if(!is.null(missingPackages)){
 
 # Check that python3 is in the path -------------------------------------
 
-source(paste0(metaSnvSrcDir,"/src/subpopr/R/runPyScripts.R"))
+source(paste0(scriptDir,"/src/subpopr/R/runPyScripts.R"))
 py3Path <- getPython3Path()
 print(paste0("Will use python executable: ",py3Path))
 
