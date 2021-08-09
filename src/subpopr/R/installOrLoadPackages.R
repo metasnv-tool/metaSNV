@@ -1,5 +1,5 @@
 requiredPackageNames_biocManPackages <- c("BiocParallel")
-requiredPackageNames <- c("fpc","ape","getopt","optparse","readr","dplyr",
+requiredPackageNames <- c("fpc","ape","getopt","optparse","readr","dplyr","forcats",
                           "ggplot2","tidyr","gridExtra","DT","cluster","ggrepel",
                           "data.table","rmarkdown",# for report rendering
                           "batchtools","futile.logger",
