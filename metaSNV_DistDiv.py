@@ -182,7 +182,7 @@ def compute_diversity(sample1, sample2):
 def computeDiv(filt_file, horizontal_coverage, vertical_coverage, bedfile_tab, matched,outdir):
     '''Per species computation'''
 
-    species = int(filt_file.split('/')[-1].split('.')[0])
+    species = filt_file.split('/')[-1].split('.')[0]
     data = pd.read_table(filt_file, index_col=0, na_values=['-1'])
 
     pre_index = [i.split(':') for i in list(data.index)]
