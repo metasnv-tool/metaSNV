@@ -75,7 +75,7 @@ This will need 450M of disk space and, after the downloads are complete, should 
 
 ```
 wget http://swifter.embl.de/~ralves/metaSNV_test_data/testdata.tar.xz
-tar xvf testdata.tar.xz && rm -f testdata.tar.gz
+tar xvf testdata.tar.xz && rm -f testdata.tar.xz
 ```
 
 **Run all steps of metaSNV v2 with the test data:**
