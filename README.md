@@ -71,6 +71,14 @@ For subpopulation calling, you will also need
 
     conda install -c r r-essentials
     conda install -c anaconda cairo
+    
+And several R libraries, see [here](src/subpopr/R/installOrLoadPackages.R) and call function installOrLoadPackagesfunction() from within R. e.g.
+
+```
+source("installOrLoadPackages.R")
+installOrLoadPackagesfunction(doInstall=TRUE, doSuppressPackageStartupMessages=FALSE)
+```
+
 
 Setup & Compilation
 ===================
