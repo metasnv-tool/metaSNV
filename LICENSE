@@ -1,6 +1,8 @@
     
-    metaSNV --- A metagenomic SNV calling pipeline
-    Copyright (C) 2017  P. I. Costea & R. Munch
+    metaSNV v2 --- A metagenomic SNV calling pipeline
+   
+    metaSNV v2 - Copyright (C) 2021  T. Van Rossum & P. I. Costea
+    metaSNV v1 - Copyright (C) 2017  P. I. Costea & R. Munch
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
