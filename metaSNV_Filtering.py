@@ -153,7 +153,7 @@ def relevant_taxa(args):
 #       1. Position covered by at least c (5) reads
 #       2. Position present in at least proportion p (50 %) of the accepted samples_of_interest
 
-def filter_two(species, args, snp_files, outdir):
+def filter_two(species, args, snp_files, outdir, samples_of_interest):
     """position wise filtering"""
 
     snp_taxID = '_'
@@ -281,7 +281,8 @@ if __name__ == "__main__":
     partial_Div = partial(filter_two,
                           args=args,
                           snp_files=glob.glob(args.projdir + '/snpCaller/called*'),
-                          outdir=filt_folder + '/pop')
+                          outdir=filt_folder + '/pop',
+                          samples_of_interest=samples_of_interest)
     p.map(partial_Div, samples_of_interest.keys())
     p.close()
     p.join()
@@ -293,7 +294,8 @@ if __name__ == "__main__":
         partial_Div = partial(filter_two,
                               args=args,
                               snp_files=glob.glob(args.projdir + '/snpCaller/indiv*'),
-                              outdir=filt_folder + '/ind')
+                              outdir=filt_folder + '/ind',
+                              samples_of_interest=samples_of_interest)
         p.map(partial_Div, samples_of_interest.keys())
         p.close()
         p.join()
