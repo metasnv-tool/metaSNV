@@ -44,8 +44,8 @@ def get_arguments():
                              "required proportion of informative samples (coverage non-zero) per position",
                         default=0.50)
     parser.add_argument('--ind', action='store_true', help="Compute individual SNVs")
-    parser.add_argument('--n_threads',metavar=': Number of Processes',default=1,type=int, help="Number of jobs to run simmultaneously.")
-
+    parser.add_argument('--n_threads', metavar=': Number of Processes',
+                        default=1, type=int, help="Number of jobs to run simultaneously.")
 
     return parser.parse_args()
 
@@ -90,7 +90,7 @@ def print_arguments():
     if args.ind:
         print("Compute indiv SNVs : {}".format(args.ind))
     if args.n_threads:
-        print("Number of parallel processes : {}".format(args.n_threads) )
+        print("Number of parallel processes : {}".format(args.n_threads))
     print("")
 
 
