@@ -83,6 +83,12 @@ tar xvf testdata.tar.xz && rm -f testdata.tar.xz
 ### 2. Call SNVs:
 
 ```
+metaSNV.py --threads 3 output testdata/all_samples testdata/ref/allReferenceGenomes.fasta
+```
+
+or if running from source
+
+```
 python metaSNV.py --threads 3 output testdata/all_samples testdata/ref/allReferenceGenomes.fasta
 ```
 
@@ -92,6 +98,12 @@ Your SNVs are now in `output/snpCaller/`.
 - If you ran with 1 thread: Your SNVs are now in `output/snpCaller/called_SNPs`. You should have 6238 SNVs in this file, one per line.
 
 ### 3. Filter SNVs:
+
+```
+metaSNV_Filtering.py --n_threads 3 output
+```
+
+or if running from source
 
 ```
 python metaSNV_Filtering.py --n_threads 3 output
@@ -110,12 +122,24 @@ The number of SNVs expected per file are:
 ### 4. Calculate distances between samples based on SNV profiles:
 
 ```
+metaSNV_DistDiv.py --n_threads 3 --filt output/filtered/pop --dist
+```
+
+or if running from source
+
+```
 python metaSNV_DistDiv.py --n_threads 3 --filt output/filtered/pop --dist
 ```
 
 This command calculated pairwise dissimilarities between samples based on filtered SNV allele frequencies. Your filtered SNV allele frequencies are now in the `output/distances` folder. Each species has its own file with 160 samples (161 lines with the header).
 
 ### 5. Detect clusters of samples that correspond to within-species subpopulations:
+
+```
+metaSNV_subpopr.R --procs 3 -i output -g testdata/abunds/geneAbundances.tsv -a testdata/abunds/speciesAbundances.tsv
+```
+
+or if running from source
 
 ```
 Rscript metaSNV_subpopr.R --procs 3 -i output -g testdata/abunds/geneAbundances.tsv -a testdata/abunds/speciesAbundances.tsv
