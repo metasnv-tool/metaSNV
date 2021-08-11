@@ -14,7 +14,7 @@ or [as a zip file](https://git.embl.de/metasnv-tool/metaSNV/repository/archive.z
 
 * [Boost-1.53.0 or above](http://www.boost.org/users/download/)
 * [htslib](http://www.htslib.org/)
-* Python-2.7 or above
+* Python-3.7 or above
     * numpy
     * pandas
 
