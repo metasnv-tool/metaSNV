@@ -11,7 +11,7 @@ See the full [documentation](https://github.com/metasnv-tool/metaSNV/tree/master
 
 ## Installing
 
-### via conda
+### Installing via conda
 
 Create a new conda environment with metaSNV installed:
 
@@ -25,9 +25,30 @@ Install metaSNV in an existing conda environment:
 conda install -c bioconda -c conda-forge 'metasnv>=2.0.0'
 ```
 
-### from source
+To test that all files and dependencies have been properly installed, run the following:
+
+```
+metaSNV.py --help
+metaSNV_Filtering.py --help
+metaSNV_DistDiv.py --help
+metaSNV_subpopr.R --help
+```
+
+### Installing from source
 
 Refer to the [developer guide](DEVELOPER.md).
+
+## Preparing to analyse your data
+
+We recommend using genomes from ProGenomes2 as your species references. The version provided here is a subset with one representative genome per species (the longest of the represenatatives).
+
+To use the provided reference database, download the species genome reference fasta file (`ref_db`) and the gene annotation file (`db_ann`) with the following. 
+These files will take approx. 25 GB of space.
+
+```
+wget http://swifter.embl.de/~ralves/metaSNV_reference_data/progenomes2_speciesReps_genomes.fna
+wget http://swifter.embl.de/~ralves/metaSNV_reference_data/progenomes2_speciesReps_annotations.txt
+```
 
 ## Workflow
 
