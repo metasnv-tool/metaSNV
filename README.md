@@ -9,46 +9,8 @@ metaSNV supports variant (SNV) calling on metagenomic data and population geneti
 
 See the full [documentation](https://github.com/metasnv-tool/metaSNV/tree/master/documentation) for more details and an test example on this page below.
 
-# Installation
-
-## Via conda (recommended):
-
-Create a new conda environment and install metasnv in it (recommended):
-
-```
-conda create --name metaSNV -c bioconda metasnv
-```
-
-or
-
-Install in the active environment: 
-
-```
-conda install -c bioconda metasnv
-```
-
-To test that all files and dependencies have been properly installed, run the following:
-
-    metaSNV.py --help
-    metaSNV_Filtering.py --help
-    metaSNV_DistDiv.py --help
-    metaSNV_subpopr.R --help
-
-To use the provided reference database:
-
-We recommend using genomes from ProGenomes2. The version provided here is a subset with one representative genome per species (the longest of the represenatatives).
-
-To download the species genome reference fasta file (`ref_db`) and the gene annotation file (`db_ann`), run the following. 
-These files will take approx. 25 GB of space.
-
-```
-wget http://swifter.embl.de/~ralves/metaSNV_reference_data/progenomes2_speciesReps_genomes.fna
-wget http://swifter.embl.de/~ralves/metaSNV_reference_data/progenomes2_speciesReps_annotations.txt
-```
-
-## Alternative installation:
-
-### Download
+Download
+========
 
 Via Git:
 
@@ -56,7 +18,8 @@ Via Git:
     
 or [download](https://git.embl.de/metasnv-tool/metaSNV/repository/archive.zip?ref=master) a zip file of the repository.
 
-### Dependencies
+Dependencies
+============
 
 **SNV calling**:
 
@@ -109,7 +72,8 @@ For subpopulation calling, you will also need
     conda install -c r r-essentials
     conda install -c anaconda cairo
 
-### Setup & Compilation
+Setup & Compilation
+===================
 
     make
     
@@ -133,21 +97,22 @@ wget http://swifter.embl.de/~ralves/metaSNV_reference_data/progenomes2_speciesRe
 
 These files will take approx. 25 GB of space.
 
-# Workflow:
+Workflow:
+=========
 
 This summarises the general workflow. See the full documentation for details.
 
-## Part 0: Input files
+### Part 0: Input files
 
 * **'all\_samples'**  = a list of all BAM files, one /path/to/sample.bam per line (no duplicates, no empty mappings)
 * **'ref\_db'**       = the reference database in fasta format (i.e. multi-sequence fasta) and write permission for its directory
 * **'db\_ann'**       = [optional] a gene annotation file for the reference database (see documentation for custom files).
 
-## Part I: Call SNVs
+### Part I: Call SNVs
 
     metaSNV.py output_dir/ all_samples ref_db [options]
 
-## Part II: SNV Post-Processing: Filtering & Analysis
+### Part II: SNV Post-Processing: Filtering & Analysis
 
 Note: requires SNV calling (Part I) to be done
 
@@ -155,7 +120,7 @@ Note: requires SNV calling (Part I) to be done
     
     metaSNV_DistDiv.py --filt output_dir/filtered/pop [options]
 
-## Part III: Subpopulation detection
+### Part III: Subpopulation detection
 
 Note: requires SNV calling, filtering, and distance calculations to be done (Parts I & II)
 
@@ -163,7 +128,8 @@ Note: requires SNV calling, filtering, and distance calculations to be done (Par
 
 To determine abundances of subspecies relative to the whole community, you will also need to provide species abundance profiles. To determine subspecies-associated gene content, you will need to provide per-metagenome gene abundance profiles. See the full documentation for details.
 
-# Example Tutorial 
+Example Tutorial 
+===================
 
 This test example uses in silico generated data so that results compute quickly. There are 160 metagenomic samples with abundance of 3 species. The 'species' are called "refGenome1clus", "refGenome2clus", and "refGenome3clus", with 1, 2, and 3 subspecies, respectively. See the manual for details on the formats of the output files.
 
