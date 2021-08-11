@@ -110,7 +110,7 @@ def alleledist(d1, d2, threshold=.6):
     return (np.abs(d1 - d2) > threshold).mean()
 
 
-def computeDist(filt_file):
+def computeDist(filt_file,outdir):
     ''' Compute distances per species '''
     species = filt_file.split('/')[-1].replace('.freq', '')
     data = pd.read_table(filt_file, index_col=0, na_values=['-1']).T
@@ -124,14 +124,16 @@ def computeDist(filt_file):
     dist.to_csv(outdir + '/' + '%s.allele.dist' % species, sep='\t')
 
 
-def computeAllDist(args):
+def computeAllDist(args,outdir):
 
     print("Computing distances")
 
     allFreq = glob.glob(args.filt + '/*.freq')
 
     p = Pool(processes=args.n_threads)
-    p.map(computeDist, allFreq)
+    partial_Dist = partial(computeDist,
+                           outdir=outdir)
+    p.map(partial_Dist, allFreq)
     p.close()
     p.join()
 
@@ -177,7 +179,7 @@ def compute_diversity(sample1, sample2):
 ############################################################
 # Per Species Diversity
 
-def computeDiv(filt_file, horizontal_coverage, vertical_coverage, bedfile_tab, matched):
+def computeDiv(filt_file, horizontal_coverage, vertical_coverage, bedfile_tab, matched,outdir):
     '''Per species computation'''
 
     species = int(filt_file.split('/')[-1].split('.')[0])
@@ -231,7 +233,7 @@ def computeDiv(filt_file, horizontal_coverage, vertical_coverage, bedfile_tab, m
 ############################################################
 # Per Species N & S Diversity
 
-def computeDivNS(filt_file, horizontal_coverage, vertical_coverage, bedfile_tab, matched):
+def computeDivNS(filt_file, horizontal_coverage, vertical_coverage, bedfile_tab, matched,outdir):
     '''Per species computation'''
 
     species = int(filt_file.split('/')[-1].split('.')[0])
@@ -292,7 +294,7 @@ def computeDivNS(filt_file, horizontal_coverage, vertical_coverage, bedfile_tab,
 ############################################################
 # Compute Diversity for all Species
 
-def computeAllDiv(args):
+def computeAllDiv(args,outdir):
 
     '''Computing diversities & FST'''
 
@@ -315,7 +317,8 @@ def computeAllDiv(args):
                               horizontal_coverage=horizontal_coverage,
                               vertical_coverage=vertical_coverage,
                               bedfile_tab=bedfile_tab,
-                              matched=args.matched)
+                              matched=args.matched,
+                              outdir=outdir)
         p.map(partial_Div, allFreq)
         p.close()
         p.join()
@@ -326,7 +329,8 @@ def computeAllDiv(args):
                                 horizontal_coverage=horizontal_coverage,
                                 vertical_coverage=vertical_coverage,
                                 bedfile_tab=bedfile_tab,
-                                matched=args.matched)
+                                matched=args.matched,
+                                outdir=outdir)
         p.map(partial_DivNS, allFreq)
         p.close()
         p.join()
@@ -361,9 +365,9 @@ if __name__ == "__main__":
     print("Starting computations: ", datetime.now())
 
     if args.dist:
-        computeAllDist(args)
+        computeAllDist(args,outdir)
 
     if args.div or args.divNS:
-        computeAllDiv(args)
+        computeAllDiv(args,outdir)
 
     print("Computations complete: ", datetime.now())
