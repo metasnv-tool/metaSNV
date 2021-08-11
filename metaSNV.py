@@ -178,10 +178,7 @@ def execute_snp_call(args, snpCaller, ifile, ofile, split):
 
 def snp_call(args):
     out_dir = path.join(args.project_dir, 'snpCaller')
-    try:
-        os.makedirs(out_dir)
-    except:
-        pass
+    os.makedirs(out_dir, exist_ok=True)
 
     shutil.copy(args.all_samples, args.project_dir+'/all_samples')
 
