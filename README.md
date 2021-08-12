@@ -22,7 +22,7 @@ conda create --name metaSNV -c bioconda -c conda-forge 'metasnv>=2.0.1'
 Install metaSNV in an existing conda environment:
 
 ```
-conda install -c bioconda -c conda-forge 'metasnv>=2.0.0'
+conda install -c bioconda -c conda-forge 'metasnv>=2.0.1'
 ```
 
 To test that all files and dependencies have been properly installed, run the following:
