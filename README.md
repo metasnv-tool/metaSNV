@@ -16,7 +16,7 @@ See the full [documentation](https://github.com/metasnv-tool/metaSNV/tree/master
 Create a new conda environment with metaSNV installed:
 
 ```
-conda create --name metaSNV -c bioconda -c conda-forge 'metasnv>=2.0.0'
+conda create --name metaSNV -c bioconda -c conda-forge 'metasnv>=2.0.1'
 ```
 
 Install metaSNV in an existing conda environment:
