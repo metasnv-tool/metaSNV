@@ -113,6 +113,8 @@ or if running from source
 python metaSNV.py --threads 3 output testdata/all_samples testdata/ref/allReferenceGenomes.fasta
 ```
 
+To also detect whether SNVs result in codon changes, add `--db_ann testdata/ref/metaSNV_anntotationsAll.txt` which will add to the SNV output: the gene within which the SNV was detected and the original and resultant codon. The file `testdata/ref/metaSNV_anntotationsAll.txt` contains gene names and locations within the reference genomes. See the documentation for details.
+
 Your SNVs are now in `output/snpCaller/`.
 
 - If you ran with >1 thread: Your SNVs are now in files named with the pattern: `output/snpCaller/called_SNPs.best_split_*`. If you ran with 3 threads, then each species will have it's own file and you should have 1080, 2094, and 3064 SNVs per file, one per line.
