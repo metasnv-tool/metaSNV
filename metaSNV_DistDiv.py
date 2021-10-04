@@ -236,7 +236,7 @@ def computeDiv(filt_file, horizontal_coverage, vertical_coverage, bedfile_tab, m
 def computeDivNS(filt_file, horizontal_coverage, vertical_coverage, bedfile_tab, matched,outdir):
     '''Per species computation'''
 
-    species = int(filt_file.split('/')[-1].split('.')[0])
+    species = filt_file.split('/')[-1].split('.')[0]
     data = pd.read_table(filt_file, index_col=0, na_values=['-1'])
 
     pre_index = [i.split(':') for i in list(data.index)]
@@ -244,11 +244,21 @@ def computeDivNS(filt_file, horizontal_coverage, vertical_coverage, bedfile_tab,
     index1 = [item[0] + ':' + item[1] + ':' + item[2] for item in pre_index]
     # Setting index for Non-synonymous vs Synonymous
     index2 = [item[4].split('[')[0] for item in pre_index]
-    data = data.set_index(pd.MultiIndex.from_arrays([index1, index2], names=['index', 'significance']))
+    data = data.set_index(pd.MultiIndex.from_arrays([index1, index2], names=['index', 'synomimity']))
     data = data.sort_index()
+    
+    if 'N' not in data.index.get_level_values("synonimity") or 'S' not in data.index.get_level_values("synonimity"):
+        raise Exception(
+        """
+        You're asking metaSNV to compute synonymous and non-synonymous diversity but
+        metaSNV can't seem to find either type of SNV.
+        What I except is happening is that there was no gene information provided during the SNV
+        calling which made it impossible for metaSNV to identify synonimity.
+        """
+        )
 
-    data_N = data.xs('N', level='significance')
-    data_S = data.xs('S', level='significance')
+    data_N = data.xs('N', level='synomimity')
+    data_S = data.xs('S', level='synomimity')
 
     ########
     # If matched, filter for 'common' positions :
