@@ -244,7 +244,7 @@ def computeDivNS(filt_file, horizontal_coverage, vertical_coverage, bedfile_tab,
     index1 = [item[0] + ':' + item[1] + ':' + item[2] for item in pre_index]
     # Setting index for Non-synonymous vs Synonymous
     index2 = [item[4].split('[')[0] for item in pre_index]
-    data = data.set_index(pd.MultiIndex.from_arrays([index1, index2], names=['index', 'synomimity']))
+    data = data.set_index(pd.MultiIndex.from_arrays([index1, index2], names=['index', 'synonimity']))
     data = data.sort_index()
     
     if 'N' not in data.index.get_level_values("synonimity") or 'S' not in data.index.get_level_values("synonimity"):
