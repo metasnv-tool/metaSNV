@@ -257,8 +257,8 @@ def computeDivNS(filt_file, horizontal_coverage, vertical_coverage, bedfile_tab,
         """
         )
 
-    data_N = data.xs('N', level='synomimity')
-    data_S = data.xs('S', level='synomimity')
+    data_N = data.xs('N', level='synonimity')
+    data_S = data.xs('S', level='synonimity')
 
     ########
     # If matched, filter for 'common' positions :
