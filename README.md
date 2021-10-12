@@ -113,7 +113,7 @@ or if running from source
 python metaSNV.py --threads 3 output testdata/all_samples testdata/ref/allReferenceGenomes.fasta
 ```
 
-To also detect whether SNVs result in codon changes, add `--db_ann testdata/ref/metaSNV_anntotationsAll.txt` which will add to the SNV output: the gene within which the SNV was detected and the original and resultant codon. The file `testdata/ref/metaSNV_anntotationsAll.txt` contains gene names and locations within the reference genomes. See the documentation for details.
+To also detect whether SNVs result in codon changes, add `--db_ann testdata/ref/allReferenceGenomes_geneAnno.txt` which will add to the SNV output: the gene within which the SNV was detected and the original and resultant codon. The file `testdata/ref/allReferenceGenomes_geneAnno.txt` contains gene names and locations within the reference genomes. See the documentation for details.
 
 Your SNVs are now in `output/snpCaller/`.
 
