@@ -3,7 +3,7 @@
 
 metaSNV supports variant (SNV) calling on metagenomic data and population genetic analysis, including subspecies identification and profiling. Input is metagenomic reads mapped against reference genomes (bam files).
 
-- metaSNV v2 paper: coming soon
+- [metaSNV v2 paper](https://doi.org/10.1093/bioinformatics/btab789): Van Rossum, et al. 2021. _metaSNV v2: detection of SNVs and subspecies in prokaryotic metagenomes._ Bioinformatics.
 - [metaSNV v1 paper](https://doi.org/10.1371/journal.pone.0182392): Costea, et al. 2017. _metaSNV: A tool for metagenomic strain level analysis._ PLOS One.
 
 
